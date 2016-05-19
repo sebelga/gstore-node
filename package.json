@@ -1,0 +1,16 @@
+{
+  "name": "datastoore",
+  "version": "0.1.0",
+  "description": "Datastoore is a tool designed to work with the Google Datastore",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "hooks-fixed": "^1.1.0",
+    "kareem": "^1.1.0",
+    "regexp-clone": "0.0.1"
+  }
+}
