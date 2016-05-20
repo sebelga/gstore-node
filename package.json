@@ -16,6 +16,7 @@
   "dependencies": {
     "hooks-fixed": "^1.1.0",
     "kareem": "^1.1.0",
-    "regexp-clone": "0.0.1"
+    "regexp-clone": "0.0.1",
+    "gcloud": "0.34.0"
   }
 }
