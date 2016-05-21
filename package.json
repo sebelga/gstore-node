@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["Google Datastore", "Node JS"],
+  "keywords": [
+    "Google Datastore",
+    "Node JS"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sebelga/datastools.git"
@@ -18,5 +21,9 @@
     "kareem": "^1.1.0",
     "regexp-clone": "0.0.1",
     "gcloud": "0.34.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5"
   }
 }
