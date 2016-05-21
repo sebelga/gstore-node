@@ -41,17 +41,16 @@ describe('Datastools', function() {
 
         it('and add model and schema to cache', () => {
             var schema = {};
-            var ds = {};
 
             datastools.model('Blog', schema);
 
+            expect(Model.compile.getCall(0)).called;
             expect(datastools.models.Blog).to.exist;
             expect(datastools.modelSchemas.Blog).to.exist;
         });
 
         it('and not add them to cache', () => {
             var schema = {};
-            var ds = {};
             var options = {cache:false};
 
             datastools.model('Image', schema, options);
@@ -63,9 +62,8 @@ describe('Datastools', function() {
             var schema             = new datastools.Schema({});
             var mockModel          = {schema: schema};
             datastools.models.Blog = mockModel;
-            var ds = {};
 
-            var model = datastools.model('Blog', schema, ds);
+            var model = datastools.model('Blog', schema);
 
             expect(model).equal(mockModel);
         });
@@ -73,7 +71,6 @@ describe('Datastools', function() {
         it ('allowing to pass an existing Schema', () => {
             var schema = new datastools.Schema({});
             datastools.modelSchemas.Blog = schema;
-            var ds = {};
 
             var fn = () => {
                 datastools.model('Blog', schema);
@@ -86,11 +83,10 @@ describe('Datastools', function() {
             var schema    = new datastools.Schema({});
             var newSchema = new datastools.Schema({});
             var mockModel = {schema: schema};
-            var ds        = {};
             datastools.models.Blog = mockModel;
 
             var fn = () => {
-                return datastools.model('Blog', newSchema, ds);
+                return datastools.model('Blog', newSchema);
             };
 
             expect(fn).to.throw(Error);
