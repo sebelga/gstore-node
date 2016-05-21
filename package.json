@@ -4,7 +4,8 @@
   "description": "Datastools is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "coverage": "istanbul cover _mocha -- -R spec"
   },
   "keywords": [
     "Google Datastore",
@@ -24,6 +25,8 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^2.4.5"
+    "istanbul": "^0.4.3",
+    "mocha": "^2.4.5",
+    "sinon": "^1.17.4"
   }
 }
