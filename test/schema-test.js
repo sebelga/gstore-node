@@ -112,7 +112,7 @@ describe('Schema', () => {
         });
 
         it ('should not allow to set reserved key', function() {
-            
+
             var schema = new Schema({});
             var fn = () => {
                 schema.path('ds', {});
