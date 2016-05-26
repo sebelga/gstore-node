@@ -4,9 +4,13 @@
   "description": "Datastools is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test --recursive",
+    "coverage": "istanbul cover _mocha -- -R spec --recursive"
   },
-  "keywords": ["Google Datastore", "Node JS"],
+  "keywords": [
+    "Google Datastore",
+    "Node JS"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sebelga/datastools.git"
@@ -18,5 +22,12 @@
     "kareem": "^1.1.0",
     "regexp-clone": "0.0.1",
     "gcloud": "0.34.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "istanbul": "^0.4.3",
+    "mocha": "^2.4.5",
+    "nconf": "^0.8.4",
+    "sinon": "^1.17.4"
   }
 }
