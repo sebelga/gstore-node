@@ -4,10 +4,10 @@ var expect = chai.expect;
 
 var sinon = require('sinon');
 
-//var nconf = require('nconf');
-//nconf.file({ file: './test/config.json' });
-//var gcloud = require('gcloud')(nconf.get('gcloud'));
-//var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
+var nconf = require('nconf');
+nconf.file({ file: './test/config.json' });
+var gcloud = require('gcloud')(nconf.get('gcloud'));
+var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
 
 var Model  = require('../lib/model');
 var Schema = require('../lib').Schema;
@@ -16,31 +16,44 @@ describe('Model', () => {
     "use strict";
 
     let schema;
-    let ds;
     let ModelInstance;
+    let clock;
 
     beforeEach(() => {
-        schema = new Schema({});
+        clock = sinon.useFakeTimers();
+
+        schema = new Schema({
+            name : {type:'string'},
+            lastname: {type:'string'}
+        });
 
         // Key Model Mock
-        function Key() {};
+        function Key() {}
 
-        ds = {
-            key: () => {return new Key();}
-        };
+        sinon.stub(ds, 'save', (entity, cb) => {
+            setTimeout(() => {
+                cb(null ,entity);
+            }, 20);
+        });
 
         ModelInstance = Model.compile('Blog', schema, ds);
     });
 
-    it ('should set properties on compile and return ModelInstance', () => {
-        expect(Model.ds).to.exist;
-        expect(Model.schema).to.exist;
+    afterEach(() => {
+        try {
+            ds.save.restore();
+        } catch(e) {}
+    });
 
-        expect(ModelInstance).to.exist;
-        expect(ModelInstance.hooks).to.exist;
-        expect(ModelInstance.hooks).to.deep.equal(schema.s.hooks);
-        expect(ModelInstance.entityName).to.exist;
-        expect(ModelInstance.init).to.exist;
+    it ('should set properties on compile and return ModelInstance', () => {
+        expect(Model.schema).exist;
+
+        expect(ModelInstance).exist;
+        expect(ModelInstance.ds).exist;
+        expect(ModelInstance.hooks).exist;
+        expect(ModelInstance.hooks).deep.equal(schema.s.hooks);
+        expect(ModelInstance.entityName).exist;
+        expect(ModelInstance.init).exist;
     });
 
     it('should apply schema methods to the model instances', () => {
@@ -52,13 +65,17 @@ describe('Model', () => {
         expect(model.doSomething).equal(schema.methods.doSomething);
     });
 
-    it ('should emit "save" on save', () => {
-        var model = new ModelInstance({name:'John'});
-        var emit  = sinon.spy(model, 'emit');
+    it('should emit "save" on save', (done) => {
+        let model       = new ModelInstance({});
+        let emitStub    = sinon.stub(model, 'emit');
+        let callbackSpy = sinon.spy();
 
-        model.save();
+        model.save(callbackSpy);
+        clock.tick(20);
 
-        expect(emit.calledOnce).to.be.true;
+        expect(emitStub.calledWithExactly('save')).be.true;
+        expect(emitStub.calledBefore(callbackSpy)).be.true;
+        done();
     });
 
     it('should call pre and post hooks for findOne', () => {
@@ -80,7 +97,26 @@ describe('Model', () => {
 
         ModelInstance.findOne({});
 
-        expect(findOnePre.calledOnce).to.be.true;
+        expect(findOnePre.calledOnce).be.true;
         expect(findOnePost.calledOnce).to.be.true;
     });
+
+    it('should convert to Datastore format and save entity', function(done) {
+        let data  = {name:'John', lastname:'Snow'};
+        let model = new ModelInstance(data);
+
+        model.save(() => {});
+        clock.tick(20);
+
+        // TODO add assertion for excludeFromIndex True / False
+        expect(model.ds.save.calledOnce).be.true;
+        expect(model.ds.save.getCall(0).args[0].key).exist;
+        expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
+        expect(model.ds.save.getCall(0).args[0].data).exist;
+        expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
+
+        done();
+    });
+
+    it('should save entity in a transaction');
 });

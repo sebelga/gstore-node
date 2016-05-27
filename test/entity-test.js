@@ -21,12 +21,17 @@ describe('Entity', () => {
 
     beforeEach(() => {
         schema = new Schema({name:{type:'string'}});
+        sinon.stub(ds, 'save', (entity, cb) => {
+            cb(null, entity);
+        });
     });
 
     afterEach(() => {
         datastools.models       = {};
         datastools.modelSchemas = {};
         datastools.options      = {};
+
+        ds.save.restore();
     });
 
     it('should initialized properties', (done) => {
@@ -51,7 +56,7 @@ describe('Entity', () => {
         expect(entity.entityData.name).to.equal('John');
     });
 
-    it ('should not add any data if nothing is passed', () => {
+    it('should not add any data if nothing is passed', () => {
         var model  = datastools.model('BlogPost', schema);
 
         var entity = new model();
@@ -59,7 +64,7 @@ describe('Entity', () => {
         expect(Object.keys(entity.entityData).length).to.equal(0);
     });
 
-    it ('should set entity Data modifiedOn to new Date if property in Schema', () => {
+    it('should set entity Data modifiedOn to new Date if property in Schema', () => {
         schema = new Schema({modifiedOn: {type: 'datetime'}});
         var model  = datastools.model('BlogPost', schema);
 
@@ -118,13 +123,13 @@ describe('Entity', () => {
             };
         });
 
-        it('should call pre hooks before saving', () => {
+        it('should call pre hooks before saving', (done) => {
             var save = sinon.spy(spyOn, 'fnHookPre');
             schema.pre('save', save);
             model  = datastools.model('BlogPost', schema);
             entity = new model({name:'John'});
 
-            entity.save();
+            entity.save(done);
 
             expect(save.callCount).to.equal(1);
             save.restore();
@@ -150,13 +155,13 @@ describe('Entity', () => {
             postNewMethod.restore();
         });
 
-        it('should call post hooks after saving', () => {
+        it('should call post hooks after saving', (done) => {
             let save = sinon.spy(spyOn, 'fnHookPost');
             schema.post('save', save);
             model  = datastools.model('BlogPost', schema);
             entity = new model({});
 
-            entity.save();
+            entity.save(done);
 
             expect(save.calledOnce).to.be.true;
             save.restore();
