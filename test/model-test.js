@@ -69,19 +69,6 @@ describe('Model', () => {
         expect(model.doSomething).equal(schema.methods.doSomething);
     });
 
-    it('should emit "save" on save', (done) => {
-        let model       = new ModelInstance({});
-        let emitStub    = sinon.stub(model, 'emit');
-        let callbackSpy = sinon.spy();
-
-        model.save(callbackSpy);
-        clock.tick(20);
-
-        expect(emitStub.calledWithExactly('save')).be.true;
-        expect(emitStub.calledBefore(callbackSpy)).be.true;
-        done();
-    });
-
     it('should call pre and post hooks for findOne', () => {
         var spy = {
             fnPre : function(next) {
@@ -105,7 +92,7 @@ describe('Model', () => {
         expect(findOnePost.calledOnce).to.be.true;
     });
 
-    describe('should be able to validate Schema', () => {
+    describe('should validate Schema', () => {
         it('properties passed ok', () => {
             let model = new ModelInstance({name:'John', lastname:'Snow'});
 
@@ -237,7 +224,22 @@ describe('Model', () => {
             model = new ModelInstance(data);
         });
 
-        it('should call validate() before', () => {
+        it('should emit "save" on save', (done) => {
+            let model       = new ModelInstance({});
+            let emitStub    = sinon.stub(model, 'emit');
+            let callbackSpy = sinon.spy();
+
+            model.save(callbackSpy);
+            clock.tick(20);
+
+            expect(emitStub.calledWithExactly('save')).be.true;
+            expect(emitStub.calledBefore(callbackSpy)).be.true;
+            done();
+
+            emitStub.restore();
+        });
+
+        it('---> should validate() before', () => {
             model  = new ModelInstance({name:'John'});
             let validateSpy = sinon.spy(model, 'validate');
 
@@ -246,7 +248,7 @@ describe('Model', () => {
             expect(validateSpy.called).be.true;
         });
 
-        it('should not call validate() data before', () => {
+        it('---> should NOT validate() data before', () => {
             schema = new Schema({}, {validateBeforeSave: false});
             ModelInstance = Model.compile('Blog', schema, ds);
             model  = new ModelInstance({name:'John'});
@@ -257,7 +259,15 @@ describe('Model', () => {
             expect(validateSpy.called).be.false;
         });
 
-        it.only('should convert to Datastore format and save entity', function(done) {
+        it('should NOT save to dataStore if it didn\'t pass the validation', () => {
+            model  = new ModelInstance({unknown:'John'});
+
+            model.save(() => {});
+
+            expect(ds.save.called).be.false;
+        });
+
+        it('should convert to Datastore format and save entity', function(done) {
             let spySerializerToDatastore = sinon.spy(serializer.ds, 'toDatastore');
 
             model.save(() => {});
@@ -273,6 +283,29 @@ describe('Model', () => {
             expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
 
             done();
+        });
+
+        it('if datastore error, return the error and don\'t call emit', () => {
+            ds.save.restore();
+
+            let error = {
+                code:500,
+                message:'Server Error'
+            };
+            sinon.stub(ds, 'save', (entity, cb) => {
+                return cb(error);
+            });
+
+            let model       = new ModelInstance({});
+            let emitStub    = sinon.stub(model, 'emit');
+            let callbackSpy = sinon.spy();
+
+            model.save(callbackSpy);
+
+            expect(emitStub.called).be.false;
+            expect(callbackSpy.getCall(0).args[0]).equal(error);
+
+            emitStub.restore();
         });
 
         it('should save entity into a transaction');
