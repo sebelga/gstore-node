@@ -9,8 +9,9 @@ nconf.file({ file: './test/config.json' });
 var gcloud = require('gcloud')(nconf.get('gcloud'));
 var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
 
-var Model  = require('../lib/model');
-var Schema = require('../lib').Schema;
+var Model      = require('../lib/model');
+var Schema     = require('../lib').Schema;
+var serializer = require('../lib/services/serializer');
 
 describe('Model', () => {
     "use strict";
@@ -24,12 +25,12 @@ describe('Model', () => {
 
         schema = new Schema({
             name:     {type:      'string'},
-            lastname: {type:      'string'},
-            age:      {type:      'number'},
+            lastname: {type:      'string', excludedFromIndex:true},
+            age:      {type:      'number', excludedFromIndex:true},
             birthday: {type:      'datetime'},
             street:   {},
-            website:  {validator: 'isURL'},
-            email:    {validator: 'isEmail'},
+            website:  {validate: 'isURL'},
+            email:    {validate: 'isEmail'},
             type:     {values:    ['image', 'video']}
         });
 
@@ -105,11 +106,10 @@ describe('Model', () => {
     });
 
     describe('should be able to validate Schema', () => {
-        it ('properties passed ok', () => {
+        it('properties passed ok', () => {
             let model = new ModelInstance({name:'John', lastname:'Snow'});
 
             let valid = model.validate();
-
             expect(valid.success).be.true;
         });
 
@@ -145,35 +145,35 @@ describe('Model', () => {
             expect(valid.success).be.false;
         });
 
-        it ('--> date property ok', () => {
+        it('--> date property ok', () => {
             let model = new ModelInstance({birthday:'2015-01-01'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it ('--> date property ko', () => {
+            let model = new ModelInstance({birthday:'01-2015-01'});
             let model2 = new ModelInstance({birthday:'01-01-2015'});
             let model3 = new ModelInstance({birthday:'2015/01/01'});
             let model4 = new ModelInstance({birthday:'01/01/2015'});
+            let model5 = new ModelInstance({birthday:12345}); // No number allowed
+            let model6 = new ModelInstance({birthday:'string'});
 
             let valid = model.validate();
             let valid2 = model2.validate();
             let valid3 = model3.validate();
             let valid4 = model4.validate();
-
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-            expect(valid4.success).be.true;
-        });
-
-        it ('--> date property ko', () => {
-            let model = new ModelInstance({birthday:'01-2015-01'});
-            let model2 = new ModelInstance({birthday:12345}); // No number allowed
-            let model3 = new ModelInstance({birthday:'string'});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
+            let valid5 = model5.validate();
+            let valid6 = model6.validate();
 
             expect(valid.success).be.false;
             expect(valid2.success).be.false;
             expect(valid3.success).be.false;
+            expect(valid4.success).be.false;
+            expect(valid5.success).be.false;
+            expect(valid6.success).be.false;
         });
 
         it ('--> is URL ok', () => {
@@ -257,13 +257,16 @@ describe('Model', () => {
             expect(validateSpy.called).be.false;
         });
 
-        it('should convert to Datastore format and save entity', function(done) {
+        it.only('should convert to Datastore format and save entity', function(done) {
+            let spySerializerToDatastore = sinon.spy(serializer.ds, 'toDatastore');
 
             model.save(() => {});
             clock.tick(20);
 
-            // TODO add assertion for excludeFromIndex True / False
             expect(model.ds.save.calledOnce).be.true;
+            expect(spySerializerToDatastore.called).be.true;
+            expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
+            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludedFromIndexes);
             expect(model.ds.save.getCall(0).args[0].key).exist;
             expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
             expect(model.ds.save.getCall(0).args[0].data).exist;

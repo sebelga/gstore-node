@@ -16,12 +16,12 @@ var Schema     = require('../lib').Schema;
 
 var schema;
 
-describe.only('Entity', () => {
+describe('Entity', () => {
     "use strict";
 
     beforeEach(() => {
         schema = new Schema({
-            name:{type:'string'}
+            name    : {type: 'string'}
         });
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
@@ -44,21 +44,25 @@ describe.only('Entity', () => {
         expect(entity.entityData).to.exist;
         expect(entity.entityKey).to.exist;
         expect(entity.schema).to.exist;
+        expect(entity.excludedFromIndexes).deep.equal([]);
         expect(entity.pre).to.exist;
         expect(entity.post).to.exist;
 
         done();
     });
 
-    it ('should add data passed to entityData', () => {
+    it('should add data passed to entityData', () => {
         let model  = datastools.model('BlogPost', schema);
 
-        let entity = new model({name:'John'}, 'keyid');
+        let entity = new model({name:'John'});
 
         expect(entity.entityData.name).to.equal('John');
     });
 
     it('should not add any data if nothing is passed', () => {
+        schema = new Schema({
+            name    : {type: 'string', optional:true}
+        });
         let model = datastools.model('BlogPost', schema);
 
         let entity = new model();
@@ -66,15 +70,43 @@ describe.only('Entity', () => {
         expect(Object.keys(entity.entityData).length).to.equal(0);
     });
 
-    it ('should set default values if no value was passed', () => {
+    it ('should set default values or null from schema', () => {
         schema = new Schema({
-            name:{type:'string', default:'John'}
+            name:{type:'string', default:'John'},
+            lastname: {type: 'string'},
+            email:{optional:true}
         });
         let model = datastools.model('BlogPost', schema);
 
         let entity = new model({});
 
         expect(entity.entityData.name).equal('John');
+        expect(entity.entityData.lastname).equal(null);
+        expect(entity.entityData.email).equal(undefined);
+    });
+
+    it ('should not add default to optional properties', () => {
+        schema = new Schema({
+            name:{type:'string'},
+            email:{optional:true}
+        });
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({});
+
+        expect(entity.entityData.email).equal(undefined);
+    });
+
+    it ('should its array of excludedFromIndexes', () => {
+        schema = new Schema({
+            name    : {excludedFromIndex:true},
+            lastname: {excludedFromIndex:true}
+        });
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({name:'John'});
+
+        expect(entity.excludedFromIndexes).deep.equal(['name', 'lastname']);
     });
 
     it('should set entity Data modifiedOn to new Date if property in Schema', () => {
