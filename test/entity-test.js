@@ -20,46 +20,96 @@ describe('Entity', () => {
     "use strict";
 
     beforeEach(() => {
-        schema = new Schema({name:{type:'string'}});
+        schema = new Schema({
+            name    : {type: 'string'}
+        });
+        sinon.stub(ds, 'save', (entity, cb) => {
+            cb(null, entity);
+        });
     });
 
     afterEach(() => {
         datastools.models       = {};
         datastools.modelSchemas = {};
         datastools.options      = {};
+
+        ds.save.restore();
     });
 
     it('should initialized properties', (done) => {
-        var model  = datastools.model('BlogPost', schema);
+        let model  = datastools.model('BlogPost', schema);
 
-        var entity = new model({}, 'keyid');
+        let entity = new model({}, 'keyid');
 
         expect(entity.entityData).to.exist;
         expect(entity.entityKey).to.exist;
         expect(entity.schema).to.exist;
+        expect(entity.excludedFromIndexes).deep.equal([]);
         expect(entity.pre).to.exist;
         expect(entity.post).to.exist;
 
         done();
     });
 
-    it ('should add data passed to entityData', () => {
-        var model  = datastools.model('BlogPost', schema);
+    it('should add data passed to entityData', () => {
+        let model  = datastools.model('BlogPost', schema);
 
-        var entity = new model({name:'John'}, 'keyid');
+        let entity = new model({name:'John'});
 
         expect(entity.entityData.name).to.equal('John');
     });
 
-    it ('should not add any data if nothing is passed', () => {
-        var model  = datastools.model('BlogPost', schema);
+    it('should not add any data if nothing is passed', () => {
+        schema = new Schema({
+            name    : {type: 'string', optional:true}
+        });
+        let model = datastools.model('BlogPost', schema);
 
-        var entity = new model();
+        let entity = new model();
 
         expect(Object.keys(entity.entityData).length).to.equal(0);
     });
 
-    it ('should set entity Data modifiedOn to new Date if property in Schema', () => {
+    it ('should set default values or null from schema', () => {
+        schema = new Schema({
+            name:{type:'string', default:'John'},
+            lastname: {type: 'string'},
+            email:{optional:true}
+        });
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({});
+
+        expect(entity.entityData.name).equal('John');
+        expect(entity.entityData.lastname).equal(null);
+        expect(entity.entityData.email).equal(undefined);
+    });
+
+    it ('should not add default to optional properties', () => {
+        schema = new Schema({
+            name:{type:'string'},
+            email:{optional:true}
+        });
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({});
+
+        expect(entity.entityData.email).equal(undefined);
+    });
+
+    it ('should its array of excludedFromIndexes', () => {
+        schema = new Schema({
+            name    : {excludedFromIndex:true},
+            lastname: {excludedFromIndex:true}
+        });
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({name:'John'});
+
+        expect(entity.excludedFromIndexes).deep.equal(['name', 'lastname']);
+    });
+
+    it('should set entity Data modifiedOn to new Date if property in Schema', () => {
         schema = new Schema({modifiedOn: {type: 'datetime'}});
         var model  = datastools.model('BlogPost', schema);
 
@@ -69,7 +119,7 @@ describe('Entity', () => {
         expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
     });
 
-    describe('should create Datastore Key when intantiated with', () => {
+    describe('should create Datastore Key when intantiated', () => {
         beforeEach(() => {
             sinon.stub(ds, 'key', () => {
                 return {};
@@ -80,7 +130,7 @@ describe('Entity', () => {
             ds.key.restore();
         });
 
-        it ('---> full Key (keyname passed) {string}', () => {
+        it ('---> with a full Key (String keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, 'keyid');
@@ -88,7 +138,7 @@ describe('Entity', () => {
             expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 'keyid']);
         });
 
-        it ('---> full Key (keyname passed) {int}', () => {
+        it ('---> with a full Key (Integer keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, '123');
@@ -96,7 +146,7 @@ describe('Entity', () => {
             expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 123]);
         });
 
-        it ('---> partial Key (auto-generated id)', () => {
+        it ('---> with a partial Key (auto-generated id)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             new model({});
@@ -118,13 +168,13 @@ describe('Entity', () => {
             };
         });
 
-        it('should call pre hooks before saving', () => {
+        it('should call pre hooks before saving', (done) => {
             var save = sinon.spy(spyOn, 'fnHookPre');
             schema.pre('save', save);
             model  = datastools.model('BlogPost', schema);
             entity = new model({name:'John'});
 
-            entity.save();
+            entity.save(done);
 
             expect(save.callCount).to.equal(1);
             save.restore();
@@ -150,13 +200,13 @@ describe('Entity', () => {
             postNewMethod.restore();
         });
 
-        it('should call post hooks after saving', () => {
+        it('should call post hooks after saving', (done) => {
             let save = sinon.spy(spyOn, 'fnHookPost');
             schema.post('save', save);
             model  = datastools.model('BlogPost', schema);
             entity = new model({});
 
-            entity.save();
+            entity.save(done);
 
             expect(save.calledOnce).to.be.true;
             save.restore();
