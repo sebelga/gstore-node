@@ -16,12 +16,12 @@ var Schema     = require('../lib').Schema;
 
 var schema;
 
-describe('Entity', () => {
+describe.only('Entity', () => {
     "use strict";
 
     beforeEach(() => {
         schema = new Schema({
-            name:{type:'string', default:'John'}
+            name:{type:'string'}
         });
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
@@ -66,7 +66,10 @@ describe('Entity', () => {
         expect(Object.keys(entity.entityData).length).to.equal(0);
     });
 
-    it ('should set default values', () => {
+    it ('should set default values if no value was passed', () => {
+        schema = new Schema({
+            name:{type:'string', default:'John'}
+        });
         let model = datastools.model('BlogPost', schema);
 
         let entity = new model({});
@@ -84,7 +87,7 @@ describe('Entity', () => {
         expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
     });
 
-    describe('should create Datastore Key when intantiated with', () => {
+    describe('should create Datastore Key when intantiated', () => {
         beforeEach(() => {
             sinon.stub(ds, 'key', () => {
                 return {};
@@ -95,7 +98,7 @@ describe('Entity', () => {
             ds.key.restore();
         });
 
-        it ('---> full Key (keyname passed) {string}', () => {
+        it ('---> with a full Key (String keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, 'keyid');
@@ -103,7 +106,7 @@ describe('Entity', () => {
             expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 'keyid']);
         });
 
-        it ('---> full Key (keyname passed) {int}', () => {
+        it ('---> with a full Key (Integer keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, '123');
@@ -111,7 +114,7 @@ describe('Entity', () => {
             expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 123]);
         });
 
-        it ('---> partial Key (auto-generated id)', () => {
+        it ('---> with a partial Key (auto-generated id)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             new model({});
