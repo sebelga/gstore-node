@@ -2,18 +2,19 @@
 datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the gcloud-node library.
 
 ## Motivation
-The Google Datastore is an amazing fast and reliable database but I realized that a lot of times I was missing some very nice featrues from Mongoose like the
- ability to define a Schema for the models, validate those and have some pre/post 'hooks' on its methods. These are for now the main purpose of this library 
- which is still in in active development (no release yet).
+The Google Datastore is an amazing fast and reliable database but I realized that a lot of times I was missing some very nice features from Mongoose like the
+ ability to define a Schema for the models, validate those or have some pre/post 'hooks' on the model's methods. These are -for now- the main purpose of this 
+ library which is still in in active development (no release yet).
  
- ## Install
+ ### Install
  ```
  npm install datastools --save
  ```
  
- ## Getting started
+ ### Getting started
+ (For info on gcloud-config go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
  ```
- var configGcloud = {} // https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud
+ var configGcloud = {};
  var gcloud = require('gcloud')(configGcloud);
  var ds = gcloud.datastore(configDatastore);
  
@@ -24,39 +25,42 @@ The Google Datastore is an amazing fast and reliable database but I realized tha
 ## Schema
 ### Creation
 ```
-var datastools = require('../datastools');
+var datastools = require('datastools');
 var Schema     = datastools.Schema;
 
 var entitySchema = new Schema({
     name:{},
     lastname:{},
-    // ...
+    ...
 });
 ```
+
 ### Properties types
 For now 3 properties type are validated
 - 'string' (default)
 - 'number'
-- 'datetime'
-'''
+- 'datetime' (valid values ---> 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
+
+``
 var entitySchema = new Schema({
     name:{type:'string'},
     lastname:{},  // if nothing is passed, default is type:'string'
     age:{type:'number'},
-    createdOn:{type:'datetime'} // valid values are: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00'
+    createdOn:{type:'datetime'}
 });
-'''
+```
+
 ### Properties validations
 datastools uses the amazing validator library (https://github.com/chriso/validator.js) so you can use any of the validation from there.
+
 ```
 var entitySchema = new Schema({
     email:{validate:'isEmail'},
     website:{validate:'isURL'},
-    color:{validate:'isHexColor}
+    color:{validate:'isHexColor},
+    ...
 });
 ```
-
-
 
 ## Model
 ```
