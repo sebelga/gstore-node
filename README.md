@@ -5,14 +5,14 @@ datastools is a Google Datastore entities modeling library for Node.js inspired 
 The Google Datastore is an amazing fast and reliable database but I realized that a lot of times I was missing some very nice features from Mongoose like the
  ability to define a Schema for the models, validate those or have some pre/post 'hooks' on the model's methods. These are -for now- the main purpose of this 
  library which is still in in active development (no release yet).
- 
- ### Install
+
+### Install
  ```
  npm install datastools --save
  ```
  
- ### Getting started
- (For info on gcloud-config go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
+### Getting started
+(For info on how to configure gcloud go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
  ```
  var configGcloud = {};
  var gcloud = require('gcloud')(configGcloud);
@@ -39,7 +39,7 @@ var entitySchema = new Schema({
 For now 3 properties type are validated
 - 'string' (default)
 - 'number'
-- 'datetime' (valid values ---> 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
+- 'datetime' (valid format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 
 ``
 var entitySchema = new Schema({
@@ -63,6 +63,7 @@ var entitySchema = new Schema({
 ```
 
 ## Model
+
 ```
 var datastools = require('../datastools');
 var Schema     = datastools.Schema;
