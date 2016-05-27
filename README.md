@@ -41,7 +41,7 @@ For now 3 properties type are validated
 - 'number'
 - 'datetime' (valid format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 
-``
+```
 var entitySchema = new Schema({
     name:{type:'string'},
     lastname`:{},  // if nothing is passed, default is type:'string'
