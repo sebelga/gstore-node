@@ -44,7 +44,7 @@ For now 3 properties type are validated
 ``
 var entitySchema = new Schema({
     name:{type:'string'},
-    lastname:{},  // if nothing is passed, default is type:'string'
+    lastname`:{},  // if nothing is passed, default is type:'string'
     age:{type:'number'},
     createdOn:{type:'datetime'}
 });
