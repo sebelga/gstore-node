@@ -18,10 +18,11 @@
   "author": "Sébastien Loix",
   "license": "ISC",
   "dependencies": {
+    "gcloud": "0.34.0",
     "hooks-fixed": "^1.1.0",
     "kareem": "^1.1.0",
     "regexp-clone": "0.0.1",
-    "gcloud": "0.34.0"
+    "validator": "^5.2.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",

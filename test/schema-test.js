@@ -36,12 +36,26 @@ describe('Schema', () => {
             expect(schema.paths.property2).to.exist;
         });
 
+        it('if no type passed, default to string', () => {
+            let schema = new Schema({name:{}});
+
+            expect(schema.paths.name.type).equal('string');
+        });
+
         it ('should not allowed reserved properties on schema', function() {
             let fn = () => {
                 let schema = new Schema({ds:123});
             };
 
             expect(fn).to.throw(Error);
+        });
+
+        it('should register default middelwares', () => {
+            let schema = new Schema({});
+
+            expect(schema.callQueue.length).equal(1);
+            expect(schema.callQueue[0][0]).equal('pre');
+            expect(schema.callQueue[0][1][0]).equal('save');
         });
     });
 

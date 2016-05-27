@@ -23,12 +23,15 @@ describe('Model', () => {
         clock = sinon.useFakeTimers();
 
         schema = new Schema({
-            name : {type:'string'},
-            lastname: {type:'string'}
+            name:     {type:      'string'},
+            lastname: {type:      'string'},
+            age:      {type:      'number'},
+            birthday: {type:      'datetime'},
+            street:   {},
+            website:  {validator: 'isURL'},
+            email:    {validator: 'isEmail'},
+            type:     {values:    ['image', 'video']}
         });
-
-        // Key Model Mock
-        function Key() {}
 
         sinon.stub(ds, 'save', (entity, cb) => {
             setTimeout(() => {
@@ -101,22 +104,174 @@ describe('Model', () => {
         expect(findOnePost.calledOnce).to.be.true;
     });
 
-    it('should convert to Datastore format and save entity', function(done) {
-        let data  = {name:'John', lastname:'Snow'};
-        let model = new ModelInstance(data);
+    describe('should be able to validate Schema', () => {
+        it ('properties passed ok', () => {
+            let model = new ModelInstance({name:'John', lastname:'Snow'});
 
-        model.save(() => {});
-        clock.tick(20);
+            let valid = model.validate();
 
-        // TODO add assertion for excludeFromIndex True / False
-        expect(model.ds.save.calledOnce).be.true;
-        expect(model.ds.save.getCall(0).args[0].key).exist;
-        expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
-        expect(model.ds.save.getCall(0).args[0].data).exist;
-        expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
+            expect(valid.success).be.true;
+        });
 
-        done();
+        it ('properties passed ko', () => {
+            let model = new ModelInstance({unkown:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('default validates to string', () => {
+            let model = new ModelInstance({street:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> string property', () => {
+            let model = new ModelInstance({name:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> number property', () => {
+            let model = new ModelInstance({age:'string'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> date property ok', () => {
+            let model = new ModelInstance({birthday:'2015-01-01'});
+            let model2 = new ModelInstance({birthday:'01-01-2015'});
+            let model3 = new ModelInstance({birthday:'2015/01/01'});
+            let model4 = new ModelInstance({birthday:'01/01/2015'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+            let valid4 = model4.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
+            expect(valid4.success).be.true;
+        });
+
+        it ('--> date property ko', () => {
+            let model = new ModelInstance({birthday:'01-2015-01'});
+            let model2 = new ModelInstance({birthday:12345}); // No number allowed
+            let model3 = new ModelInstance({birthday:'string'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+        });
+
+        it ('--> is URL ok', () => {
+            let model  = new ModelInstance({website:'http://google.com'});
+            let model2 = new ModelInstance({website:'google.com'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+        });
+
+        it ('--> is URL ko', () => {
+            let model = new ModelInstance({website:'domain.k'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> is EMAIL ok', () => {
+            let model  = new ModelInstance({email:'john@snow.com'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it ('--> is EMAIL ko', () => {
+            let model  = new ModelInstance({email:'john@snow'});
+            let model2  = new ModelInstance({email:'john@snow.'});
+            let model3  = new ModelInstance({email:'john@snow.k'});
+            let model4  = new ModelInstance({email:'johnsnow.com'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+            let valid4 = model4.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+            expect(valid4.success).be.false;
+        });
+
+        it ('and only accept value in default values', () => {
+            let model = new ModelInstance({type:'other'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
     });
 
-    it('should save entity in a transaction');
+    describe('when saving entity', () => {
+        let model;
+
+        beforeEach(() => {
+            let data  = {name:'John', lastname:'Snow'};
+            model = new ModelInstance(data);
+        });
+
+        it('should call validate() before', () => {
+            model  = new ModelInstance({name:'John'});
+            let validateSpy = sinon.spy(model, 'validate');
+
+            model.save(() => {});
+
+            expect(validateSpy.called).be.true;
+        });
+
+        it('should not call validate() data before', () => {
+            schema = new Schema({}, {validateBeforeSave: false});
+            ModelInstance = Model.compile('Blog', schema, ds);
+            model  = new ModelInstance({name:'John'});
+            let validateSpy = sinon.spy(model, 'validate');
+
+            model.save(() => {});
+
+            expect(validateSpy.called).be.false;
+        });
+
+        it('should convert to Datastore format and save entity', function(done) {
+
+            model.save(() => {});
+            clock.tick(20);
+
+            // TODO add assertion for excludeFromIndex True / False
+            expect(model.ds.save.calledOnce).be.true;
+            expect(model.ds.save.getCall(0).args[0].key).exist;
+            expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
+            expect(model.ds.save.getCall(0).args[0].data).exist;
+            expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
+
+            done();
+        });
+
+        it('should save entity into a transaction');
+    });
 });

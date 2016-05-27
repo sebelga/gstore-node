@@ -20,7 +20,9 @@ describe('Entity', () => {
     "use strict";
 
     beforeEach(() => {
-        schema = new Schema({name:{type:'string'}});
+        schema = new Schema({
+            name:{type:'string', default:'John'}
+        });
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
         });
@@ -35,9 +37,9 @@ describe('Entity', () => {
     });
 
     it('should initialized properties', (done) => {
-        var model  = datastools.model('BlogPost', schema);
+        let model  = datastools.model('BlogPost', schema);
 
-        var entity = new model({}, 'keyid');
+        let entity = new model({}, 'keyid');
 
         expect(entity.entityData).to.exist;
         expect(entity.entityKey).to.exist;
@@ -49,19 +51,27 @@ describe('Entity', () => {
     });
 
     it ('should add data passed to entityData', () => {
-        var model  = datastools.model('BlogPost', schema);
+        let model  = datastools.model('BlogPost', schema);
 
-        var entity = new model({name:'John'}, 'keyid');
+        let entity = new model({name:'John'}, 'keyid');
 
         expect(entity.entityData.name).to.equal('John');
     });
 
     it('should not add any data if nothing is passed', () => {
-        var model  = datastools.model('BlogPost', schema);
+        let model = datastools.model('BlogPost', schema);
 
-        var entity = new model();
+        let entity = new model();
 
         expect(Object.keys(entity.entityData).length).to.equal(0);
+    });
+
+    it ('should set default values', () => {
+        let model = datastools.model('BlogPost', schema);
+
+        let entity = new model({});
+
+        expect(entity.entityData.name).equal('John');
     });
 
     it('should set entity Data modifiedOn to new Date if property in Schema', () => {
