@@ -25,6 +25,7 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
     - [Save](#save)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
+    - [list](#list)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -182,7 +183,7 @@ blogPost.save(function(err) {
 #### gcloud queries
 Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/datastore/query) so you can execute any query from that library.
 
-````
+```
 var BlogPost = datastools.model('BlogPost', schema);
 
 var query = BlogPost.query();
@@ -201,16 +202,16 @@ query.run(function(err, entities, info) {
 });
 ```
 
+<a name="simplifyResultInline"></a>
 **options**:
 query.run() accepts a first options argument with the following properties
-<a name="simplifyResultInline"></a>- simplifyResult : true|false (see explanation above)
+- simplifyResult : true|false (see explanation above)
 
 ```
 query.run({simplifyResult:false}, function(err, entities, info) {
     ....
 })
 ```
-
 
 #### list
 Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
