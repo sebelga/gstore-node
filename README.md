@@ -11,11 +11,14 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
 - [Schema](#schema)
   - [Creation](#creation)
   - [Properties types](#properties-types)
-  - [Values validations](#values-validations)
-  - [Other Schema options](#other-schema-options)
+  - [Properties values validations](#properties-values-validations)
+  - [Other properties options](#other-properties-options)
     - [optional](#optional)
     - [default](#default)
     - [excludedFromIndex](#excludedfromindex)
+  - [Schema options](#schema-options)
+    - [validateBeforeSave (default true)](#validatebeforesave-default-true)
+    - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -198,6 +201,17 @@ query.run(function(err, entities, info) {
 });
 ```
 
+**options**
+query.run() accepts a first options argument with the following properties
+- simplifyResult : true|false (see explanation above)
+
+```
+query.run({simplifyResult:false}, function(err, entities, info) {
+    ....
+})
+```
+
+
 #### list
 Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
 Currently it support the following settings:
@@ -258,4 +272,16 @@ BlogPost.list(newSettings, function(err, entities) {
     }
     console.log(entities);
 });
+```
+
+Just like with gcloud queries, there is an extra setting you can set inline: **simplifyResult** (default to true) to receive the full Datastore data or a 
+simplified response.
+
+```
+var newSettings = {
+    limit : 20,
+    simplifyResult : false
+};
+
+BlogPost.list(newSettings, ...);
 ```
