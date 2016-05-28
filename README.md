@@ -109,10 +109,11 @@ var model = datastools.model('EntityName', entitySchema);
 #### Save
 
 ```
+var datastools = require('datastools');
 var blogPostSchema = new datastools.Schema({
     title : {type:'string'},
     createdOn : {type:'datetime'}
-})
+});
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 var data = {
@@ -120,6 +121,7 @@ var data = {
     createdOn : new Date()
 };
 var blogPost = new BlogPost(data);
+
 blogPost.save(function(err) {
     if (err) {
         // deal with err
