@@ -347,4 +347,61 @@ describe('Model', () => {
 
         it('should save entity into a transaction');
     });
+
+    describe.only('gcloud-node queries', () => {
+        it ('should be able to create gcloud-node Query object', () => {
+            let query  = ModelInstance.initQuery();
+
+            expect(query.constructor.name).equal('Query');
+        });
+
+        it ('should be able to execute all gcloud-node queries', () => {
+            let fn = () => {
+                let query  = ModelInstance.initQuery()
+                    .filter('name', '=', 'John')
+                    .filter('age', '>=', 4)
+                    .order('lastname', {
+                        descending: true
+                    });
+                return query;
+            };
+
+            expect(fn).to.not.throw(Error);
+        });
+
+        it ('should throw error if calling unregistered query method', () => {
+            let fn = () => {
+                let query  = ModelInstance.initQuery()
+                            .unkown('test', false);
+                return query;
+            };
+
+            expect(fn).to.throw(Error);
+        });
+
+        it ('should run query', (done) => {
+            let mockEntities = [
+                {
+                    id : 1234,
+                    name:'John'
+                }
+            ];
+            sinon.stub(ds, 'runQuery', (query, cb) => {
+                return cb(null, mockEntities);
+            });
+
+            let query = ModelInstance.initQuery()
+                        .filter('name', '=', 'John');
+
+            var result;
+            query.run((err, entities) => {
+                result = entities;
+                done();
+            });
+
+            expect(ds.runQuery.getCall(0).args[0]).equal(query);
+            expect(result).equal(mockEntities);
+        });
+
+    });
 });
