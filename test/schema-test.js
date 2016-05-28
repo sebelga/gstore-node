@@ -15,15 +15,24 @@ describe('Schema', () => {
             expect(schema.shortcutQueries).to.exist;
             expect(schema.paths).to.exist;
             expect(schema.callQueue).to.exist;
-            expect(schema.options).to.exist;
             expect(schema.s).to.exist;
             expect(schema.s.hooks.constructor.name).to.equal('Kareem');
+            expect(schema.options).to.exist;
+            expect(schema.options.entities).deep.equal({
+                simplifyResult:true
+            });
         });
 
         it ('should merge options passed', () => {
-            let schema = new Schema({}, {optionName:'optionValue'});
+            let schema = new Schema({}, {
+                optionName:'optionValue',
+                entities:{
+                    simplifyResult:false
+                }
+            });
 
-            expect(schema.options.optionName).to.equal('optionValue');
+            expect(schema.options.optionName).equal('optionValue');
+            expect(schema.options.entities.simplifyResult).be.false;
         });
 
         it ('should create its paths from obj passed', () => {

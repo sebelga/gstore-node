@@ -27,5 +27,24 @@ describe('Datastore serializer', () => {
             expect(serialized[0].excludeFromIndexes).to.be.true;
         });
     });
+
+    it('should convert Datastore format to simple object', () => {
+        let datastoreMock = {
+            key: {
+                namespace: undefined,
+                id: 1234,
+                kind: "BlogPost",
+                path: ["BlogPost", 1234]
+            },
+            data: {
+                name: "John",
+                lastname : 'Snow'
+            }
+        };
+
+        var serialized = datastoreSerializer.fromDatastore(datastoreMock);
+
+        expect(serialized).equal = datastoreMock.data;
+    });
 });
 

@@ -47,8 +47,16 @@ describe('Model', () => {
 
         mockEntities = [
             {
-                id : 1234,
-                name:'John'
+                key: {
+                    namespace: undefined,
+                    id: 1234,
+                    kind: "BlogPost",
+                    path: ["BlogPost", 1234]
+                },
+                data: {
+                    name: "John",
+                    lastname : 'Snow'
+                }
             }
         ];
         sinon.stub(ds, 'runQuery', (query, cb) => {
@@ -59,10 +67,7 @@ describe('Model', () => {
     });
 
     afterEach(() => {
-        try {
-            ds.save.restore();
-        } catch(e) {}
-
+        ds.save.restore();
         ds.runQuery.restore();
     });
 
@@ -301,9 +306,9 @@ describe('Model', () => {
         });
 
         it('---> should NOT validate() data before', () => {
-            schema = new Schema({}, {validateBeforeSave: false});
+            schema        = new Schema({}, {validateBeforeSave: false});
             ModelInstance = Model.compile('Blog', schema, ds);
-            model  = new ModelInstance({name:'John'});
+            model         = new ModelInstance({name: 'John'});
             let validateSpy = sinon.spy(model, 'validate');
 
             model.save(() => {});
@@ -311,8 +316,16 @@ describe('Model', () => {
             expect(validateSpy.called).be.false;
         });
 
-        it('should NOT save to dataStore if it didn\'t pass the validation', () => {
+        it('should NOT save to dataStore if it didn\'t pass property validation', () => {
             model  = new ModelInstance({unknown:'John'});
+
+            model.save(() => {});
+
+            expect(ds.save.called).be.false;
+        });
+
+        it('should NOT save to dataStore if it didn\'t pass value validation', () => {
+            model  = new ModelInstance({website:'mydomain'});
 
             model.save(() => {});
 
@@ -405,6 +418,35 @@ describe('Model', () => {
             });
 
             expect(ds.runQuery.getCall(0).args[0]).equal(query);
+            expect(result).to.exist;
+        });
+
+        it('should not return entities', (done) => {
+            ds.runQuery.restore();
+            sinon.stub(ds, 'runQuery', (query, cb) => {
+                cb({code:400, message: 'Something went wrong doctor'});
+            });
+            let query = ModelInstance.query();
+            var result;
+
+            query.run((err, entities) => {
+                if (!err) {
+                    result = entities;
+                }
+                done();
+            });
+
+            expect(result).to.not.exist;
+        });
+
+        it('should allow options for query', () => {
+            let query = ModelInstance.query();
+
+            var result;
+            query.run({simplifyResult:false}, (err, entities) => {
+                result = entities;
+            });
+
             expect(result).equal(mockEntities);
         });
     });
@@ -417,7 +459,7 @@ describe('Model', () => {
                 done();
             });
 
-            expect(result).equal(mockEntities);
+            expect(result).exist;
         });
 
         it('---> list (settings defined)', () => {
@@ -430,7 +472,7 @@ describe('Model', () => {
 
             ModelInstance.list(() => {});
 
-            expect(queryHelpers.buildFromOptions.getCall(0).args[1]).deep.equal(querySettings);
+            expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
             expect(ds.runQuery.getCall(0).args[0].limitVal).equal(10);
 
             queryHelpers.buildFromOptions.restore();
