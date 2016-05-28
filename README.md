@@ -91,7 +91,7 @@ var entitySchema = new Schema({
     ...
 });
 ```
-### Other Schema options
+### Other properties options
 #### optional
 By default if a property value is not defined it will be set to null or its default value (see below) if any. If you don't want this behaviour you can set it as *optional* and if now value is passed nothing will be saved on the entity.
 
