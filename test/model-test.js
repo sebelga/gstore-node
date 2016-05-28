@@ -9,9 +9,10 @@ nconf.file({ file: './test/config.json' });
 var gcloud = require('gcloud')(nconf.get('gcloud'));
 var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
 
-var Model      = require('../lib/model');
-var Schema     = require('../lib').Schema;
-var serializer = require('../lib/services/serializer');
+var Model               = require('../lib/model');
+var Schema              = require('../lib').Schema;
+var datastoreSerializer = require('../lib/serializer').Datastore;
+var queryHelpers        = require('../lib/helper').QueryHelpers;
 
 describe('Model', () => {
     "use strict";
@@ -19,6 +20,8 @@ describe('Model', () => {
     let schema;
     let ModelInstance;
     let clock;
+
+    let mockEntities;
 
     beforeEach(() => {
         clock = sinon.useFakeTimers();
@@ -42,6 +45,16 @@ describe('Model', () => {
             }, 20);
         });
 
+        mockEntities = [
+            {
+                id : 1234,
+                name:'John'
+            }
+        ];
+        sinon.stub(ds, 'runQuery', (query, cb) => {
+            return cb(null, mockEntities);
+        });
+
         ModelInstance = Model.compile('Blog', schema, ds);
     });
 
@@ -49,6 +62,8 @@ describe('Model', () => {
         try {
             ds.save.restore();
         } catch(e) {}
+
+        ds.runQuery.restore();
     });
 
     it ('should set properties on compile and return ModelInstance', () => {
@@ -305,7 +320,7 @@ describe('Model', () => {
         });
 
         it('should convert to Datastore format and save entity', function(done) {
-            let spySerializerToDatastore = sinon.spy(serializer.ds, 'toDatastore');
+            let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
             model.save(() => {});
             clock.tick(20);
@@ -346,5 +361,95 @@ describe('Model', () => {
         });
 
         it('should save entity into a transaction');
+    });
+
+    describe('gcloud-node queries', () => {
+        it ('should be able to create gcloud-node Query object', () => {
+            let query  = ModelInstance.query();
+
+            expect(query.constructor.name).equal('Query');
+        });
+
+        it ('should be able to execute all gcloud-node queries', () => {
+            let fn = () => {
+                let query  = ModelInstance.query()
+                    .filter('name', '=', 'John')
+                    .filter('age', '>=', 4)
+                    .order('lastname', {
+                        descending: true
+                    });
+                return query;
+            };
+
+            expect(fn).to.not.throw(Error);
+        });
+
+        it ('should throw error if calling unregistered query method', () => {
+            let fn = () => {
+                let query  = ModelInstance.query()
+                            .unkown('test', false);
+                return query;
+            };
+
+            expect(fn).to.throw(Error);
+        });
+
+        it ('should run query', (done) => {
+            let query = ModelInstance.query()
+                        .filter('name', '=', 'John');
+
+            var result;
+            query.run((err, entities) => {
+                result = entities;
+                done();
+            });
+
+            expect(ds.runQuery.getCall(0).args[0]).equal(query);
+            expect(result).equal(mockEntities);
+        });
+    });
+
+    describe('should have shortcut queries', () => {
+        it('---> list (no settings defined)', (done) => {
+            let result;
+            ModelInstance.list((err, entities) => {
+                result = entities;
+                done();
+            });
+
+            expect(result).equal(mockEntities);
+        });
+
+        it('---> list (settings defined)', () => {
+            let querySettings = {
+                limit:10
+            };
+            schema.queries('list', querySettings);
+            ModelInstance = Model.compile('Blog', schema, ds);
+            sinon.spy(queryHelpers, 'buildFromOptions');
+
+            ModelInstance.list(() => {});
+
+            expect(queryHelpers.buildFromOptions.getCall(0).args[1]).deep.equal(querySettings);
+            expect(ds.runQuery.getCall(0).args[0].limitVal).equal(10);
+
+            queryHelpers.buildFromOptions.restore();
+        });
+
+        it('---> list (inline options override)', () => {
+            let querySettings = {
+                limit:10
+            };
+            schema.queries('list', querySettings);
+            ModelInstance = Model.compile('Blog', schema, ds);
+            sinon.spy(queryHelpers, 'buildFromOptions');
+
+            ModelInstance.list({limit:15}, () => {});
+
+            expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
+            expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
+
+            queryHelpers.buildFromOptions.restore();
+        });
     });
 });

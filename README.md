@@ -2,9 +2,11 @@
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **gcloud-node** library.
 
 ## Motivation
-The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility (schemaless) sometimes can lead to a lot of duplicate code to **validate** the properties to save. The **pre & post 'hooks'** found in Mongoose are also of great value when it comes to work with entities on a NoSQL database.
+The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
+sometimes lead to a lot of duplicate code to **validate** the properties to save. The **pre & post 'hooks'** found in Mongoose are also of great value when it comes to work with entities on a NoSQL database.
 
-Datastools enhances the experience to work with entities of Googe Datastore. It is still in in active development (**no release yet**).
+Datastools enhances the experience to work with entities of Googe Datastore.
+It is still in in active development (**no release yet**).
 
 ### Install
  ```
@@ -76,6 +78,7 @@ You can set a default value for the property is no value has been passed.
 By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndex' property to false.
 
 ```
+// Schema options example
 var entitySchema = new Schema({
     name:{type:'string'},
     lastname:{excludedFromIndex:true},
@@ -87,9 +90,10 @@ var entitySchema = new Schema({
 
 
 ## Model
+### Creation
 
 ```
-var datastools = require('../datastools');
+var datastools = require('datastools');
 var Schema     = datastools.Schema;
 
 var entitySchema = new Schema({
@@ -99,4 +103,29 @@ var entitySchema = new Schema({
 });
 
 var model = datastools.model('EntityName', entitySchema);
+```
+
+### Methods
+#### Save
+
+```
+var datastools = require('datastools');
+var blogPostSchema = new datastools.Schema({
+    title : {type:'string'},
+    createdOn : {type:'datetime'}
+});
+var BlogPost = datastools.model('BlogPost', blogPostSchema);
+
+var data = {
+    title : 'My first blog post',
+    createdOn : new Date()
+};
+var blogPost = new BlogPost(data);
+
+blogPost.save(function(err) {
+    if (err) {
+        // deal with err
+    }
+    console.log('Great! post saved');
+});
 ```

@@ -12,7 +12,7 @@ describe('Schema', () => {
             let schema = new Schema({});
 
             expect(schema.methods).to.exist;
-            expect(schema.defaultQueries).to.exist;
+            expect(schema.shortcutQueries).to.exist;
             expect(schema.paths).to.exist;
             expect(schema.callQueue).to.exist;
             expect(schema.options).to.exist;
@@ -100,16 +100,6 @@ describe('Schema', () => {
         });
     });
 
-    it ('should add custom queries to its defaultQueries table', () => {
-        let schema = new Schema({});
-        let listQuerySettings = {limit:10, filters:[]};
-
-        schema.queries('list', listQuerySettings);
-
-        expect(schema.defaultQueries.list).to.exist;
-        expect(schema.defaultQueries.list).to.equal(listQuerySettings);
-    });
-
     describe('modify / access paths table', () => {
         it ('should read', function() {
             let data   = {keyname: {type: 'string'}};
@@ -146,31 +136,57 @@ describe('Schema', () => {
         });
     });
 
-    it('should add pre hooks to callQueue', () => {
-        let schema = new Schema({});
+    describe('callQueue', () => {
+        it('should add pre hooks to callQueue', () => {
+            let schema = new Schema({});
+            schema.callQueue = [];
 
-        schema.pre('save', (next) => {
-            next();
+            schema.pre('save', (next) => {
+                next();
+            });
+
+            expect(schema.callQueue.length).equal(1);
         });
 
-        expect(schema.callQueue.length).gt(0);
+        it('should add post hooks to callQueue', () => {
+            let schema = new Schema({});
+            schema.callQueue = [];
+
+            schema.post('save', (next) => {
+                next();
+            });
+
+            expect(schema.callQueue.length).equal(1);
+        });
     });
 
-    it('should add pre findOne query hook to Kareem', () => {
-        let schema = new Schema({});
+    describe('query hooks', () => {
+        it('should add pre findOne query hook to Kareem', () => {
+            let schema = new Schema({});
 
-        schema.pre('findOne', (next) => {
-            next();
+            schema.pre('findOne', (next) => {
+                next();
+            });
+
+            expect(schema.s.hooks._pres.findOne).to.exist;
         });
 
-        expect(schema.s.hooks._pres.findOne).to.exist;
+        it('should add post findOne query hook to Kareem', () => {
+            let schema = new Schema({});
+
+            schema.post('findOne', () => {});
+
+            expect(schema.s.hooks._posts.findOne).to.exist;
+        });
     });
 
-    it('should add post findOne query hook to Kareem', () => {
+    it('add shortCut queries settings', () => {
         let schema = new Schema({});
+        let listQuerySettings = {limit:10, filters:[]};
 
-        schema.post('findOne', () => {});
+        schema.queries('list', listQuerySettings);
 
-        expect(schema.s.hooks._posts.findOne).to.exist;
+        expect(schema.shortcutQueries.list).to.exist;
+        expect(schema.shortcutQueries.list).to.equal(listQuerySettings);
     });
 });

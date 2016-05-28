@@ -1,5 +1,5 @@
 /**
- * Export lib/datastoore
+ * Export lib/datastools
  *
  */
 
