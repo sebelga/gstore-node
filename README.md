@@ -1,6 +1,30 @@
 # Datastools (work in progress)
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **gcloud-node** library.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Motivation](#motivation)
+  - [Installation](#installation)
+  - [Getting started](#getting-started)
+- [Schema](#schema)
+  - [Creation](#creation)
+  - [Properties types](#properties-types)
+  - [Values validations](#values-validations)
+  - [Other Schema options](#other-schema-options)
+    - [optional](#optional)
+    - [default](#default)
+    - [excludedFromIndex](#excludedfromindex)
+- [Model](#model)
+  - [Creation](#creation-1)
+  - [Methods](#methods)
+    - [Save](#save)
+  - [Queries](#queries)
+    - [gcloud queries](#gcloud-queries)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Motivation
 The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
 sometimes lead to a lot of duplicate code to **validate** the properties to save. The **pre & post 'hooks'** found in Mongoose are also of great value when it comes to work with entities on a NoSQL database.
@@ -8,7 +32,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties to save
 Datastools enhances the experience to work with entities of Googe Datastore.
 It is still in in active development (**no release yet**).
 
-### Install
+### Installation
  ```
  npm install datastools --save
  ```
