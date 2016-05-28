@@ -80,7 +80,7 @@ var entitySchema = new Schema({
 });
 ```
 
-### Values validations
+### Properties values validations
 Datastools uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
 ```
@@ -102,7 +102,7 @@ You can set a default value for the property is no value has been passed.
 By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndex' property to false.
 
 ```
-// Schema options example
+// Properties options example
 var entitySchema = new Schema({
     name    : {type: 'string'},
     lastname: {excludedFromIndex: true},
@@ -112,6 +112,25 @@ var entitySchema = new Schema({
 });
 ```
 
+### Schema options
+#### validateBeforeSave (default true)
+To disable any validation before save/update, set it to false
+
+#### entities
+**simplifyResult** (default true).
+By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis (see below).
+
+```
+// Schema options example
+var entitySchema = new Schema({
+    name : {type: 'string'}
+}, {
+    validateBeforeSave : false,
+    entities : {
+        simplifyResult : false
+    }
+});
+```
 
 ## Model
 ### Creation
