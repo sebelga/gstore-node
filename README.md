@@ -121,7 +121,7 @@ To disable any validation before save/update, set it to false
 
 #### entities
 **simplifyResult** (default true).
-By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis (see below).
+By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
 
 ```
 // Schema options example
@@ -201,9 +201,9 @@ query.run(function(err, entities, info) {
 });
 ```
 
-**options**
+**options**:
 query.run() accepts a first options argument with the following properties
-- simplifyResult : true|false (see explanation above)
+<a name="simplifyResultInline"></a>- simplifyResult : true|false (see explanation above)
 
 ```
 query.run({simplifyResult:false}, function(err, entities, info) {
@@ -274,7 +274,7 @@ BlogPost.list(newSettings, function(err, entities) {
 });
 ```
 
-Just like with gcloud queries, there is an extra setting you can set inline: **simplifyResult** (default to true) to receive the full Datastore data or a 
+Just like with gcloud queries, there is an extra setting you can set: **simplifyResult** (default to true) to receive the full Datastore data or a 
 simplified response.
 
 ```
