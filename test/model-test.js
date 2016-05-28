@@ -24,14 +24,16 @@ describe('Model', () => {
         clock = sinon.useFakeTimers();
 
         schema = new Schema({
-            name:     {type:      'string'},
-            lastname: {type:      'string', excludedFromIndex:true},
-            age:      {type:      'number', excludedFromIndex:true},
-            birthday: {type:      'datetime'},
+            name:     {type: 'string'},
+            lastname: {type: 'string', excludedFromIndex:true},
+            age:      {type: 'number', excludedFromIndex:true},
+            birthday: {type: 'datetime'},
             street:   {},
             website:  {validate: 'isURL'},
             email:    {validate: 'isEmail'},
-            type:     {values:    ['image', 'video']}
+            modified: {type: 'boolean'},
+            tags:     {type:'array'},
+            type:     {values:['image', 'video']}
         });
 
         sinon.stub(ds, 'save', (entity, cb) => {
@@ -108,13 +110,13 @@ describe('Model', () => {
             expect(valid.success).be.false;
         });
 
-        it ('default validates to string', () => {
-            let model = new ModelInstance({street:123});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
-        });
+        // it ('default validates to string', () => {
+        //     let model = new ModelInstance({street:123});
+        //
+        //     let valid = model.validate();
+        //
+        //     expect(valid.success).be.false;
+        // });
 
         it ('--> string property', () => {
             let model = new ModelInstance({name:123});
@@ -132,12 +134,45 @@ describe('Model', () => {
             expect(valid.success).be.false;
         });
 
-        it('--> date property ok', () => {
-            let model = new ModelInstance({birthday:'2015-01-01'});
+        it ('--> boolean property', () => {
+            let model = new ModelInstance({modified:'string'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it('--> array property ok', () => {
+            let model = new ModelInstance({tags:[]});
 
             let valid = model.validate();
 
             expect(valid.success).be.true;
+        });
+
+        it('--> array property ko', () => {
+            let model = new ModelInstance({tags:{}});
+            let model2 = new ModelInstance({tags:'string'});
+            let model3 = new ModelInstance({tags:123});
+
+            let valid = model.validate();
+            let valid2 = model.validate();
+            let valid3 = model.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+        });
+
+        it('--> date property ok', () => {
+            let model = new ModelInstance({birthday:'2015-01-01'});
+            let model2 = new ModelInstance({birthday:new Date()});
+
+            let valid = model.validate();
+            let valid2 = model.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
         });
 
         it ('--> date property ko', () => {
@@ -162,6 +197,8 @@ describe('Model', () => {
             expect(valid5.success).be.false;
             expect(valid6.success).be.false;
         });
+
+        // TODO boolean, object (for Array)
 
         it ('--> is URL ok', () => {
             let model  = new ModelInstance({website:'http://google.com'});

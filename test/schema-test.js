@@ -36,11 +36,11 @@ describe('Schema', () => {
             expect(schema.paths.property2).to.exist;
         });
 
-        it('if no type passed, default to string', () => {
-            let schema = new Schema({name:{}});
-
-            expect(schema.paths.name.type).equal('string');
-        });
+        // it('if no type passed, default to string', () => {
+        //     let schema = new Schema({name:{}});
+        //
+        //     expect(schema.paths.name.type).equal('string');
+        // });
 
         it ('should not allowed reserved properties on schema', function() {
             let fn = () => {
