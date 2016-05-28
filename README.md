@@ -17,8 +17,8 @@ It is still in in active development (**no release yet**).
 (For info on how to configure gcloud go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
  ```
  var configGcloud = {...your config here};
- var gcloud = require('gcloud')(configGcloud);
- var ds = gcloud.datastore(configDatastore);
+ var gcloud       = require('gcloud')(configGcloud);
+ var ds           = gcloud.datastore(configDatastore);
  
  var datastools = require('datastools');
  datastools.connect(ds);
@@ -47,12 +47,12 @@ Valid property types are
 
 ```
 var entitySchema = new Schema({
-    name:{type:'string'},
-    lastname`:{},  // if nothing is passed, no type validation occurs (anything goes in!)
-    age:{type:'number'},
-    hasPaid:{type:'boolean'},
-    createdOn:{type:'datetime'},
-    tags:{type:'array'}
+    name     : {type: 'string'},
+    lastname : {},  // if nothing is passed, no type validation occurs (anything goes in!)
+    age      : {type: 'number'},
+    hasPaid  : {type: 'boolean'},
+    createdOn: {type: 'datetime'},
+    tags     : {type: 'array'}
 });
 ```
 
@@ -61,9 +61,9 @@ Datastools uses the great validator library (https://github.com/chriso/validator
 
 ```
 var entitySchema = new Schema({
-    email:{validate:'isEmail'},
-    website:{validate:'isURL'},
-    color:{validate:'isHexColor'},
+    email  : {validate: 'isEmail'},
+    website: {validate: 'isURL'},
+    color  : {validate: 'isHexColor'},
     ...
 });
 ```
@@ -80,10 +80,10 @@ By default all properties are **included** in the Datastore indexes. If you don'
 ```
 // Schema options example
 var entitySchema = new Schema({
-    name:{type:'string'},
-    lastname:{excludedFromIndex:true},
-    website:{validate:'isURL', optional:true},
-    modified:{type:'boolean', default:false},
+    name    : {type: 'string'},
+    lastname: {excludedFromIndex: true},
+    website : {validate: 'isURL', optional: true},
+    modified: {type: 'boolean', default: false},
     ...
 });
 ```
@@ -110,10 +110,12 @@ var model = datastools.model('EntityName', entitySchema);
 
 ```
 var datastools = require('datastools');
+
 var blogPostSchema = new datastools.Schema({
     title : {type:'string'},
     createdOn : {type:'datetime'}
 });
+
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 var data = {
@@ -169,11 +171,11 @@ var blogPostSchema = new datastools.Schema({
 });
 
 var querySettings = {
-    limit : 10,
-    order : {property: 'title'},
-    select : 'title'
-    ancestors : ['Parent', 123],  // will add a hasAncestor filter
-    filters : ['title', 'My first post'] // operator defaults to "="
+    limit    : 10,
+    order    : {property: 'title'},
+    select   : 'title'
+    ancestors: ['Parent', 123],  // will add a hasAncestor filter
+    filters  : ['title', 'My first post'] // operator defaults to "="
 };
 
 blogPostSchema.queries('list', querySettings);
@@ -194,8 +196,8 @@ Order, Select & filters settings can also be **arrays**
 
 ```
 var querySettings = {
-    orders : [{property: 'title'}, {property:'createdOn', descending:true}]
-    select : ['title', 'createdOn'],
+    orders  : [{property: 'title'}, {property:'createdOn', descending:true}]
+    select  : ['title', 'createdOn'],
     filters : [['title', 'My first post'], ['createdOn', '<',  new Date()]]
 };
 ```
