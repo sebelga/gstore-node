@@ -156,8 +156,8 @@ describe('Model', () => {
             let model3 = new ModelInstance({tags:123});
 
             let valid = model.validate();
-            let valid2 = model.validate();
-            let valid3 = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
 
             expect(valid.success).be.false;
             expect(valid2.success).be.false;
@@ -169,7 +169,7 @@ describe('Model', () => {
             let model2 = new ModelInstance({birthday:new Date()});
 
             let valid = model.validate();
-            let valid2 = model.validate();
+            let valid2 = model2.validate();
 
             expect(valid.success).be.true;
             expect(valid2.success).be.true;
