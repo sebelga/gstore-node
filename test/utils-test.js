@@ -41,7 +41,7 @@ describe('Utils', () => {
         });
 
         it ('passing a buffer', () => {
-            var buffer = Buffer.alloc(10);
+            var buffer = new Buffer(8);
             var isObject = utils.isObject(buffer);
 
             expect(isObject).to.be.true;
