@@ -1,4 +1,4 @@
-# Datastools
+# Datastools (work in progress)
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **gcloud-node** library.
 
 ## Motivation
