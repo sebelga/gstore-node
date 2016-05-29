@@ -12,8 +12,7 @@ var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
 var datastools = require('../lib');
 datastools.connect(ds);
 
-var Schema     = require('../lib').Schema;
-
+var Schema = require('../lib').Schema;
 var schema;
 
 describe('Entity', () => {
@@ -119,7 +118,7 @@ describe('Entity', () => {
         expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
     });
 
-    describe('should create Datastore Key when intantiated', () => {
+    describe('should create Datastore Key when instantiated', () => {
         beforeEach(() => {
             sinon.stub(ds, 'key', () => {
                 return {};
@@ -154,6 +153,21 @@ describe('Entity', () => {
             expect(ds.key.getCall(0).args[0]).to.deep.equal('BlogPost');
         });
 
+        it('---> with an ancestor path (auto-generated id)', () => {
+            var model  = datastools.model('BlogPost', schema);
+
+            new model({}, null, ['Parent', 123]);
+
+            expect(ds.key.getCall(0).args[0]).to.deep.equal(['Parent', 123, 'BlogPost']);
+        });
+
+        it('---> with an ancestor path (manual id)', () => {
+            var model  = datastools.model('BlogPost', schema);
+
+            new model({}, 'entityName', ['Parent', 1234]);
+
+            expect(ds.key.getCall(0).args[0]).to.deep.equal(['Parent', 1234, 'BlogPost', 'entityName']);
+        });
     });
 
     describe('should register schema hooks', () => {

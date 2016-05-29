@@ -21,11 +21,12 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
     - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
+  - [Instances](#instances)
+    - [id param (optional)](#id-param-optional)
+    - [ancestors param (optional)](#ancestors-param-optional)
   - [Methods](#methods)
     - [Get()](#get)
     - [Save()](#save)
-    - [id param (optional)](#id-param-optional)
-    - [ancestors param (optional)](#ancestors-param-optional)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
     - [list](#list)
@@ -156,6 +157,36 @@ var entitySchema = new Schema({
 var model = datastools.model('EntityName', entitySchema);
 ```
 
+### Instances
+To create instances of a model call: `new model(data, id /*optional*/, ancestors /*optional*/)
+- data {object} keys / values pairs of the data to save
+- id {int or string} (optional)
+- ancestors {Array} (optional)
+
+#### id param (optional)
+By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an 
+id, pass as a second parameter during the instantiation.
+
+```
+...
+// String id
+var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will be converted to integer 1234
+
+// Integer ir
+var blogPost = new BlogPost(data, 1234);
+```
+
+#### ancestors param (optional)
+Array of an ancestor's path.
+
+```
+// Auto generated id on an ancestor
+var blogPost = new BlogPost(data, null, ['Parent', 'keyname']);
+
+// Manual id on an ancestor
+var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
+```
+
 ----------
 
 ### Methods
@@ -195,10 +226,6 @@ BlogPost.get(123, function(err, entity) {
 ```
 
 #### Save()
-This method accepts 3 parameters:
-- data {object of keys : values}
-- id {int or string} (optional)
-- ancestors {Array} (optional)
 
 ```
 var datastools = require('datastools');
@@ -223,20 +250,6 @@ blogPost.save(function(err) {
     console.log('Great! post saved');
 });
 ```
-#### id param (optional)
-By default, if you don't pass an id when you create an instance of the model, the entity id will be auto-generated. If you want to manually give the entity an 
-id, pass as a second parameter during the instantiation.
-
-```
-...
-// String id
-var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will be converted to integer 1234
-
-// Integer ir
-var blogPost = new BlogPost(data, 1234);
-```
-
-#### ancestors param (optional)
 
 ----------
 

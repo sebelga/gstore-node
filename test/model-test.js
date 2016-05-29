@@ -218,9 +218,7 @@ describe('Model', () => {
             expect(valid6.success).be.false;
         });
 
-        // TODO boolean, object (for Array)
-
-        it ('--> is URL ok', () => {
+         it ('--> is URL ok', () => {
             let model  = new ModelInstance({website:'http://google.com'});
             let model2 = new ModelInstance({website:'google.com'});
 
@@ -275,9 +273,9 @@ describe('Model', () => {
 
     describe('when saving entity', () => {
         let model;
+        let data = {name:'John', lastname:'Snow'};
 
         beforeEach(() => {
-            let data  = {name:'John', lastname:'Snow'};
             model = new ModelInstance(data);
         });
 
@@ -316,7 +314,7 @@ describe('Model', () => {
             expect(validateSpy.called).be.false;
         });
 
-        it('should NOT save to dataStore if it didn\'t pass property validation', () => {
+        it('should NOT save to Datastore if it didn\'t pass property validation', () => {
             model  = new ModelInstance({unknown:'John'});
 
             model.save(() => {});
@@ -324,7 +322,7 @@ describe('Model', () => {
             expect(ds.save.called).be.false;
         });
 
-        it('should NOT save to dataStore if it didn\'t pass value validation', () => {
+        it('should NOT save to Datastore if it didn\'t pass value validation', () => {
             model  = new ModelInstance({website:'mydomain'});
 
             model.save(() => {});
@@ -332,7 +330,7 @@ describe('Model', () => {
             expect(ds.save.called).be.false;
         });
 
-        it('should convert to Datastore format and save entity', function(done) {
+        it('should save to Datastore but before convert to Datastore format', function(done) {
             let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
             model.save(() => {});
@@ -351,7 +349,7 @@ describe('Model', () => {
             spySerializerToDatastore.restore();
         });
 
-        it('if datastore error, return the error and don\'t call emit', () => {
+        it('if Datastore error, return the error and don\'t call emit', () => {
             ds.save.restore();
 
             let error = {
