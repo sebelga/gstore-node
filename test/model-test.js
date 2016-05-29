@@ -218,9 +218,7 @@ describe('Model', () => {
             expect(valid6.success).be.false;
         });
 
-        // TODO boolean, object (for Array)
-
-        it ('--> is URL ok', () => {
+         it ('--> is URL ok', () => {
             let model  = new ModelInstance({website:'http://google.com'});
             let model2 = new ModelInstance({website:'google.com'});
 
@@ -275,9 +273,9 @@ describe('Model', () => {
 
     describe('when saving entity', () => {
         let model;
+        let data = {name:'John', lastname:'Snow'};
 
         beforeEach(() => {
-            let data  = {name:'John', lastname:'Snow'};
             model = new ModelInstance(data);
         });
 
@@ -316,7 +314,7 @@ describe('Model', () => {
             expect(validateSpy.called).be.false;
         });
 
-        it('should NOT save to dataStore if it didn\'t pass property validation', () => {
+        it('should NOT save to Datastore if it didn\'t pass property validation', () => {
             model  = new ModelInstance({unknown:'John'});
 
             model.save(() => {});
@@ -324,7 +322,7 @@ describe('Model', () => {
             expect(ds.save.called).be.false;
         });
 
-        it('should NOT save to dataStore if it didn\'t pass value validation', () => {
+        it('should NOT save to Datastore if it didn\'t pass value validation', () => {
             model  = new ModelInstance({website:'mydomain'});
 
             model.save(() => {});
@@ -332,7 +330,7 @@ describe('Model', () => {
             expect(ds.save.called).be.false;
         });
 
-        it('should convert to Datastore format and save entity', function(done) {
+        it('should save to Datastore but before convert to Datastore format', function(done) {
             let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
             model.save(() => {});
@@ -348,9 +346,10 @@ describe('Model', () => {
             expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
 
             done();
+            spySerializerToDatastore.restore();
         });
 
-        it('if datastore error, return the error and don\'t call emit', () => {
+        it('if Datastore error, return the error and don\'t call emit', () => {
             ds.save.restore();
 
             let error = {
@@ -451,7 +450,7 @@ describe('Model', () => {
         });
     });
 
-    describe('should have shortcut queries', () => {
+    describe('shortcut queries', () => {
         it('---> list (no settings defined)', (done) => {
             let result;
             ModelInstance.list((err, entities) => {
@@ -486,12 +485,119 @@ describe('Model', () => {
             ModelInstance = Model.compile('Blog', schema, ds);
             sinon.spy(queryHelpers, 'buildFromOptions');
 
-            ModelInstance.list({limit:15}, () => {});
+            ModelInstance.list({limit:15, simplifyResult:false}, () => {});
 
             expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
             expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
 
             queryHelpers.buildFromOptions.restore();
+        });
+
+        it('---> list (dealing with err response', () => {
+            ds.runQuery.restore();
+            sinon.stub(ds, 'runQuery', (query, cb) => {
+                return cb({code:500, message:'Server error'});
+            });
+
+            let result;
+            ModelInstance.list((err, entities) => {
+                if (!err) {
+                    result = entities;
+                }
+            });
+
+            expect(result).not.exist;
+        });
+    });
+
+    describe('should get an entity by key', () => {
+        let entity;
+
+        beforeEach(() => {
+            entity = {
+                key:{id:123},
+                data:{name:'John'}
+            };
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null, entity);
+            });
+        });
+
+        afterEach(() => {
+            ds.get.restore();
+        });
+
+        it('passing an integer id', () => {
+            let result;
+            ModelInstance.get(123, (err, res) => {result = res;});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(result).equal(entity);
+        });
+
+        it('passing an string id', () => {
+            let result;
+            ModelInstance.get('keyname', (err, res) => {result = res;});
+
+            expect(result).equal(entity);
+        });
+
+        it('converting a string integer to real integer', () => {
+            ModelInstance.get('123', () => {});
+
+            expect(ds.get.getCall(0).args[0].name).not.exist;
+            expect(ds.get.getCall(0).args[0].id).equal(123);
+        });
+
+        it('passing an ancestor path array', () => {
+            let ancestors = ['Parent', 'keyname'];
+
+            ModelInstance.get(123, ancestors, (err, result) => {});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
+            expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+        });
+
+        it('should add a "simplify()" method to the entity', () => {
+            ModelInstance.get(123, () => {});
+
+            expect(entity.simplify).exist;
+        });
+
+        it('resulting "entity.simplify()" should call datastoreSerializer', () => {
+            sinon.stub(datastoreSerializer, 'fromDatastore', () => {return true;});
+            ModelInstance.get(123, () => {});
+
+            let output = entity.simplify();
+
+            expect(datastoreSerializer.fromDatastore.called).be.true;
+        });
+
+        it('on datastore get error, should return its error', () => {
+            ds.get.restore();
+
+            let error = {code:500, message:'Something went really bad'};
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(error);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err).equal(error);
+                expect(entity).not.exist;
+            });
+        });
+
+        it('on no entity found, should return a 404 error', () => {
+            ds.get.restore();
+
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err.code).equal(404);
+            });
         });
     });
 });

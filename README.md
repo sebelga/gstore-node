@@ -6,7 +6,7 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Motivation](#motivation)
-  - [Installation](#installation)
+- [Installation](#installation)
   - [Getting started](#getting-started)
 - [Schema](#schema)
   - [Creation](#creation)
@@ -21,8 +21,12 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
     - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
+  - [Instances](#instances)
+    - [id param (optional)](#id-param-optional)
+    - [ancestors param (optional)](#ancestors-param-optional)
   - [Methods](#methods)
-    - [Save](#save)
+    - [Get()](#get)
+    - [Save()](#save)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
     - [list](#list)
@@ -33,20 +37,20 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
 The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
 sometimes lead to a lot of duplicate code to **validate** the properties to save. The **pre & post 'hooks'** found in Mongoose are also of great value when it comes to work with entities on a NoSQL database.
 
-Datastools enhances the experience to work with entities of Googe Datastore.
+Datastools enhances the experience to work with entities from Googe Datastore.
 It is still in in active development (**no release yet**).
 
-### Installation
+## Installation
  ```
  npm install datastools --save
  ```
  
 ### Getting started
-(For info on how to configure gcloud go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
- var ds           = gcloud.datastore(configDatastore);
+ var ds           = gcloud.datastore();
  
  var datastools = require('datastools');
  datastools.connect(ds);
@@ -70,7 +74,7 @@ Valid property types are
 - 'string'
 - 'number'
 - 'boolean'
-- 'datetime' (valid format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
+- 'datetime' (valids are: javascript Date() or a string with the following format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 - 'array'
 
 ```
@@ -120,6 +124,7 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
+<a name="simplifyResultExplained"></a>
 #### entities
 **simplifyResult** (default true).
 By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
@@ -152,21 +157,88 @@ var entitySchema = new Schema({
 var model = datastools.model('EntityName', entitySchema);
 ```
 
+### Instances
+To create instances of a model call: `new model(data, id /*optional*/, ancestors /*optional*/)
+- data {object} keys / values pairs of the data to save
+- id {int or string} (optional)
+- ancestors {Array} (optional)
+
+#### id param (optional)
+By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an 
+id, pass as a second parameter during the instantiation.
+
+```
+...
+// String id
+var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will be converted to integer 1234
+
+// Integer ir
+var blogPost = new BlogPost(data, 1234);
+```
+
+#### ancestors param (optional)
+Array of an ancestor's path.
+
+```
+// Auto generated id on an ancestor
+var blogPost = new BlogPost(data, null, ['Parent', 'keyname']);
+
+// Manual id on an ancestor
+var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
+```
+
+----------
+
 ### Methods
-#### Save
+#### Get()
+Retrieving an entity by key is the fastest way to read from the Datastore.
+This method accepts 3 parameters:
+- id {int or string}
+- ancestors {Array} (optional)
+- callback
+
+```
+var blogPostSchema = new datastools.Schema({...});
+var BlogPost       = datastools.model('BlogPost', blogPostSchema);
+
+// id can be integer or string
+BlogPost.get(1234, function(err, entity) {
+    if (err) {
+        // deal with err
+    }
+    console.log('Entity:', entity);
+});
+
+// Passing an ancestor path
+BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
+    if (err) { // deal with err }
+    console.log(entity);
+});
+```
+
+**simplify()** The resulting entity has a simplify() method attached to it that outputs a simplified object with just the entity data and the entity id.
+
+```
+BlogPost.get(123, function(err, entity) {
+    if (err) { // deal with err }
+    console.log(entity.simplify());
+});
+```
+
+#### Save()
 
 ```
 var datastools = require('datastools');
 
 var blogPostSchema = new datastools.Schema({
-    title : {type:'string'},
+    title :     {type:'string'},
     createdOn : {type:'datetime'}
 });
 
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 var data = {
-    title : 'My first blog post',
+    title :    'My first blog post',
     createdOn : new Date()
 };
 var blogPost = new BlogPost(data);
@@ -178,6 +250,8 @@ blogPost.save(function(err) {
     console.log('Great! post saved');
 });
 ```
+
+----------
 
 ### Queries
 #### gcloud queries
@@ -205,7 +279,7 @@ query.run(function(err, entities, info) {
 <a name="simplifyResultInline"></a>
 **options**:
 query.run() accepts a first options argument with the following properties
-- simplifyResult : true|false (see explanation above)
+- simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
 ```
 query.run({simplifyResult:false}, function(err, entities, info) {
