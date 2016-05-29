@@ -18,11 +18,14 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
     - [excludedFromIndex](#excludedfromindex)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
-    - [entities](#entities)
+    - [entities <a name="simplifyResultExplained"></a>](#entities-a-namesimplifyresultexplaineda)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
-    - [Save](#save)
+    - [Get()](#get)
+    - [Save()](#save)
+    - [id param (optional)](#id-param-optional)
+    - [ancestors param (optional)](#ancestors-param-optional)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
     - [list](#list)
@@ -33,7 +36,7 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
 The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
 sometimes lead to a lot of duplicate code to **validate** the properties to save. The **pre & post 'hooks'** found in Mongoose are also of great value when it comes to work with entities on a NoSQL database.
 
-Datastools enhances the experience to work with entities of Googe Datastore.
+Datastools enhances the experience to work with entities from Googe Datastore.
 It is still in in active development (**no release yet**).
 
 ## Installation
@@ -157,14 +160,14 @@ var model = datastools.model('EntityName', entitySchema);
 ### Methods
 #### Get()
 Retrieving an entity by key is the fastest way to read from the Datastore.
-This method accepts 3 parameters
+This method accepts 3 parameters:
 - id {int or string}
 - ancestors {Array} (optional)
 - callback
 
 ```
 var blogPostSchema = new datastools.Schema({...});
-var BlogPost = datastools.model('BlogPost', blogPostSchema);
+var BlogPost       = datastools.model('BlogPost', blogPostSchema);
 
 // id can be integer or string
 BlogPost.get(1234, function(err, entity) {
@@ -182,7 +185,7 @@ BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
 ```
 
 #### Save()
-This method accepts 3 parameters
+This method accepts 3 parameters:
 - data {object of keys : values}
 - id {int or string} (optional)
 - ancestors {Array} (optional)
@@ -191,14 +194,14 @@ This method accepts 3 parameters
 var datastools = require('datastools');
 
 var blogPostSchema = new datastools.Schema({
-    title : {type:'string'},
+    title :     {type:'string'},
     createdOn : {type:'datetime'}
 });
 
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 var data = {
-    title : 'My first blog post',
+    title :    'My first blog post',
     createdOn : new Date()
 };
 var blogPost = new BlogPost(data);
@@ -210,9 +213,9 @@ blogPost.save(function(err) {
     console.log('Great! post saved');
 });
 ```
-#### Entity id (optional)
-By default, if you don't pass an id when you create an instance of the model, the id will be auto-generated. If you want to manually give the entity an id, 
-pass as a second parameter during the instantiation, like so:
+#### id param (optional)
+By default, if you don't pass an id when you create an instance of the model, the entity id will be auto-generated. If you want to manually give the entity an 
+id, pass as a second parameter during the instantiation.
 
 ```
 ...
@@ -223,7 +226,7 @@ var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will
 var blogPost = new BlogPost(data, 1234);
 ```
 
-#### Ancestors (optional)
+#### ancestors param (optional)
 
 ----------
 
