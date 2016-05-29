@@ -303,7 +303,7 @@ query.run(function(err, entities, info) {
 Model.query() takes an optional namespace parameter if needed.
 
 ```
-var query = BlogPost.query('com.domain-dev').filter('name', '=', 'John');
+var query = User.query('com.domain-dev').filter('name', '=', 'John');
 ```
 
 <a name="simplifyResultInline"></a>
