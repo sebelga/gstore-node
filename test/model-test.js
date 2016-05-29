@@ -465,62 +465,73 @@ describe('Model', () => {
     });
 
     describe('shortcut queries', () => {
-        it('---> list (no settings defined)', (done) => {
-            let result;
-            ModelInstance.list((err, entities) => {
-                result = entities;
-                done();
-            });
-
-            expect(result).exist;
-        });
-
-        it('---> list (settings defined)', () => {
-            let querySettings = {
-                limit:10
-            };
-            schema.queries('list', querySettings);
-            ModelInstance = Model.compile('Blog', schema, ds);
-            sinon.spy(queryHelpers, 'buildFromOptions');
-
-            ModelInstance.list(() => {});
-
-            expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
-            expect(ds.runQuery.getCall(0).args[0].limitVal).equal(10);
-
-            queryHelpers.buildFromOptions.restore();
-        });
-
-        it('---> list (inline options override)', () => {
-            let querySettings = {
-                limit:10
-            };
-            schema.queries('list', querySettings);
-            ModelInstance = Model.compile('Blog', schema, ds);
-            sinon.spy(queryHelpers, 'buildFromOptions');
-
-            ModelInstance.list({limit:15, simplifyResult:false}, () => {});
-
-            expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
-            expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
-
-            queryHelpers.buildFromOptions.restore();
-        });
-
-        it('---> list (dealing with err response', () => {
-            ds.runQuery.restore();
-            sinon.stub(ds, 'runQuery', (query, cb) => {
-                return cb({code:500, message:'Server error'});
-            });
-
-            let result;
-            ModelInstance.list((err, entities) => {
-                if (!err) {
+        describe.only('list', () =>  {
+            it('should work with no settings defined', (done) => {
+                let result;
+                ModelInstance.list((err, entities) => {
                     result = entities;
-                }
+                    done();
+                });
+
+                expect(result).exist;
             });
 
-            expect(result).not.exist;
+            it('should read settings defined', () => {
+                let querySettings = {
+                    limit:10
+                };
+                schema.queries('list', querySettings);
+                ModelInstance = Model.compile('Blog', schema, ds);
+                sinon.spy(queryHelpers, 'buildFromOptions');
+
+                ModelInstance.list(() => {});
+
+                expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
+                expect(ds.runQuery.getCall(0).args[0].limitVal).equal(10);
+
+                queryHelpers.buildFromOptions.restore();
+            });
+
+            it('should override setting with options)', () => {
+                let querySettings = {
+                    limit:10
+                };
+                schema.queries('list', querySettings);
+                ModelInstance = Model.compile('Blog', schema, ds);
+                sinon.spy(queryHelpers, 'buildFromOptions');
+
+                ModelInstance.list({limit:15, simplifyResult:false}, () => {});
+
+                expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
+                expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
+
+                queryHelpers.buildFromOptions.restore();
+            });
+
+            it('should deal with err response', () => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb({code:500, message:'Server error'});
+                });
+
+                let result;
+                ModelInstance.list((err, entities) => {
+                    if (!err) {
+                        result = entities;
+                    }
+                });
+
+                expect(result).not.exist;
+            });
+
+            it('should accept a namespace ', () => {
+                let namespace = 'com.mydomain-dev';
+
+                ModelInstance.list({namespace:namespace}, () => {});
+
+                let query = ds.runQuery.getCall(0).args[0];
+                expect(query.namespace).equal(namespace);
+            });
         });
     });
 
