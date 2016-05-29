@@ -326,13 +326,18 @@ Currently it support the following settings:
 - ancestors
 - filters (default operator is "=" and does not need to be passed
 
-#####Define
+#####Define on Schema
+
+'mySchema.queries('list', {...settings});`
+
+Example
 ```
+// Create Schema
 var blogPostSchema = new datastools.Schema({
-    title : {type:'string'},
-    createdOn : {type:'datetime'}
+    title : {type:'string'}
 });
 
+// List settings
 var querySettings = {
     limit    : 10,
     order    : {property: 'title'},
@@ -341,11 +346,14 @@ var querySettings = {
     filters  : ['title', 'My first post'] // operator defaults to "="
 };
 
+// Add to schema
 blogPostSchema.queries('list', querySettings);
+
+// Create Model
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 ```
 
-#####use anywhere
+#####Use anywhere
 ```
 // anywhere in your Controllers
 BlogPost.list(function(err, entities) {
