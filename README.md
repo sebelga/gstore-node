@@ -120,7 +120,7 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
-#### entities
+#### entities <a name="simplifyResultExplained"></a>
 **simplifyResult** (default true).
 By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
 
@@ -218,7 +218,7 @@ query.run(function(err, entities, info) {
 <a name="simplifyResultInline"></a>
 **options**:
 query.run() accepts a first options argument with the following properties
-- simplifyResult : true|false (see explanation above)
+- simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
 ```
 query.run({simplifyResult:false}, function(err, entities, info) {
