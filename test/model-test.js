@@ -4,10 +4,12 @@ var expect = chai.expect;
 
 var sinon = require('sinon');
 
-var nconf = require('nconf');
-nconf.file({ file: './test/config.json' });
-var gcloud = require('gcloud')(nconf.get('gcloud'));
-var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
+var gcloud = require('gcloud')({
+    projectId: 'my-project'
+});
+var ds = gcloud.datastore({
+    namespace : 'com.mydomain'
+});
 
 var Model               = require('../lib/model');
 var Schema              = require('../lib').Schema;

@@ -3,11 +3,12 @@ var chai   = require('chai');
 var expect = chai.expect;
 var sinon  = require('sinon');
 
-var nconf = require('nconf');
-nconf.file({ file: './test/config.json' });
-
-var gcloud = require('gcloud')(nconf.get('gcloud'));
-var ds     = gcloud.datastore(nconf.get('gcloud-datastore'));
+var gcloud = require('gcloud')({
+    projectId: 'my-project'
+});
+var ds = gcloud.datastore({
+    namespace : 'com.mydomain'
+});
 
 var datastools = require('../lib');
 datastools.connect(ds);
@@ -120,16 +121,14 @@ describe('Entity', () => {
 
     describe('should create Datastore Key when instantiated', () => {
         beforeEach(() => {
-            sinon.stub(ds, 'key', () => {
-                return {};
-            });
+            sinon.spy(ds, 'key');
         });
 
         afterEach(() => {
             ds.key.restore();
         });
 
-        it ('---> with a full Key (String keyname passed)', () => {
+        it.only('---> with a full Key (String keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, 'keyid');
@@ -167,6 +166,14 @@ describe('Entity', () => {
             new model({}, 'entityName', ['Parent', 1234]);
 
             expect(ds.key.getCall(0).args[0]).to.deep.equal(['Parent', 1234, 'BlogPost', 'entityName']);
+        });
+
+        it('---> with a namespace', () => {
+            let Model  = datastools.model('BlogPost', schema);
+
+            let model = new Model({}, null, null, 'com.otherdomain');
+
+            expect(model.entityKey.namespace).equal('com.otherdomain');
         });
     });
 
