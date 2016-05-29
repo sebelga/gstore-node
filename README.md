@@ -6,7 +6,7 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Motivation](#motivation)
-  - [Installation](#installation)
+- [Installation](#installation)
   - [Getting started](#getting-started)
 - [Schema](#schema)
   - [Creation](#creation)
@@ -36,7 +36,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties to save
 Datastools enhances the experience to work with entities of Googe Datastore.
 It is still in in active development (**no release yet**).
 
-### Installation
+## Installation
  ```
  npm install datastools --save
  ```
@@ -178,6 +178,19 @@ blogPost.save(function(err) {
     console.log('Great! post saved');
 });
 ```
+#### Entity id
+By default, if you don't pass an id when you create an instance of the model, the id will be auto-generated. If you want to manually give the entity an id, 
+pass as a second parameter during the instantiation, like so:
+
+```
+...
+// String id
+var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will be converted to integer 1234
+
+// Integer ir
+var blogPost = new BlogPost(data, 1234);
+```
+
 
 ### Queries
 #### gcloud queries
