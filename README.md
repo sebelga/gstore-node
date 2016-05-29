@@ -36,6 +36,7 @@ This library is still in in active development (**no release yet**).
   - [Instances](#instances)
     - [id param (optional)](#id-param-optional)
     - [ancestors param (optional)](#ancestors-param-optional)
+    - [namespace param (optional)](#namespace-param-optional)
   - [Methods](#methods)
     - [Get()](#get)
     - [Save()](#save)
@@ -201,7 +202,8 @@ var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
 ```
 
 #### namespace param (optional)
-By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on another namespace by providing it as a third argument.
+By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on 
+another namespace by passing it as a third argument.
 
 ```
 // Creates an entity with auto-generated id on the namespace "dev-com.my-domain"
