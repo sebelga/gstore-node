@@ -328,7 +328,7 @@ Currently it support the following settings:
 
 #####Define on Schema
 
-'mySchema.queries('list', {...settings});`
+`entitySchema.queries('list', {...settings});`
 
 Example
 ```
