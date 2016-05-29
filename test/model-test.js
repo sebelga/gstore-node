@@ -348,6 +348,7 @@ describe('Model', () => {
             expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
 
             done();
+            spySerializerToDatastore.restore();
         });
 
         it('if datastore error, return the error and don\'t call emit', () => {
@@ -560,11 +561,45 @@ describe('Model', () => {
             expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
         });
 
-        it.only('should add a "simplify()" method to the entity', () => {
+        it('should add a "simplify()" method to the entity', () => {
             ModelInstance.get(123, () => {});
 
             expect(entity.simplify).exist;
         });
 
+        it('resulting "entity.simplify()" should call datastoreSerializer', () => {
+            sinon.stub(datastoreSerializer, 'fromDatastore', () => {return true;});
+            ModelInstance.get(123, () => {});
+
+            let output = entity.simplify();
+
+            expect(datastoreSerializer.fromDatastore.called).be.true;
+        });
+
+        it('on datastore get error, should return its error', () => {
+            ds.get.restore();
+
+            let error = {code:500, message:'Something went really bad'};
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(error);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err).equal(error);
+                expect(entity).not.exist;
+            });
+        });
+
+        it('on no entity found, should return a 404 error', () => {
+            ds.get.restore();
+
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err.code).equal(404);
+            });
+        });
     });
 });

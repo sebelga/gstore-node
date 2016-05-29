@@ -18,7 +18,7 @@ Datastools is a Google Datastore entities modeling library for Node.js inspired 
     - [excludedFromIndex](#excludedfromindex)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
-    - [entities <a name="simplifyResultExplained"></a>](#entities-a-namesimplifyresultexplaineda)
+    - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -123,7 +123,8 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
-#### entities <a name="simplifyResultExplained"></a>
+<a name="simplifyResultExplained"></a>
+#### entities
 **simplifyResult** (default true).
 By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
 
