@@ -170,10 +170,11 @@ var model = datastools.model('EntityName', entitySchema);
 ```
 
 ### Instances
-To create instances of a model call: `new Model(data, id /*optional*/, ancestors /*optional*/)`
+To create instances of a model call: `new Model(data, id /*optional*/, ancestors /*optional*/, namespace /*optional*/)`
 - data {object} keys / values pairs of the data to save
 - id {int or string} (optional)
 - ancestors {Array} (optional)
+- namespace {string} (optional)
 
 #### id param (optional)
 By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an 
@@ -197,6 +198,15 @@ var blogPost = new BlogPost(data, null, ['Parent', 'keyname']);
 
 // Manual id on an ancestor
 var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
+```
+
+#### namespace param (optional)
+By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on another namespace by providing it as a third argument.
+
+```
+// Creates an entity with auto-generated id on the namespace "dev-com.my-domain"
+var blogPost = new BlogPost(data, null, null, 'dev-com.my-domain');
+
 ```
 
 ----------
