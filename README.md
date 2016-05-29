@@ -27,7 +27,7 @@ This library is still in in active development (**no release yet**).
   - [Other properties options](#other-properties-options)
     - [optional](#optional)
     - [default](#default)
-    - [excludedFromIndex](#excludedfromindex)
+    - [excludedFromIndexes](#excludedfromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [entities](#entities)
@@ -117,14 +117,15 @@ By default if a property value is not defined it will be set to null or its defa
 #### default
 You can set a default value for the property is no value has been passed.
 
-#### excludedFromIndex
-By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndex' property to false.
+#### excludedFromIndexes
+By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndexes' property 
+to false.
 
 ```
 // Properties options example
 var entitySchema = new Schema({
     name    : {type: 'string'},
-    lastname: {excludedFromIndex: true},
+    lastname: {excludedFromIndexes: true},
     website : {validate: 'isURL', optional: true},
     modified: {type: 'boolean', default: false},
     ...

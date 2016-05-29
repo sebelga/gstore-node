@@ -32,19 +32,4 @@ describe('Utils', () => {
             expect(options.modified).to.exist;
         });
     });
-
-    describe('should validate if an arg is an Object', () => {
-        it ('passing an object', () => {
-            var isObject = utils.isObject({});
-
-            expect(isObject).to.be.true;
-        });
-
-        it ('passing a buffer', () => {
-            var buffer = new Buffer(8);
-            var isObject = utils.isObject(buffer);
-
-            expect(isObject).to.be.true;
-        });
-    });
 });

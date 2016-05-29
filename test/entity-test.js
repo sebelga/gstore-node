@@ -99,8 +99,8 @@ describe('Entity', () => {
 
     it ('should its array of excludedFromIndexes', () => {
         schema = new Schema({
-            name    : {excludedFromIndex:true},
-            lastname: {excludedFromIndex:true}
+            name    : {excludedFromIndexes:true},
+            lastname: {excludedFromIndexes:true}
         });
         let model = datastools.model('BlogPost', schema);
 
@@ -119,7 +119,7 @@ describe('Entity', () => {
         expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
     });
 
-    describe('should create Datastore Key when instantiated', () => {
+    describe('should create correct Datastore Key when instantiated', () => {
         beforeEach(() => {
             sinon.spy(ds, 'key');
         });
@@ -128,44 +128,50 @@ describe('Entity', () => {
             ds.key.restore();
         });
 
-        it.only('---> with a full Key (String keyname passed)', () => {
+        it('---> with a full Key (String keyname passed)', () => {
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, 'keyid');
 
-            expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 'keyid']);
+            expect(entity.entityKey.kind).equal('BlogPost');
+            expect(entity.entityKey.name).equal('keyid');
         });
 
         it ('---> with a full Key (Integer keyname passed)', () => {
-            var model  = datastools.model('BlogPost', schema);
+            var Model  = datastools.model('BlogPost', schema);
 
-            var entity = new model({}, '123');
+            var entity = new Model({}, '123');
 
-            expect(ds.key.getCall(0).args[0]).to.deep.equal(['BlogPost', 123]);
+            expect(entity.entityKey.id).equal(123);
         });
 
         it ('---> with a partial Key (auto-generated id)', () => {
-            var model  = datastools.model('BlogPost', schema);
+            var Model  = datastools.model('BlogPost', schema);
 
-            new model({});
+            new Model({});
 
             expect(ds.key.getCall(0).args[0]).to.deep.equal('BlogPost');
         });
 
         it('---> with an ancestor path (auto-generated id)', () => {
-            var model  = datastools.model('BlogPost', schema);
+            var Model  = datastools.model('BlogPost', schema);
 
-            new model({}, null, ['Parent', 123]);
+            var entity = new Model({}, null, ['Parent', 1234]);
 
-            expect(ds.key.getCall(0).args[0]).to.deep.equal(['Parent', 123, 'BlogPost']);
+            expect(entity.entityKey.parent.kind).equal('Parent');
+            expect(entity.entityKey.parent.id).equal(1234);
+            expect(entity.entityKey.kind).equal('BlogPost');
         });
 
         it('---> with an ancestor path (manual id)', () => {
-            var model  = datastools.model('BlogPost', schema);
+            var Model  = datastools.model('BlogPost', schema);
 
-            new model({}, 'entityName', ['Parent', 1234]);
+            var entity = new Model({}, 'entityName', ['Parent', 1234]);
 
-            expect(ds.key.getCall(0).args[0]).to.deep.equal(['Parent', 1234, 'BlogPost', 'entityName']);
+            expect(entity.entityKey.parent.kind).equal('Parent');
+            expect(entity.entityKey.parent.id).equal(1234);
+            expect(entity.entityKey.kind).equal('BlogPost');
+            expect(entity.entityKey.name).equal('entityName');
         });
 
         it('---> with a namespace', () => {
