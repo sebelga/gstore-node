@@ -278,7 +278,98 @@ describe('Model', () => {
         });
     });
 
-    describe('when saving entity', () => {
+    describe('get()', () => {
+        let entity;
+
+        beforeEach(() => {
+            entity = {
+                key:{id:123},
+                data:{name:'John'}
+            };
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null, entity);
+            });
+        });
+
+        afterEach(() => {
+            ds.get.restore();
+        });
+
+        it('passing an integer id', () => {
+            let result;
+            ModelInstance.get(123, (err, res) => {result = res;});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(result).equal(entity);
+        });
+
+        it('passing an string id', () => {
+            let result;
+            ModelInstance.get('keyname', (err, res) => {result = res;});
+
+            expect(result).equal(entity);
+        });
+
+        it('converting a string integer to real integer', () => {
+            ModelInstance.get('123', () => {});
+
+            expect(ds.get.getCall(0).args[0].name).not.exist;
+            expect(ds.get.getCall(0).args[0].id).equal(123);
+        });
+
+        it('passing an ancestor path array', () => {
+            let ancestors = ['Parent', 'keyname'];
+
+            ModelInstance.get(123, ancestors, (err, result) => {});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
+            expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+        });
+
+        it('should add a "simplify()" method to the entity', () => {
+            ModelInstance.get(123, () => {});
+
+            expect(entity.simplify).exist;
+        });
+
+        it('resulting "entity.simplify()" should call datastoreSerializer', () => {
+            sinon.stub(datastoreSerializer, 'fromDatastore', () => {return true;});
+            ModelInstance.get(123, () => {});
+
+            let output = entity.simplify();
+
+            expect(datastoreSerializer.fromDatastore.called).be.true;
+        });
+
+        it('on datastore get error, should return its error', () => {
+            ds.get.restore();
+
+            let error = {code:500, message:'Something went really bad'};
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(error);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err).equal(error);
+                expect(entity).not.exist;
+            });
+        });
+
+        it('on no entity found, should return a 404 error', () => {
+            ds.get.restore();
+
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null);
+            });
+
+            ModelInstance.get(123, (err, entity) => {
+                expect(err.code).equal(404);
+            });
+        });
+    });
+
+    describe('save()', () => {
         let model;
         let data = {name:'John', lastname:'Snow'};
 
@@ -286,7 +377,7 @@ describe('Model', () => {
             model = new ModelInstance(data);
         });
 
-        it('should emit "save" on save', (done) => {
+        it('should emit "save" after', (done) => {
             let model       = new ModelInstance({});
             let emitStub    = sinon.stub(model, 'emit');
             let callbackSpy = sinon.spy();
@@ -465,7 +556,7 @@ describe('Model', () => {
     });
 
     describe('shortcut queries', () => {
-        describe.only('list', () =>  {
+        describe('list', () =>  {
             it('should work with no settings defined', (done) => {
                 let result;
                 ModelInstance.list((err, entities) => {
@@ -535,93 +626,54 @@ describe('Model', () => {
         });
     });
 
-    describe('should get an entity by key', () => {
-        let entity;
-
+    describe('delete()', () => {
         beforeEach(() => {
-            entity = {
-                key:{id:123},
-                data:{name:'John'}
-            };
-            sinon.stub(ds, 'get', (key, cb) => {
-                return cb(null, entity);
+            sinon.stub(ds, 'delete', (key, cb) => {
+                cb(null, {indexUpdates:3});
+            });
+        });
+        afterEach(() => {
+            ds.delete.restore();
+        });
+
+        it('should call ds.delete with correct Key', () => {
+            ModelInstance.delete(123, (err, success) => {
+                expect(ds.delete.called).be.true;
+                expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
+                expect(success).be.true;
             });
         });
 
-        afterEach(() => {
-            ds.get.restore();
+        it ('should allow ancestors', () => {
+            ModelInstance.delete(123, ['Parent', 123], () => {});
+
+            var key = ds.delete.getCall(0).args[0];
+
+            expect(key.parent.kind).equal('Parent');
+            expect(key.parent.id).equal(123);
         });
 
-        it('passing an integer id', () => {
-            let result;
-            ModelInstance.get(123, (err, res) => {result = res;});
+        it ('should set "success" to false if no entity deleted', () => {
+            ds.delete.restore();
+            sinon.stub(ds, 'delete', (key, cb) => {
+                cb(null, {indexUpdates:0});
+            });
 
-            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(result).equal(entity);
+            ModelInstance.delete(123, (err, success) => {
+                expect(success).be.false;
+            });
         });
 
-        it('passing an string id', () => {
-            let result;
-            ModelInstance.get('keyname', (err, res) => {result = res;});
-
-            expect(result).equal(entity);
-        });
-
-        it('converting a string integer to real integer', () => {
-            ModelInstance.get('123', () => {});
-
-            expect(ds.get.getCall(0).args[0].name).not.exist;
-            expect(ds.get.getCall(0).args[0].id).equal(123);
-        });
-
-        it('passing an ancestor path array', () => {
-            let ancestors = ['Parent', 'keyname'];
-
-            ModelInstance.get(123, ancestors, (err, result) => {});
-
-            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
-            expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
-        });
-
-        it('should add a "simplify()" method to the entity', () => {
-            ModelInstance.get(123, () => {});
-
-            expect(entity.simplify).exist;
-        });
-
-        it('resulting "entity.simplify()" should call datastoreSerializer', () => {
-            sinon.stub(datastoreSerializer, 'fromDatastore', () => {return true;});
-            ModelInstance.get(123, () => {});
-
-            let output = entity.simplify();
-
-            expect(datastoreSerializer.fromDatastore.called).be.true;
-        });
-
-        it('on datastore get error, should return its error', () => {
-            ds.get.restore();
-
-            let error = {code:500, message:'Something went really bad'};
-            sinon.stub(ds, 'get', (key, cb) => {
+        it ('should deal with err response', () => {
+            ds.delete.restore();
+            let error = {code:500, message:'We got a problem Houston'};
+            sinon.stub(ds, 'delete', (key, cb) => {
                 return cb(error);
             });
 
-            ModelInstance.get(123, (err, entity) => {
-                expect(err).equal(error);
-                expect(entity).not.exist;
-            });
-        });
-
-        it('on no entity found, should return a 404 error', () => {
-            ds.get.restore();
-
-            sinon.stub(ds, 'get', (key, cb) => {
-                return cb(null);
-            });
-
-            ModelInstance.get(123, (err, entity) => {
-                expect(err.code).equal(404);
+            ModelInstance.delete(123, (err, success) => {
+                expect(err).deep.equal(error);
+                expect(success).not.exist;
             });
         });
     });
