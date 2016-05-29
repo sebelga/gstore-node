@@ -282,15 +282,14 @@ blogPost.save(function(err) {
 Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/datastore/query) so you can execute any query from that library.
 
 ```
-var BlogPost = datastools.model('BlogPost', schema);
+var User = datastools.model('User'); // assuming that a schema has been defined previously
 
-var query = BlogPost.query();
-
-query.filter('name', '=', 'John')
-     .filter('age', '>=', 4)
-     .order('lastname', {
-         descending: true
-     });
+var query = User.query()
+            .filter('name', '=', 'John')
+            .filter('age', '>=', 4)
+            .order('lastname', {
+                descending: true
+            });
 
 query.run(function(err, entities, info) {
     if (err) {
@@ -298,6 +297,13 @@ query.run(function(err, entities, info) {
     }
     console.log('Entities found:', entities);
 });
+```
+
+**namespace**
+Model.query() takes an optional namespace parameter if needed.
+
+```
+var query = BlogPost.query('com.domain-dev').filter('name', '=', 'John');
 ```
 
 <a name="simplifyResultInline"></a>

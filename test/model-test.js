@@ -61,7 +61,12 @@ describe('Model', () => {
                 }
             }
         ];
-        sinon.stub(ds, 'runQuery', (query, cb) => {
+        sinon.stub(ds, 'runQuery', function(namespace, query, cb) {
+            let args = [];
+            for (let i = 0; i < arguments.length; i++) {
+                args.push(arguments[i]);
+            }
+            cb = args.pop();
             return cb(null, mockEntities);
         });
 
@@ -449,6 +454,13 @@ describe('Model', () => {
             });
 
             expect(result).equal(mockEntities);
+        });
+
+        it('should allow a namespace for query', () => {
+            let namespace = 'com.mydomain-dev';
+            let query     = ModelInstance.query(namespace);
+
+            expect(query.namespace).equal(namespace);
         });
     });
 
