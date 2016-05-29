@@ -282,15 +282,14 @@ blogPost.save(function(err) {
 Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/datastore/query) so you can execute any query from that library.
 
 ```
-var BlogPost = datastools.model('BlogPost', schema);
+var User = datastools.model('User'); // assuming that a schema has been defined previously
 
-var query = BlogPost.query();
-
-query.filter('name', '=', 'John')
-     .filter('age', '>=', 4)
-     .order('lastname', {
-         descending: true
-     });
+var query = User.query()
+            .filter('name', '=', 'John')
+            .filter('age', '>=', 4)
+            .order('lastname', {
+                descending: true
+            });
 
 query.run(function(err, entities, info) {
     if (err) {
@@ -298,6 +297,13 @@ query.run(function(err, entities, info) {
     }
     console.log('Entities found:', entities);
 });
+```
+
+**namespace**
+Model.query() takes an optional namespace parameter if needed.
+
+```
+var query = User.query('com.domain-dev').filter('name', '=', 'John');
 ```
 
 <a name="simplifyResultInline"></a>
@@ -320,6 +326,7 @@ Currently it support the following settings:
 - ancestors
 - filters (default operator is "=" and does not need to be passed
 
+#####Define
 ```
 var blogPostSchema = new datastools.Schema({
     title : {type:'string'},
@@ -336,9 +343,10 @@ var querySettings = {
 
 blogPostSchema.queries('list', querySettings);
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
+```
 
-...
-
+#####use anywhere
+```
 // anywhere in your Controllers
 BlogPost.list(function(err, entities) {
     if (err) {
@@ -348,7 +356,7 @@ BlogPost.list(function(err, entities) {
 });
 ```
 
-Order, Select & filters settings can also be **arrays**
+Order, Select & filters can also be **arrays** of settings
 
 ```
 var querySettings = {
@@ -358,7 +366,8 @@ var querySettings = {
 };
 ```
 
-The settings can be overriden anytime by passing another settings object as first parameter
+#####Override
+These settings can be overridden anytime by passing another object settings as first argument
 
 ```
 var newSettings = {
@@ -373,13 +382,19 @@ BlogPost.list(newSettings, function(err, entities) {
 });
 ```
 
-Just like with gcloud queries, there is an extra setting you can set: **simplifyResult** (default to true) to receive the full Datastore data or a 
-simplified response.
+**additional settings** in override
+- simplifyResult {true|false}
+- namespace {string}
+
+Just like with gcloud queries, **simplifyResult** can be set to receive the full Datastore data for each entity or a simplified response.
+Use the **namespace** setting to override the default namespace defined globally when setting up the Datastore instance.
 
 ```
 var newSettings = {
     limit : 20,
-    simplifyResult : false
+    ... 
+    simplifyResult : false,
+    namespace:'com.domain-dev'
 };
 
 BlogPost.list(newSettings, ...);
