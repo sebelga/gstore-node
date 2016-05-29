@@ -451,7 +451,7 @@ describe('Model', () => {
         });
     });
 
-    describe('should have shortcut queries', () => {
+    describe('shortcut queries', () => {
         it('---> list (no settings defined)', (done) => {
             let result;
             ModelInstance.list((err, entities) => {
@@ -486,12 +486,77 @@ describe('Model', () => {
             ModelInstance = Model.compile('Blog', schema, ds);
             sinon.spy(queryHelpers, 'buildFromOptions');
 
-            ModelInstance.list({limit:15}, () => {});
+            ModelInstance.list({limit:15, simplifyResult:false}, () => {});
 
             expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
             expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
 
             queryHelpers.buildFromOptions.restore();
         });
+
+        it('---> list (dealing with err response', () => {
+            ds.runQuery.restore();
+            sinon.stub(ds, 'runQuery', (query, cb) => {
+                return cb({code:500, message:'Server error'});
+            });
+
+            let result;
+            ModelInstance.list((err, entities) => {
+                if (!err) {
+                    result = entities;
+                }
+            });
+
+            expect(result).not.exist;
+        });
+    });
+
+    describe('should get an entity by key', () => {
+        let entity = {
+            key:{id:123},
+            data:{name:'John'}
+        };
+        beforeEach(() => {
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null, entity);
+            });
+        });
+
+        afterEach(() => {
+            ds.get.restore();
+        });
+
+        it('passing an integer id', () => {
+            let result;
+            ModelInstance.get(123, (err, res) => {result = res;});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(result).equal(entity);
+        });
+
+        it('passing an string id', () => {
+            let result;
+            ModelInstance.get('keyname', (err, res) => {result = res;});
+
+            expect(result).equal(entity);
+        });
+
+        it('converting a string integer to real integer', () => {
+            ModelInstance.get('123', () => {});
+
+            expect(ds.get.getCall(0).args[0].name).not.exist;
+            expect(ds.get.getCall(0).args[0].id).equal(123);
+        });
+
+        it('passing an ancestor path array', () => {
+            let ancestors = ['Parent', 'keyname'];
+
+            ModelInstance.get(123, ancestors, (err, result) => {});
+
+            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
+            expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+        });
+
     });
 });

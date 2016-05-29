@@ -152,8 +152,40 @@ var entitySchema = new Schema({
 var model = datastools.model('EntityName', entitySchema);
 ```
 
+----------
+
 ### Methods
-#### Save
+#### Get()
+Retrieving an entity by key is the fastest way to read from the Datastore.
+This method accepts 3 parameters
+- id {int or string}
+- ancestors {Array} (optional)
+- callback
+
+```
+var blogPostSchema = new datastools.Schema({...});
+var BlogPost = datastools.model('BlogPost', blogPostSchema);
+
+// id can be integer or string
+BlogPost.get(1234, function(err, entity) {
+    if (err) {
+        // deal with err
+    }
+    console.log('Entity:', entity);
+});
+
+// Passing an ancestor path
+BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
+    if (err) { // deal with err }
+    console.log('Entity:', entity);
+});
+```
+
+#### Save()
+This method accepts 3 parameters
+- data {object of keys : values}
+- id {int or string} (optional)
+- ancestors {Array} (optional)
 
 ```
 var datastools = require('datastools');
@@ -178,7 +210,7 @@ blogPost.save(function(err) {
     console.log('Great! post saved');
 });
 ```
-#### Entity id
+#### Entity id (optional)
 By default, if you don't pass an id when you create an instance of the model, the id will be auto-generated. If you want to manually give the entity an id, 
 pass as a second parameter during the instantiation, like so:
 
@@ -191,6 +223,9 @@ var blogPost = new BlogPost(data, 'stringId'); // cautious that a '1234' id will
 var blogPost = new BlogPost(data, 1234);
 ```
 
+#### Ancestors (optional)
+
+----------
 
 ### Queries
 #### gcloud queries
