@@ -40,6 +40,7 @@ This library is still in in active development (**no release yet**).
   - [Methods](#methods)
     - [Get()](#get)
     - [Save()](#save)
+    - [Delete()](#delete)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
     - [list](#list)
@@ -250,6 +251,7 @@ BlogPost.get(123, function(err, entity) {
 ```
 
 #### Save()
+After the instantiation of a model with some data (and maybe an ancestors or a namespace), you can persist it to the Datastore with `save(callback)`
 
 ```
 var datastools = require('datastools');
@@ -273,6 +275,26 @@ blogPost.save(function(err) {
     }
     console.log('Great! post saved');
 });
+```
+
+#### Delete()
+You can delete an entity by calling `delete(id, ancestors /*optional*/, callback)` on the Model. The callback has a "success" properties that it set to true if 
+an entity was deleted or false if no entity where deleted.
+
+```
+var BlogPost = datastools.model('BlogPost');
+
+BlogPost.delete(123, function(err, success, apiResponse) {
+    if (err) {
+        // deal with err
+    }
+    if (!success) {
+        console.log('No entity deleted. The id provided didn't return any entity');
+    }
+});
+
+// With ancestors
+BlogPost.delete(123, ['Parent', 123], function(err, success, apiResponse) {...}
 ```
 
 ----------
