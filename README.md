@@ -180,7 +180,16 @@ BlogPost.get(1234, function(err, entity) {
 // Passing an ancestor path
 BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
     if (err) { // deal with err }
-    console.log('Entity:', entity);
+    console.log(entity);
+});
+```
+
+**simplify()** The resulting entity has a simplify() method attached to it that outputs a simplified object with just the entity data and the entity id.
+
+```
+BlogPost.get(123, function(err, entity) {
+    if (err) { // deal with err }
+    console.log(entity.simplify());
 });
 ```
 

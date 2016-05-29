@@ -512,11 +512,13 @@ describe('Model', () => {
     });
 
     describe('should get an entity by key', () => {
-        let entity = {
-            key:{id:123},
-            data:{name:'John'}
-        };
+        let entity;
+
         beforeEach(() => {
+            entity = {
+                key:{id:123},
+                data:{name:'John'}
+            };
             sinon.stub(ds, 'get', (key, cb) => {
                 return cb(null, entity);
             });
@@ -556,6 +558,12 @@ describe('Model', () => {
             expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
             expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
             expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+        });
+
+        it.only('should add a "simplify()" method to the entity', () => {
+            ModelInstance.get(123, () => {});
+
+            expect(entity.simplify).exist;
         });
 
     });
