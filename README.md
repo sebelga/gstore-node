@@ -167,7 +167,7 @@ var model = datastools.model('EntityName', entitySchema);
 ```
 
 ### Instances
-To create instances of a model call: `new model(data, id /*optional*/, ancestors /*optional*/)
+To create instances of a model call: `new Model(data, id /*optional*/, ancestors /*optional*/)`
 - data {object} keys / values pairs of the data to save
 - id {int or string} (optional)
 - ancestors {Array} (optional)
