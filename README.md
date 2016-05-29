@@ -42,11 +42,11 @@ It is still in in active development (**no release yet**).
  ```
  
 ### Getting started
-(For info on how to configure gcloud go here: https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud)
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
- var ds           = gcloud.datastore(configDatastore);
+ var ds           = gcloud.datastore();
  
  var datastools = require('datastools');
  datastools.connect(ds);
@@ -70,7 +70,7 @@ Valid property types are
 - 'string'
 - 'number'
 - 'boolean'
-- 'datetime' (valid format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
+- 'datetime' (valids are: javascript Date() or a string with the following format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 - 'array'
 
 ```
