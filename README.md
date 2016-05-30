@@ -5,8 +5,8 @@ Its main features are:
    - explicit Schema declaration for entities
    - properties type validation
    - properties value validation
+   - queries shortcuts
    - pre & post hooks on methods (wip)
-   - queries shortcuts (wip)
    - custom methods for models (wip)
    
 This library is still in in active development (**no release yet**).
@@ -141,7 +141,7 @@ To disable any validation before save/update, set it to false
 <a name="simplifyResultExplained"></a>
 #### entities
 **simplifyResult** (default true).
-By default the results coming back from the Datastore are serialized into a more readable object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
+By default the results coming back from the Datastore are serialized into a simpler object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
 
 ```
 // Schema options example
