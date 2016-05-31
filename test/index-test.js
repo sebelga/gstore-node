@@ -26,7 +26,9 @@ describe('Datastools', function() {
 
     describe('should create models', () => {
         beforeEach(() => {
-            schema = new datastools.Schema({});
+            schema = new datastools.Schema({
+                title : {type:'string'}
+            });
 
             datastools.models       = {};
             datastools.modelSchemas = {};
@@ -34,10 +36,9 @@ describe('Datastools', function() {
         });
 
         it('and add it with its schema to the cache', () => {
-            var model = datastools.model('Blog', schema);
+            var Model = datastools.model('Blog', schema);
 
-            expect(model).to.exist;
-            expect(model.name).to.equal('ModelInstance');
+            expect(Model).to.exist;
             expect(datastools.models.Blog).to.exist;
             expect(datastools.modelSchemas.Blog).to.exist;
         });
@@ -45,12 +46,20 @@ describe('Datastools', function() {
         it('and convert schema object to Schema class instance', () => {
             schema = {};
 
-            var model = datastools.model('Blog', schema);
+            var Model = datastools.model('Blog', schema);
 
-            expect(model.schema.constructor.name).to.equal('Schema');
+            expect(Model.schema.constructor.name).to.equal('Schema');
         });
 
-        it('and not add them to cache if set to false', () => {
+        it('should attach schema to compiled Model', () => {
+            let Blog       = datastools.model('Blog', schema);
+            let schemaUser = new datastools.Schema({name: {type: 'string'}});
+            let User       = datastools.model('User', schemaUser);
+
+            expect(Blog.schema).not.equal(User.schema);
+        });
+
+        it('and not add them to cache if told so', () => {
             let options = {cache:false};
 
             datastools.model('Image', schema, options);

@@ -18,6 +18,7 @@
   "author": "Sébastien Loix",
   "license": "ISC",
   "dependencies": {
+    "extend": "^3.0.0",
     "gcloud": "0.34.0",
     "hooks-fixed": "^1.1.0",
     "is": "^3.1.0",

@@ -5,6 +5,23 @@ var datastoreSerializer = require('../../lib/serializer').Datastore;
 
 describe('Datastore serializer', () => {
     "use strict";
+    it('should convert Datastore format to simple object', () => {
+        let datastoreMock = {
+            key: {
+                namespace: undefined,
+                id: 1234,
+                kind: "BlogPost",
+                path: ["BlogPost", 1234]
+            },
+            data: {
+                name: "John",
+                lastname : 'Snow'
+            }
+        };
+
+        var serialized = datastoreSerializer.fromDatastore(datastoreMock);
+        expect(serialized).equal = datastoreMock.data;
+    });
 
     describe ('should convert data to Datastore format', () => {
         it ('without passing non-indexed properties', () => {
@@ -26,25 +43,6 @@ describe('Datastore serializer', () => {
             var serialized = datastoreSerializer.toDatastore({name:'John'}, ['name']);
             expect(serialized[0].excludeFromIndexes).to.be.true;
         });
-    });
-
-    it('should convert Datastore format to simple object', () => {
-        let datastoreMock = {
-            key: {
-                namespace: undefined,
-                id: 1234,
-                kind: "BlogPost",
-                path: ["BlogPost", 1234]
-            },
-            data: {
-                name: "John",
-                lastname : 'Snow'
-            }
-        };
-
-        var serialized = datastoreSerializer.fromDatastore(datastoreMock);
-
-        expect(serialized).equal = datastoreMock.data;
     });
 });
 
