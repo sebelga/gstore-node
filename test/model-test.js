@@ -433,15 +433,15 @@ describe('Model', () => {
         });
 
         it('should save to datastore and add a "simplify()" method to entity', () => {
-             let output;
-             let error;
+            let output;
+            let error;
 
-             model.save(undefined, (err, entity) => {
+             model.save({}, (err, entity) => {
                  error = err;
                  output = entity.simplify();
              });
              clock.tick(20);
- 
+
              expect(error).not.exist;
              expect(output.id).equal(model.entityKey.path[1]);
         });
@@ -543,6 +543,15 @@ describe('Model', () => {
             expect(_entity.simplify).exist;
 
             done();
+        });
+
+        it('should set save options "op" to "update" ', (done) => {
+            ModelInstance.update(123, {}, (err, entity, info) => {
+                expect(info.op).equal('update');
+                done();
+            });
+
+            clock.tick(40);
         });
     });
 
