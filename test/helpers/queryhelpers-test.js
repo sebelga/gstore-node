@@ -75,17 +75,17 @@ describe('Query Helpers', () => {
             expect(query.selectVal).deep.equal(options.select);
         });
 
-        it ('and update hasAncestor in query', () => {
+        it('and update hasAncestor in query', () => {
             let query = ds.createQuery();
             let options = {
-                ancestors: ['Parent', 123]
+                ancestors: ['Parent', 1234]
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
 
             expect(query.filters[0].op).equal('HAS_ANCESTOR');
             expect(query.filters[0].val.kind).equal('Parent');
-            expect(query.filters[0].val.id).equal(123);
+            expect(query.filters[0].val.id).equal(1234);
         });
 
         it ('and throw Error if no Datastore instance passed when passing ancestors', () => {
