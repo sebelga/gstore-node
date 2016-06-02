@@ -122,6 +122,20 @@ describe('Model', () => {
             expect(valid.success).be.false;
         });
 
+        it('allow unkwown properties', () => {
+            schema = new Schema({
+                name:     {type: 'string'},
+            }, {
+                unkwnownProperties : true
+            });
+            ModelInstance = Model.compile('Blog', schema, ds);
+            let model = new ModelInstance({unkown:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        })
+
         // it ('default validates to string', () => {
         //     let model = new ModelInstance({street:123});
         //
