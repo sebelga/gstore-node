@@ -114,7 +114,7 @@ describe('Model', () => {
             expect(valid.success).be.true;
         });
 
-        it ('properties passed ko', () => {
+        it('properties passed ko', () => {
             let model = new ModelInstance({unkown:123});
 
             let valid = model.validate();
