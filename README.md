@@ -30,6 +30,7 @@ This library is still in in active development (**no release yet**).
     - [excludedFromIndexes](#excludedfromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
+    - [unkwown properties (default false)](#unkwown-properties-default-false)
     - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
@@ -40,6 +41,7 @@ This library is still in in active development (**no release yet**).
   - [Methods](#methods)
     - [Get()](#get)
     - [Save()](#save)
+    - [Update()](#update)
     - [Delete()](#delete)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
@@ -89,6 +91,7 @@ Valid property types are
 - 'boolean'
 - 'datetime' (valids are: javascript Date() or a string with the following format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 - 'array'
+- 'object'
 
 ```
 var entitySchema = new Schema({
@@ -97,7 +100,8 @@ var entitySchema = new Schema({
     age      : {type: 'number'},
     hasPaid  : {type: 'boolean'},
     createdOn: {type: 'datetime'},
-    tags     : {type: 'array'}
+    tags     : {type: 'array'},
+    prefs    : {type: 'object'}
 });
 ```
 
@@ -138,6 +142,10 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
+#### unkwown properties (default false)
+To allow unkwnown properties on a schema set `unkwnownProperties : true`. This will bring back the magic os Schemaless but will keep validating the 
+properties defined explicitly.
+
 <a name="simplifyResultExplained"></a>
 #### entities
 **simplifyResult** (default true).
@@ -149,6 +157,7 @@ var entitySchema = new Schema({
     name : {type: 'string'}
 }, {
     validateBeforeSave : false,
+    unkwnownProperties : true,
     entities : {
         simplifyResult : false
     }
@@ -275,6 +284,36 @@ blogPost.save(function(err) {
     }
     console.log('Great! post saved');
 });
+```
+
+#### Update()
+To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed 
+and save it back to the Datastore with validation before.
+
+```
+...
+
+var BlogPost = datastools.model('BlogPost');
+
+var data = {
+    title :    'New title'
+};
+
+BlogPost.update(123, data, function(err, entity) {
+    if (err) {
+        // deal with err
+    }
+    console.log(entity.simplify()); // entity has also a simplify() method attached
+});
+
+// You can also pass an optional ancestors path
+BlogPost.update(123, data, ['Grandpa', 123, 'Dad', 123], function(err, entity) {
+    if (err) {
+        // deal with err
+    }
+    console.log(entity);
+});
+
 ```
 
 #### Delete()
