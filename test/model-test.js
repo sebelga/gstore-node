@@ -38,6 +38,7 @@ describe('Model', () => {
             modified: {type: 'boolean'},
             tags:     {type:'array'},
             prefs:    {type:'object'},
+            color:    {validate:'isHexColor'},
             type:     {values:['image', 'video']}
         });
 
@@ -281,6 +282,17 @@ describe('Model', () => {
             expect(valid2.success).be.false;
             expect(valid3.success).be.false;
             expect(valid4.success).be.false;
+        });
+
+        it('--> is HexColor', () => {
+            let model  = new ModelInstance({color:'#fff'});
+            let model2  = new ModelInstance({color:'white'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.false;
         });
 
         it ('and only accept value in default values', () => {
