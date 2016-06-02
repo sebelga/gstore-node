@@ -118,7 +118,8 @@ var entitySchema = new Schema({
 ```
 ### Other properties options
 #### optional
-By default if a property value is not defined it will be set to null or its default value (see below) if any. If you don't want this behaviour you can set it as *optional* and if now value is passed nothing will be saved on the entity.
+By default if a property value is not defined it will be set to null or to its default value if any. If you don't want this behaviour you can set 
+it as *optional* and if no value are passed for this property it will not be saved in the Datastore.
 
 #### default
 You can set a default value for the property is no value has been passed.

@@ -16,7 +16,7 @@ var datastoreSerializer = require('../lib/serializer').Datastore;
 var queryHelpers        = require('../lib/helper').QueryHelpers;
 
 describe('Model', () => {
-    "use strict";
+    'use strict';
 
     let schema;
     let ModelInstance;
