@@ -96,9 +96,9 @@ Valid property types are
 ```
 var entitySchema = new Schema({
     name     : {type: 'string'},
-    lastname : {},  // if nothing is passed, no type validation occurs (anything goes in!)
+    lastname : {},  // if nothing is passed, no type validation occurs (any type is allowed)
     age      : {type: 'number'},
-    hasPaid  : {type: 'boolean'},
+    isDraft  : {type: 'boolean'},
     createdOn: {type: 'datetime'},
     tags     : {type: 'array'},
     prefs    : {type: 'object'}

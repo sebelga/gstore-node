@@ -137,13 +137,19 @@ describe('Model', () => {
             expect(valid.success).be.true;
         })
 
-        // it ('default validates to string', () => {
-        //     let model = new ModelInstance({street:123});
-        //
-        //     let valid = model.validate();
-        //
-        //     expect(valid.success).be.false;
-        // });
+        it ('no type validation', () => {
+            let model = new ModelInstance({street:123});
+            let model2 = new ModelInstance({street:'123'});
+            let model3 = new ModelInstance({street:true});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
+        });
 
         it ('--> string property', () => {
             let model = new ModelInstance({name:123});
