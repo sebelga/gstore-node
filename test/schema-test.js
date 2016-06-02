@@ -25,13 +25,13 @@ describe('Schema', () => {
 
         it ('should merge options passed', () => {
             let schema = new Schema({}, {
-                optionName:'optionValue',
+                newOption:'myValue',
                 entities:{
                     simplifyResult:false
                 }
             });
 
-            expect(schema.options.optionName).equal('optionValue');
+            expect(schema.options.newOption).equal('myValue');
             expect(schema.options.entities.simplifyResult).be.false;
         });
 
