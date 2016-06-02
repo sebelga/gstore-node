@@ -91,6 +91,7 @@ Valid property types are
 - 'boolean'
 - 'datetime' (valids are: javascript Date() or a string with the following format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 - 'array'
+- 'object'
 
 ```
 var entitySchema = new Schema({
@@ -99,7 +100,8 @@ var entitySchema = new Schema({
     age      : {type: 'number'},
     hasPaid  : {type: 'boolean'},
     createdOn: {type: 'datetime'},
-    tags     : {type: 'array'}
+    tags     : {type: 'array'},
+    prefs    : {type: 'object'}
 });
 ```
 

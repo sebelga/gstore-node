@@ -37,6 +37,7 @@ describe('Model', () => {
             email:    {validate: 'isEmail'},
             modified: {type: 'boolean'},
             tags:     {type:'array'},
+            prefs:    {type:'object'},
             type:     {values:['image', 'video']}
         });
 
@@ -126,7 +127,7 @@ describe('Model', () => {
             schema = new Schema({
                 name:     {type: 'string'},
             }, {
-                unkwnownProperties : true
+                unknownProperties : true
             });
             ModelInstance = Model.compile('Blog', schema, ds);
             let model = new ModelInstance({unkown:123});
@@ -166,6 +167,14 @@ describe('Model', () => {
             let valid = model.validate();
 
             expect(valid.success).be.false;
+        });
+
+        it('--> object property', () => {
+            let model = new ModelInstance({prefs:{check:true}});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
         });
 
         it('--> array property ok', () => {
