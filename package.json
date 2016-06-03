@@ -31,8 +31,10 @@
     "babel-cli": "^6.9.0",
     "babel-preset-es2015": "^6.9.0",
     "chai": "^3.5.0",
+    "coveralls": "^2.11.9",
     "istanbul": "^0.4.3",
     "mocha": "^2.4.5",
+    "mocha-lcov-reporter": "^1.2.0",
     "nconf": "^0.8.4",
     "sinon": "^1.17.4"
   }
