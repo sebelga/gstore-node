@@ -420,21 +420,6 @@ describe('Model', () => {
             model = new ModelInstance(data);
         });
 
-        it('should emit "save" after', (done) => {
-            let model       = new ModelInstance({});
-            let emitStub    = sinon.stub(model, 'emit');
-            let callbackSpy = sinon.spy();
-
-            model.save(callbackSpy);
-            clock.tick(20);
-
-            expect(emitStub.calledWithExactly('save')).be.true;
-            expect(emitStub.calledBefore(callbackSpy)).be.true;
-            done();
-
-            emitStub.restore();
-        });
-
         it('---> should validate() before', () => {
             model  = new ModelInstance({name:'John'});
             let validateSpy = sinon.spy(model, 'validate');
@@ -471,7 +456,7 @@ describe('Model', () => {
             expect(ds.save.called).be.false;
         });
 
-        it('should save to Datastore but before convert to Datastore format', function(done) {
+        it('should convert to Datastore format before saving to Datastore', function(done) {
             let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
             model.save(() => {});
@@ -528,6 +513,56 @@ describe('Model', () => {
         });
 
         it('should save entity into a transaction');
+
+        it('should call pre hooks', () => {
+            let mockDs = {save:function() {}, key:function(){}};
+            let spyPre  = sinon.spy();
+            let spySave = sinon.spy(mockDs, 'save');
+
+            schema = new Schema({name:{type:'string'}});
+            schema.pre('save', (next) => {
+                spyPre();
+                next();
+            });
+            ModelInstance = Model.compile('Blog', schema, mockDs);
+            let model = new ModelInstance({name:'John'});
+
+            model.save({}, () => {});
+            clock.tick(20);
+
+            expect(spyPre.calledBefore(spySave)).be.true;
+        });
+
+        it('should emit "save" after', (done) => {
+            let model       = new ModelInstance({});
+            let emitStub    = sinon.stub(model, 'emit');
+            let callbackSpy = sinon.spy();
+
+            model.save(callbackSpy);
+            clock.tick(20);
+
+            expect(emitStub.calledWithExactly('save')).be.true;
+            expect(emitStub.calledBefore(callbackSpy)).be.true;
+            done();
+
+            emitStub.restore();
+        });
+
+        it('should call post hooks', () => {
+            let spyPost  = sinon.spy();
+
+            schema = new Schema({name:{type:'string'}});
+            schema.post('save', () => {
+                spyPost();
+            });
+            ModelInstance = Model.compile('Blog', schema, ds);
+            let model = new ModelInstance({name:'John'});
+
+            model.save({}, () => {});
+            clock.tick(20);
+
+            expect(spyPost.called).be.true;
+        });
     });
 
     describe('update()', () => {
@@ -644,36 +679,42 @@ describe('Model', () => {
     describe('delete()', () => {
         beforeEach(() => {
             sinon.stub(ds, 'delete', (key, cb) => {
-                cb(null, {indexUpdates:3});
+                //setTimeout(function() {
+                    cb(null, {indexUpdates:3});
+                //}, 20);
             });
         });
+
         afterEach(() => {
             ds.delete.restore();
         });
 
-        it('should call ds.delete with correct Key (int id)', () => {
-            ModelInstance.delete(123, (err, success) => {
+        it('should call ds.delete with correct Key (int id)', (done) => {
+            ModelInstance.delete(123, (err, response) => {
                 expect(ds.delete.called).be.true;
                 expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
-                expect(success).be.true;
+                expect(response.success).be.true;
+                done();
             });
         });
 
-        it('should call ds.delete with correct Key (string id)', () => {
-            ModelInstance.delete('keyName', (err, success) => {
+        it('should call ds.delete with correct Key (string id)', (done) => {
+            ModelInstance.delete('keyName', (err, response) => {
                 expect(ds.delete.called).be.true;
                 expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
-                expect(success).be.true;
+                expect(response.success).be.true;
+                done();
             });
         });
 
-        it ('should allow ancestors', () => {
-            ModelInstance.delete(123, ['Parent', 123], () => {});
+        it('should allow ancestors', (done) => {
+            ModelInstance.delete(123, ['Parent', 123], () => {
+                var key = ds.delete.getCall(0).args[0];
 
-            var key = ds.delete.getCall(0).args[0];
-
-            expect(key.parent.kind).equal('Parent');
-            expect(key.parent.id).equal(123);
+                expect(key.parent.kind).equal('Parent');
+                expect(key.parent.id).equal(123);
+                done();
+            });
         });
 
         it ('should set "success" to false if no entity deleted', () => {
@@ -682,8 +723,8 @@ describe('Model', () => {
                 cb(null, {indexUpdates:0});
             });
 
-            ModelInstance.delete(123, (err, success) => {
-                expect(success).be.false;
+            ModelInstance.delete(123, (err, response) => {
+                expect(response.success).be.false;
             });
         });
 
@@ -697,6 +738,38 @@ describe('Model', () => {
             ModelInstance.delete(123, (err, success) => {
                 expect(err).deep.equal(error);
                 expect(success).not.exist;
+            });
+        });
+
+        it('should call pre hooks', () => {
+            let mockDs    = {delete:function() {}, key:function(){}};
+            let spyPre    = sinon.spy();
+            let spyDelete = sinon.spy(mockDs, 'delete');
+
+            schema = new Schema({name:{type:'string'}});
+            schema.pre('delete', (next) => {
+                spyPre();
+                next();
+            });
+            ModelInstance = Model.compile('Blog', schema, mockDs);
+
+            ModelInstance.delete(123, (err, success) => {});
+
+            expect(spyPre.calledBefore(spyDelete)).be.true;
+        });
+
+        it('should call post hooks', (done) => {
+            let spyPost   = sinon.spy();
+
+            schema = new Schema({name:{type:'string'}});
+            schema.post('delete', () => {
+                spyPost();
+            });
+            ModelInstance = Model.compile('Blog', schema, ds);
+
+            ModelInstance.delete(123, (err, result) => {
+                expect(spyPost.called).be.true;
+                done();
             });
         });
     });
@@ -860,9 +933,9 @@ describe('Model', () => {
                     let args = Array.prototype.slice.call(arguments);
                     let cb = args.pop();
 
-                    setTimeout(() => {
+                    //setTimeout(() => {
                         return cb(null, true);
-                    }, 20)
+                    //}, 20)
                 });
             });
 
@@ -871,8 +944,8 @@ describe('Model', () => {
                 ds.delete.restore();
             });
 
-            it ('should get all entities through Query', () => {
-                ModelInstance.deleteAll();
+            it('should get all entities through Query', (done) => {
+                ModelInstance.deleteAll(() => {done();});
                 let arg = ds.runQuery.getCall(0).args[0];
 
                 expect(ds.runQuery.called).true;
@@ -881,7 +954,7 @@ describe('Model', () => {
                 expect(arg.namespace).equal('com.mydomain');
             });
 
-            it ('should return error if could not fetch entities', () => {
+            it('should return error if could not fetch entities', (done) => {
                 let error = {code:500, message:'Something went wrong'};
                 ds.runQuery.restore();
                 sinon.stub(ds, 'runQuery', function() {
@@ -892,50 +965,47 @@ describe('Model', () => {
 
                 ModelInstance.deleteAll((err) => {
                     expect(err).deep.equal(error);
+                    done();
                 });
-                clock.tick(20);
             });
 
-            it ('should call delete on all entities found (in series)', () => {
+            it('should call delete on all entities found (in series)', (done) => {
                 sinon.spy(async, 'eachSeries');
 
-                ModelInstance.deleteAll(() => {});
-                clock.tick(20);
-
-                expect(async.eachSeries.called).be.true;
-                expect(ModelInstance.delete.callCount).equal(2);
-
-                async.eachSeries.restore();
+                ModelInstance.deleteAll(() => {
+                    expect(async.eachSeries.called).be.true;
+                    expect(ModelInstance.delete.callCount).equal(2);
+                    done();
+                    async.eachSeries.restore();
+                });
             });
 
-            it ('should call with ancestors', () => {
+            it('should call with ancestors', (done) => {
                 let ancestors = ['Parent', 'keyname'];
-                ModelInstance.deleteAll(ancestors, () => {});
-                clock.tick(20);
+                ModelInstance.deleteAll(ancestors, () => {done();});
 
                 let arg = ds.runQuery.getCall(0).args[0];
                 expect(arg.filters[0].op).equal('HAS_ANCESTOR');
                 expect(arg.filters[0].val.path).deep.equal(ancestors);
             });
 
-            it ('should call with namespace', () => {
+            it('should call with namespace', (done) => {
                 let namespace = 'com.new-domain.dev';
-                ModelInstance.deleteAll(null, namespace, () => {});
-                clock.tick(20);
+                ModelInstance.deleteAll(null, namespace, () => {done();});
 
                 let arg = ds.runQuery.getCall(0).args[0];
                 expect(arg.namespace).equal(namespace);
             });
 
-            it ('should return success:true if all ok', () => {
+            it ('should return success:true if all ok', (done) => {
                 ModelInstance.deleteAll((err, msg) => {
                     expect(err).not.exist;
                     expect(msg.success).be.true;
+                    done();
                 });
-                clock.tick(40);
             });
 
-            it ('should return error if any while deleting', () => {
+            it ('should return error if any while deleting', (done) => {
                 let error = {code:500, message:'Could not delete'};
                 ModelInstance.delete.restore();
                 sinon.stub(ModelInstance, 'delete', function() {
@@ -947,8 +1017,8 @@ describe('Model', () => {
                 ModelInstance.deleteAll((err, msg) => {
                     expect(err).equal(error);
                     expect(msg).not.exist;
+                    done();
                 });
-                clock.tick(40);
             });
         });
 
