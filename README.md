@@ -45,7 +45,8 @@ This library is still in in active development (**no release yet**).
     - [Delete()](#delete)
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
-    - [list](#list)
+    - [list()](#list)
+    - [deleteAll()](#deleteall)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -379,7 +380,7 @@ query.run({simplifyResult:false}, function(err, entities, info) {
 })
 ```
 
-#### list
+#### list()
 Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
 Currently it support the following settings:
 - limit
@@ -468,4 +469,21 @@ var newSettings = {
 };
 
 BlogPost.list(newSettings, ...);
+```
+
+#### deleteAll()
+```
+BlogPost.deleteAll(ancestors /*optional*/, namespace /*optional*/, callback)
+```
+Sometimes you need to delete all the entities of a certain kind. This shortcut query lets you do just that.
+
+```
+BlogPost.deleteAll(function(err, result){
+    if (err) {// deal with err}
+    
+    console.log(result.message);
+});
+
+// With ancestors path and namespace
+BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
 ```

@@ -2,6 +2,7 @@
 var chai   = require('chai');
 var expect = chai.expect;
 var sinon  = require('sinon');
+var async  = require('async');
 
 var gcloud = require('gcloud')({
     projectId: 'my-project'
@@ -61,6 +62,18 @@ describe('Model', () => {
                     name: "John",
                     lastname : 'Snow'
                 }
+            },
+            {
+                key: {
+                    namespace: undefined,
+                    name: 'keyname',
+                    kind: "BlogPost",
+                    path: ["BlogPost", 'keyname']
+                },
+                data: {
+                    name: "Mick",
+                    lastname : 'Jagger'
+                }
             }
         ];
 
@@ -70,6 +83,10 @@ describe('Model', () => {
                 args.push(arguments[i]);
             }
             cb = args.pop();
+
+            // setTimeout(() => {
+            //     return cb(null, mockEntities);
+            // }, 20);
             return cb(null, mockEntities);
         });
 
@@ -136,7 +153,7 @@ describe('Model', () => {
             let valid = model.validate();
 
             expect(valid.success).be.true;
-        })
+        });
 
         it ('no type validation', () => {
             let model = new ModelInstance({street:123});
@@ -556,6 +573,34 @@ describe('Model', () => {
             });
         });
 
+        it('should return 404 if entity found', () => {
+            ds.get.restore();
+            sinon.stub(ds, 'get', (key, cb) => {
+                return cb(null);
+            });
+
+            ModelInstance.update(123, (err, entity) => {
+                expect(err.code).equal(404);
+                expect(entity).not.exist;
+            });
+        });
+
+        it ('should return error if any while saving', () => {
+            let error = {code:500, message: 'Houston wee need you.'};
+            ds.save.restore();
+            sinon.stub(ds, 'save', function() {
+                let args = Array.prototype.slice.call(arguments);
+                let cb = args.pop();
+                return cb(error);
+            });
+
+            ModelInstance.update(123, (err, entity) => {
+                expect(err).equal(error);
+            });
+
+            clock.tick(20);
+        });
+
         it('should merge the new data with the entity data', (done) => {
             let data = {
                 name : 'Sebas',
@@ -687,7 +732,7 @@ describe('Model', () => {
             expect(fn).to.throw(Error);
         });
 
-        it ('should run query', (done) => {
+        it('should run query', (done) => {
             let query = ModelInstance.query()
                         .filter('name', '=', 'John');
 
@@ -805,6 +850,105 @@ describe('Model', () => {
 
                 let query = ds.runQuery.getCall(0).args[0];
                 expect(query.namespace).equal(namespace);
+            });
+        });
+
+        describe('deleteAll()', () => {
+            beforeEach(() => {
+                sinon.spy(ModelInstance, 'delete');
+                sinon.stub(ds, 'delete', function() {
+                    let args = Array.prototype.slice.call(arguments);
+                    let cb = args.pop();
+
+                    setTimeout(() => {
+                        return cb(null, true);
+                    }, 20)
+                });
+            });
+
+            afterEach(() => {
+                ModelInstance.delete.restore();
+                ds.delete.restore();
+            });
+
+            it ('should get all entities through Query', () => {
+                ModelInstance.deleteAll();
+                let arg = ds.runQuery.getCall(0).args[0];
+
+                expect(ds.runQuery.called).true;
+                expect(arg.constructor.name).equal('Query');
+                expect(arg.kinds[0]).equal('Blog');
+                expect(arg.namespace).equal('com.mydomain');
+            });
+
+            it ('should return error if could not fetch entities', () => {
+                let error = {code:500, message:'Something went wrong'};
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', function() {
+                    let args = Array.prototype.slice.call(arguments);
+                    let cb = args.pop();
+                    return cb(error);
+                });
+
+                ModelInstance.deleteAll((err) => {
+                    expect(err).deep.equal(error);
+                });
+                clock.tick(20);
+            });
+
+            it ('should call delete on all entities found (in series)', () => {
+                sinon.spy(async, 'eachSeries');
+
+                ModelInstance.deleteAll(() => {});
+                clock.tick(20);
+
+                expect(async.eachSeries.called).be.true;
+                expect(ModelInstance.delete.callCount).equal(2);
+
+                async.eachSeries.restore();
+            });
+
+            it ('should call with ancestors', () => {
+                let ancestors = ['Parent', 'keyname'];
+                ModelInstance.deleteAll(ancestors, () => {});
+                clock.tick(20);
+
+                let arg = ds.runQuery.getCall(0).args[0];
+                expect(arg.filters[0].op).equal('HAS_ANCESTOR');
+                expect(arg.filters[0].val.path).deep.equal(ancestors);
+            });
+
+            it ('should call with namespace', () => {
+                let namespace = 'com.new-domain.dev';
+                ModelInstance.deleteAll(null, namespace, () => {});
+                clock.tick(20);
+
+                let arg = ds.runQuery.getCall(0).args[0];
+                expect(arg.namespace).equal(namespace);
+            });
+
+            it ('should return success:true if all ok', () => {
+                ModelInstance.deleteAll((err, msg) => {
+                    expect(err).not.exist;
+                    expect(msg.success).be.true;
+                });
+                clock.tick(40);
+            });
+
+            it ('should return error if any while deleting', () => {
+                let error = {code:500, message:'Could not delete'};
+                ModelInstance.delete.restore();
+                sinon.stub(ModelInstance, 'delete', function() {
+                    let args = Array.prototype.slice.call(arguments);
+                    let cb = args.pop();
+                    cb(error);
+                });
+
+                ModelInstance.deleteAll((err, msg) => {
+                    expect(err).equal(error);
+                    expect(msg).not.exist;
+                });
+                clock.tick(40);
             });
         });
 
