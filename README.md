@@ -1,4 +1,6 @@
 # Datastools (work in progress)
+[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)][![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls
+.io/github/sebelga/datastools?branch=master)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -47,6 +49,10 @@ This library is still in in active development (**no release yet**).
     - [gcloud queries](#gcloud-queries)
     - [list()](#list)
     - [deleteAll()](#deleteall)
+- [Hooks](#hooks)
+  - [Pre hooks](#pre-hooks)
+  - [Post hooks](#post-hooks)
+- [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -487,3 +493,69 @@ BlogPost.deleteAll(function(err, result){
 // With ancestors path and namespace
 BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
 ```
+
+## Hooks
+Hooks are functions you decide to run right before or right after a specific action on an entity. For now, hooks are available for the following actions:
+- save (are also executed when doing an **update()**)
+- delete
+
+### Pre hooks
+Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A 
+common use case would be to hash a user's password before saving it into the Datastore.
+
+```
+...
+
+var bscrypt = require('bcrypt-nodejs');
+
+var userSchema = new Schema({
+    user : {'string'},
+    email : {'string', validate:'isEmail'},
+    password : {'string', excludedFromIndexes: true}
+});
+
+userSchema.pre('save', hashPassword);
+
+function hashPassword(next) {
+    var entityData = this.entityData;
+
+    if (!entityData.hasOwnProperty('password')) {
+        return next();
+    }
+
+    bcrypt.genSalt(5, function (err, salt) {
+        if (err) return next(err);
+
+        bcrypt.hash(entityData.password, salt, null, function (err, hash) {
+            if (err) return next(err);
+            entityData.password = hash;
+            next();
+        });
+    });
+}
+
+...
+
+// Then when you create a new user and save it (and also when updating it), its password will be hashed automatically
+var User = datastools.model('User');
+var user = new User({username:'john', password:'mypassword'});
+user.save(function(err, entity) {
+    console.log(entity.data.password); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
+});
+```
+
+### Post hooks
+Post are defined the same way as pre hooks. The only difference is that there are no "next" function to call.
+
+```
+var schema = new Schema({username:{...}});
+schema.post('save', function(){
+    var entityData = this.entityData;
+    // do anything needed
+});
+```
+
+## Credits
+I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity 
+definitions, as well as 'hooks', custom methods and other similarities found here in the Datastools.
+Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node). 

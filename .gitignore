@@ -34,3 +34,4 @@ node_modules
 entity_old.js
 .trash
 config.json
+.coveralls.yml
