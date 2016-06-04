@@ -1,5 +1,7 @@
 # Datastools (work in progress)
-[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)][![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls
+
+![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls
 .io/github/sebelga/datastools?branch=master)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
