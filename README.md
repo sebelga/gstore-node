@@ -1,4 +1,6 @@
 # Datastools (work in progress)
+
+[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
@@ -7,8 +9,8 @@ Its main features are:
    - properties type validation
    - properties value validation
    - queries shortcuts
-   - pre & post hooks on methods (wip)
-   - custom methods for models (wip)
+   - pre & post Middlewares (hooks)
+   - custom methods on entity
    
 This library is still in in active development (**no release yet**).
 
@@ -31,7 +33,7 @@ This library is still in in active development (**no release yet**).
     - [excludedFromIndexes](#excludedfromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
-    - [unkwown properties (default false)](#unkwown-properties-default-false)
+    - [unregistered properties (default false)](#unregistered-properties-default-false)
     - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
@@ -48,6 +50,11 @@ This library is still in in active development (**no release yet**).
     - [gcloud queries](#gcloud-queries)
     - [list()](#list)
     - [deleteAll()](#deleteall)
+- [Middelware (Hooks)](#middelware-hooks)
+  - [Pre hooks](#pre-hooks)
+  - [Post hooks](#post-hooks)
+- [Methods](#methods-1)
+- [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -145,9 +152,9 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
-#### unkwown properties (default false)
-To allow unkwnown properties on a schema set `unkwnownProperties : true`. This will bring back the magic os Schemaless but will keep validating the 
-properties defined explicitly.
+#### unregistered properties (default false)
+To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic os Schemaless and at the same time will still validate 
+the properties explicitly declared.
 
 <a name="simplifyResultExplained"></a>
 #### entities
@@ -160,7 +167,7 @@ var entitySchema = new Schema({
     name : {type: 'string'}
 }, {
     validateBeforeSave : false,
-    unkwnownProperties : true,
+    explicitOnly : false,
     entities : {
         simplifyResult : false
     }
@@ -488,3 +495,112 @@ BlogPost.deleteAll(function(err, result){
 // With ancestors path and namespace
 BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
 ```
+
+## Middelware (Hooks)
+Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.  
+For now, hooks are available for the following actions:
+- save (are also executed when doing an **update()**)
+- delete
+
+### Pre hooks
+Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A 
+common use case would be to hash a user's password before saving it into the Datastore.
+
+```
+...
+
+var bscrypt = require('bcrypt-nodejs');
+
+var userSchema = new Schema({
+    user :     {'string'},
+    email :    {'string', validate:'isEmail'},
+    password : {'string', excludedFromIndexes: true}
+});
+
+userSchema.pre('save', hashPassword);
+
+function hashPassword(next) {
+    var entityData = this.entityData;
+
+    if (!entityData.hasOwnProperty('password')) {
+        return next();
+    }
+
+    bcrypt.genSalt(5, function (err, salt) {
+        if (err) return next(err);
+
+        bcrypt.hash(entityData.password, salt, null, function (err, hash) {
+            if (err) return next(err);
+            entityData.password = hash;
+            next();
+        });
+    });
+}
+
+...
+
+// Then when you create a new user and save it (or when updating it)
+// its password will automatically be hashed
+var User = datastools.model('User');
+var user = new User({username:'john', password:'mypassword'});
+user.save(function(err, entity) {
+    console.log(entity.data.password); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
+});
+```
+
+### Post hooks
+Post are defined the same way as pre hooks. The only difference is that there is no "next" function to call.
+
+```
+var schema = new Schema({username:{...}});
+schema.post('save', function(){
+    var entityData = this.entityData;
+    // do anything needed, maybe send an email of confirmation?
+});
+```
+
+## Methods
+Custom methods can be attached to entities instances.
+
+```
+var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
+
+// add a fullName() method
+schema.methods.fullName = function(cb) {
+    var entityData = this.entityData;
+    cb(null, entityData.name + ' ' + entityData.lastname);
+};
+var User = datastools.model('User', schema);
+
+...
+
+// You can then call it on any instances of user
+var user = new User({name:'John', lastname:'Snow'});
+user.fullName(function(err, result) {
+    console.log(result); // 'John Snow';
+});
+```
+
+Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom 
+method:
+
+```
+...
+// custom getImage() method on the User Schema
+userSchema.methods.getImage = function(cb) {
+    // Any type of query can be done here
+    return this.model('Image').get(this.entityData.imageIdx, cb);
+};
+...
+// In your controller
+var user = new User({name:'John', imageIdx:1234});
+user.getImage(function(err, imageEntity) {
+    user.entityData.profilePict = imageEntity.data.url;
+    user.save(function(err){...});
+});
+```
+
+## Credits
+I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity 
+definitions, as well as 'hooks', custom methods and other similarities found here.
+Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node). 

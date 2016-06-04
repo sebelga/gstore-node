@@ -8,9 +8,11 @@ var gcloud = require('gcloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({
-    namespace : 'com.mydomain'
+    namespace : 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080'
 });
 
+var datastools          = require('../');
 var Model               = require('../lib/model');
 var Schema              = require('../lib').Schema;
 var datastoreSerializer = require('../lib/serializer').Datastore;
@@ -22,10 +24,15 @@ describe('Model', () => {
     let schema;
     let ModelInstance;
     let clock;
-
     let mockEntities;
 
-    beforeEach(() => {
+    beforeEach('Before each describe...', function() {
+        datastools.models       = {};
+        datastools.modelSchemas = {};
+        datastools.options      = {};
+
+        datastools.connect(ds);
+
         clock = sinon.useFakeTimers();
 
         schema = new Schema({
@@ -90,15 +97,21 @@ describe('Model', () => {
             return cb(null, mockEntities);
         });
 
-        ModelInstance = Model.compile('Blog', schema, ds);
+        ModelInstance = datastools.model('Blog', schema, ds);
     });
 
-    afterEach(() => {
+    afterEach(function() {
         ds.save.restore();
         ds.runQuery.restore();
     });
 
-    describe('compile()', () => {
+    describe('compile()', function() {
+        beforeEach('Reset before compile', function() {
+            datastools.models       = {};
+            datastools.modelSchemas = {};
+            ModelInstance = datastools.model('Blog', schema);
+        });
+
         it ('should set properties on compile and return ModelInstance', () => {
             expect(ModelInstance.schema).exist;
             expect(ModelInstance.ds).exist;
@@ -115,13 +128,53 @@ describe('Model', () => {
             expect(ModelInstance.entityName).equal('Blog');
         });
 
-        it('should apply schema methods to the model instances', () => {
-            schema.method('doSomething', () => {console.log('hello');});
-            ModelInstance = Model.compile('Blog', schema, ds);
+        it('should be able to return model instances', () => {
+            let imageSchema = new Schema({});
+            let ImageModel  = datastools.model('Image', imageSchema);
 
-            var model = new ModelInstance({});
+            let blog = new ModelInstance({});
 
-            expect(model.doSomething).equal(schema.methods.doSomething);
+            expect(blog.model('Image')).equal(ImageModel);
+        });
+
+        it('should be able to execute methods from other model instances', () => {
+            let imageSchema = new Schema({});
+            let ImageModel  = datastools.model('Image', imageSchema);
+            sinon.stub(ImageModel, 'get', (cb) => {
+                cb(null, mockEntities[0]);
+            });
+
+            let blog = new ModelInstance({});
+
+            blog.model('Image').get((err, entity) => {
+                expect(entity).equal(mockEntities[0]);
+            });
+        });
+
+        it('should execute methods passed to schema.methods', () => {
+            let imageSchema = new Schema({});
+            let ImageModel  = datastools.model('Image', imageSchema);
+            sinon.stub(ImageModel, 'get', (id, cb) => {
+                cb(null, mockEntities[0]);
+            });
+            schema.methods.fullName = function(cb) {
+                var entityData = this.entityData;
+                cb(null, entityData.name + ' ' + entityData.lastname);
+            };
+            schema.methods.getImage = function(cb) {
+                return this.model('Image').get(this.entityData.imageIdx, cb);
+            };
+
+            ModelInstance = datastools.model('MyEntity', schema, ds);
+            var model = new ModelInstance({name:'John', lastname:'Snow'});
+
+            model.fullName((err, result) => {
+                expect(result).equal('John Snow');
+            });
+
+            model.getImage.call(model, function(err, result) {
+                expect(result).equal(mockEntities[0]);
+            });
         });
     });
 
@@ -145,7 +198,7 @@ describe('Model', () => {
             schema = new Schema({
                 name:     {type: 'string'},
             }, {
-                unknownProperties : true
+                explicitOnly : false
             });
             ModelInstance = Model.compile('Blog', schema, ds);
             let model = new ModelInstance({unkown:123});
