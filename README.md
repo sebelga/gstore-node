@@ -563,6 +563,8 @@ Custom methods can be attached to entities instances.
 
 ```
 var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
+
+// add a fullName() method
 schema.methods.fullName = function(cb) {
     var entityData = this.entityData;
     cb(null, entityData.name + ' ' + entityData.lastname);
@@ -578,13 +580,14 @@ user.fullName(function(err, result) {
 });
 ```
 
-As models instances can get other instances with `myModel.model('EntityName')`, denormalization can easily be done with custom method
+Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom 
+method:
 
 ```
 ...
-// add custom image() method
-schema.methods.getImage = function(cb) {
-    // Any query can be done here (gcloud queries, shortcut ones)
+// custom getImage() method on the User Schema
+userSchema.methods.getImage = function(cb) {
+    // Any type of query can be done here
     return this.model('Image').get(this.entityData.imageIdx, cb);
 };
 ...
