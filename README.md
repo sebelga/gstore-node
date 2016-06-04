@@ -66,7 +66,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
 
 ## Installation
  ```
- npm install datastools --save
+ npm install gcloud datastools --save
  ```
  
 ### Getting started
