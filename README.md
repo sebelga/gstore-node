@@ -5,12 +5,12 @@
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
-   - explicit Schema declaration for entities
-   - properties type validation
-   - properties value validation
-   - queries shortcuts
-   - pre & post Middlewares (hooks)
-   - custom methods on entity
+   - explicit **Schema declaration** for entities
+   - properties **type validation**
+   - properties **value validation**
+   - queries **shortcuts**
+   - pre & post **middlewares** (hooks)
+   - **custom methods** on entity
    
 This library is in in active development, please report any issue you might find.
 
