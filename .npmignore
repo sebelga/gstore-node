@@ -1,5 +1,9 @@
+.coveralls.yml
 jsconfig.json
 .travis.yml
 .jshintrc
 .eslintrc.json
 .babelrc
+
+test/
+**/.trash
