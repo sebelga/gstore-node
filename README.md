@@ -1,6 +1,6 @@
 # Datastools (work in progress)
 
-![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)
+[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls
 .io/github/sebelga/datastools?branch=master)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
@@ -559,5 +559,5 @@ schema.post('save', function(){
 
 ## Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity 
-definitions, as well as 'hooks', custom methods and other similarities found here in the Datastools.
+definitions, as well as 'hooks', custom methods and other similarities found here.
 Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node). 
