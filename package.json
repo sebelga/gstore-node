@@ -4,8 +4,9 @@
   "description": "Datastools is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register test --recursive",
-    "coverage": "istanbul cover _mocha -- -R spec --recursive"
+    "test": "mocha test --recursive",
+    "coverage": "istanbul cover _mocha -- -R spec --recursive",
+    "coverageBadge": "istanbul cover _mocha --report lcovonly -- -R spec --recursive && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "keywords": [
     "Google Datastore",
