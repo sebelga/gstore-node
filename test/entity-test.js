@@ -7,7 +7,8 @@ var gcloud = require('gcloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({
-    namespace : 'com.mydomain'
+    namespace : 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080'
 });
 
 var datastools = require('../lib');
@@ -19,7 +20,11 @@ var schema;
 describe('Entity', () => {
     "use strict";
 
-    beforeEach(() => {
+    beforeEach(function() {
+        datastools.models       = {};
+        datastools.modelSchemas = {};
+        datastools.options      = {};
+
         schema = new Schema({
             name    : {type: 'string'}
         });
@@ -28,11 +33,7 @@ describe('Entity', () => {
         });
     });
 
-    afterEach(() => {
-        datastools.models       = {};
-        datastools.modelSchemas = {};
-        datastools.options      = {};
-
+    afterEach(function() {
         ds.save.restore();
     });
 
@@ -148,9 +149,9 @@ describe('Entity', () => {
         it ('---> with a partial Key (auto-generated id)', () => {
             var Model  = datastools.model('BlogPost', schema);
 
-            new Model({});
+            var model = new Model({});
 
-            expect(ds.key.getCall(0).args[0]).to.deep.equal('BlogPost');
+            expect(model.entityKey.kind).to.deep.equal('BlogPost');
         });
 
         it('---> with an ancestor path (auto-generated id)', () => {
@@ -227,16 +228,16 @@ describe('Entity', () => {
             postNewMethod.restore();
         });
 
-        it('should call post hooks after saving', (done) => {
+        it('should call post hooks after saving', () => {
             let save = sinon.spy(spyOn, 'fnHookPost');
             schema.post('save', save);
             model  = datastools.model('BlogPost', schema);
             entity = new model({});
 
-            entity.save(done);
-
-            expect(save.calledOnce).to.be.true;
-            save.restore();
+            entity.save(() => {
+                expect(spyOn.fnHookPost.called).be.true;
+                save.restore();
+            });
         });
     });
 });
