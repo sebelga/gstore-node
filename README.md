@@ -1,5 +1,6 @@
 # Datastools (work in progress)
-[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)][![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls
+[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)][![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge
+.svg?branch=master)](https://coveralls
 .io/github/sebelga/datastools?branch=master)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
@@ -509,8 +510,8 @@ common use case would be to hash a user's password before saving it into the Dat
 var bscrypt = require('bcrypt-nodejs');
 
 var userSchema = new Schema({
-    user : {'string'},
-    email : {'string', validate:'isEmail'},
+    user :     {'string'},
+    email :    {'string', validate:'isEmail'},
     password : {'string', excludedFromIndexes: true}
 });
 
@@ -545,13 +546,13 @@ user.save(function(err, entity) {
 ```
 
 ### Post hooks
-Post are defined the same way as pre hooks. The only difference is that there are no "next" function to call.
+Post are defined the same way as pre hooks. The only difference is that there is no "next" function to call.
 
 ```
 var schema = new Schema({username:{...}});
 schema.post('save', function(){
     var entityData = this.entityData;
-    // do anything needed
+    // do anything needed, maybe send an email of confirmation?
 });
 ```
 
