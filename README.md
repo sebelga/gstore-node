@@ -1,4 +1,4 @@
-# Datastools (work in progress)
+# Datastools
 
 [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
@@ -12,7 +12,7 @@ Its main features are:
    - pre & post Middlewares (hooks)
    - custom methods on entity
    
-This library is still in in active development (**no release yet**).
+This library is in in active development, please report any issue you might find.
 
 ----------
 
