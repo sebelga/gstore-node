@@ -1,0 +1,5 @@
+jsconfig.json
+.travis.yml
+.jshintrc
+.eslintrc.json
+.babelrc
