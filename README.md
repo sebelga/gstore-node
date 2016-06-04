@@ -539,7 +539,8 @@ function hashPassword(next) {
 
 ...
 
-// Then when you create a new user and save it (and also when updating it), its password will be hashed automatically
+// Then when you create a new user and save it (or when updating it)
+// its password will automatically be hashed
 var User = datastools.model('User');
 var user = new User({username:'john', password:'mypassword'});
 user.save(function(err, entity) {
