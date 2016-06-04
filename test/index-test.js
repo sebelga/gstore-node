@@ -6,6 +6,14 @@ var datastools = require('../lib');
 var Model      = require('../lib/model');
 var pkg        = require('../package.json');
 
+var gcloud = require('gcloud')({
+    projectId: 'my-project'
+});
+var ds = gcloud.datastore({
+    namespace : 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080'
+});
+
 describe('Datastools', function() {
     "use strict";
 
@@ -18,10 +26,17 @@ describe('Datastools', function() {
         expect(datastools.Schema).to.exist;
     });
 
-    it('should be able to connect to ds', () => {
-        let ds = {};
+    it('should save ds instance', () => {
         datastools.connect(ds);
         expect(datastools.ds).to.equal(ds);
+    });
+
+    it('should throw an error if ds passed on connect is not a Datastore instance', function() {
+        let fn = () => {
+            datastools.connect({});
+        };
+
+        expect(fn).to.throw();
     });
 
     describe('should create models', () => {

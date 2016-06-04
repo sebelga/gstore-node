@@ -24,7 +24,6 @@
   "dependencies": {
     "async": "^2.0.0-rc.5",
     "extend": "^3.0.0",
-    "gcloud": "0.34.0",
     "hooks-fixed": "^1.1.0",
     "is": "^3.1.0",
     "kareem": "^1.1.0",
