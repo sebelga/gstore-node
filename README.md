@@ -9,8 +9,8 @@ Its main features are:
    - properties type validation
    - properties value validation
    - queries shortcuts
-   - pre & post hooks on methods (wip)
-   - custom methods for models (wip)
+   - pre & post Middlewares (hooks)
+   - custom methods on entity
    
 This library is still in in active development (**no release yet**).
 
@@ -33,7 +33,7 @@ This library is still in in active development (**no release yet**).
     - [excludedFromIndexes](#excludedfromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
-    - [unkwown properties (default false)](#unkwown-properties-default-false)
+    - [unregistered properties (default false)](#unregistered-properties-default-false)
     - [entities](#entities)
 - [Model](#model)
   - [Creation](#creation-1)
@@ -50,9 +50,10 @@ This library is still in in active development (**no release yet**).
     - [gcloud queries](#gcloud-queries)
     - [list()](#list)
     - [deleteAll()](#deleteall)
-- [Hooks](#hooks)
+- [Middelware (Hooks)](#middelware-hooks)
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
+- [Methods](#methods-1)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -151,9 +152,9 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
-#### unkwown properties (default false)
-To allow unkwnown properties on a schema set `unkwnownProperties : true`. This will bring back the magic os Schemaless but will keep validating the 
-properties defined explicitly.
+#### unregistered properties (default false)
+To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic os Schemaless and at the same time will still validate 
+the properties explicitly declared.
 
 <a name="simplifyResultExplained"></a>
 #### entities
@@ -166,7 +167,7 @@ var entitySchema = new Schema({
     name : {type: 'string'}
 }, {
     validateBeforeSave : false,
-    unkwnownProperties : true,
+    explicitOnly : false,
     entities : {
         simplifyResult : false
     }
@@ -495,8 +496,9 @@ BlogPost.deleteAll(function(err, result){
 BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
 ```
 
-## Hooks
-Hooks are functions you decide to run right before or right after a specific action on an entity. For now, hooks are available for the following actions:
+## Middelware (Hooks)
+Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.  
+For now, hooks are available for the following actions:
 - save (are also executed when doing an **update()**)
 - delete
 
@@ -553,6 +555,44 @@ var schema = new Schema({username:{...}});
 schema.post('save', function(){
     var entityData = this.entityData;
     // do anything needed, maybe send an email of confirmation?
+});
+```
+
+## Methods
+Custom methods can be attached to entities instances.
+
+```
+var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
+schema.methods.fullName = function(cb) {
+    var entityData = this.entityData;
+    cb(null, entityData.name + ' ' + entityData.lastname);
+};
+var User = datastools.model('User', schema);
+
+...
+
+// You can then call it on any instances of user
+var user = new User({name:'John', lastname:'Snow'});
+user.fullName(function(err, result) {
+    console.log(result); // 'John Snow';
+});
+```
+
+As models instances can get other instances with `myModel.model('EntityName')`, denormalization can easily be done with custom method
+
+```
+...
+// add custom image() method
+schema.methods.getImage = function(cb) {
+    // Any query can be done here (gcloud queries, shortcut ones)
+    return this.model('Image').get(this.entityData.imageIdx, cb);
+};
+...
+// In your controller
+var user = new User({name:'John', imageIdx:1234});
+user.getImage(function(err, imageEntity) {
+    user.entityData.profilePict = imageEntity.data.url;
+    user.save(function(err){...});
 });
 ```
 
