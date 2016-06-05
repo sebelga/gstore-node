@@ -45,7 +45,7 @@ describe('Entity', () => {
         expect(entity.entityData).to.exist;
         expect(entity.entityKey).to.exist;
         expect(entity.schema).to.exist;
-        expect(entity.excludedFromIndexes).deep.equal([]);
+        expect(entity.excludeFromIndexes).deep.equal([]);
         expect(entity.pre).to.exist;
         expect(entity.post).to.exist;
 
@@ -98,16 +98,16 @@ describe('Entity', () => {
         expect(entity.entityData.email).equal(undefined);
     });
 
-    it ('should its array of excludedFromIndexes', () => {
+    it ('should its array of excludeFromIndexes', () => {
         schema = new Schema({
-            name    : {excludedFromIndexes:true},
-            lastname: {excludedFromIndexes:true}
+            name    : {excludeFromIndexes:true},
+            lastname: {excludeFromIndexes:true}
         });
         let model = datastools.model('BlogPost', schema);
 
         let entity = new model({name:'John'});
 
-        expect(entity.excludedFromIndexes).deep.equal(['name', 'lastname']);
+        expect(entity.excludeFromIndexes).deep.equal(['name', 'lastname']);
     });
 
     it('should set entity Data modifiedOn to new Date if property in Schema', () => {

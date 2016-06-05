@@ -30,7 +30,7 @@ This library is in in active development, please report any issue you might find
   - [Other properties options](#other-properties-options)
     - [optional](#optional)
     - [default](#default)
-    - [excludedFromIndexes](#excludedfromindexes)
+    - [excludeFromIndexes](#excludeFromIndexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [unregistered properties (default false)](#unregistered-properties-default-false)
@@ -133,15 +133,15 @@ it as *optional* and if no value are passed for this property it will not be sav
 #### default
 You can set a default value for the property is no value has been passed.
 
-#### excludedFromIndexes
-By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndexes' property 
+#### excludeFromIndexes
+By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property 
 to false.
 
 ```
 // Properties options example
 var entitySchema = new Schema({
     name    : {type: 'string'},
-    lastname: {excludedFromIndexes: true},
+    lastname: {excludeFromIndexes: true},
     website : {validate: 'isURL', optional: true},
     modified: {type: 'boolean', default: false},
     ...
@@ -514,7 +514,7 @@ var bscrypt = require('bcrypt-nodejs');
 var userSchema = new Schema({
     user :     {'string'},
     email :    {'string', validate:'isEmail'},
-    password : {'string', excludedFromIndexes: true}
+    password : {'string', excludeFromIndexes: true}
 });
 
 userSchema.pre('save', hashPassword);

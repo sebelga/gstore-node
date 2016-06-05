@@ -518,7 +518,7 @@ describe('Model', () => {
             expect(model.ds.save.calledOnce).be.true;
             expect(spySerializerToDatastore.called).be.true;
             expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
-            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludedFromIndexes);
+            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
             expect(model.ds.save.getCall(0).args[0].key).exist;
             expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
             expect(model.ds.save.getCall(0).args[0].data).exist;
