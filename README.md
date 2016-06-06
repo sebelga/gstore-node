@@ -1,7 +1,7 @@
 # Datastools
 
 [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -11,7 +11,7 @@ Its main features are:
    - queries **shortcuts**
    - pre & post **middlewares** (hooks)
    - **custom methods** on entity
-   
+
 This library is in in active development, please report any issue you might find.
 
 ----------
@@ -30,11 +30,13 @@ This library is in in active development, please report any issue you might find
   - [Other properties options](#other-properties-options)
     - [optional](#optional)
     - [default](#default)
-    - [excludeFromIndexes](#excludeFromIndexes)
+    - [excludeFromIndexes](#excludefromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [unregistered properties (default false)](#unregistered-properties-default-false)
     - [entities](#entities)
+  - [Schema methods](#schema-methods)
+    - [path()](#path)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Instances](#instances)
@@ -59,23 +61,23 @@ This library is in in active development, please report any issue you might find
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Motivation
-The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
+The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can
 sometimes lead to a lot of duplicate code to **validate** the properties passed and their values. The **pre & post 'hooks'** found in Mongoose are also
- of great value when it comes to work with entities on a NoSQL database. As it is built on top of the great gcloud-node library, all of its API can still be 
- accessed whenever needed. 
+ of great value when it comes to work with entities on a NoSQL database. As it is built on top of the great gcloud-node library, all of its API can still be
+ accessed whenever needed.
 
 ## Installation
  ```
  npm install gcloud datastools --save
  ```
- 
+
 ### Getting started
 For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
  var ds           = gcloud.datastore();
- 
+
  var datastools = require('datastools');
  datastools.connect(ds);
  ```
@@ -127,14 +129,14 @@ var entitySchema = new Schema({
 ```
 ### Other properties options
 #### optional
-By default if a property value is not defined it will be set to null or to its default value if any. If you don't want this behaviour you can set 
+By default if a property value is not defined it will be set to null or to its default value if any. If you don't want this behaviour you can set
 it as *optional* and if no value are passed for this property it will not be saved in the Datastore.
 
 #### default
 You can set a default value for the property is no value has been passed.
 
 #### excludeFromIndexes
-By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property 
+By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property
 to false.
 
 ```
@@ -153,7 +155,7 @@ var entitySchema = new Schema({
 To disable any validation before save/update, set it to false
 
 #### unregistered properties (default false)
-To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic os Schemaless and at the same time will still validate 
+To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic os Schemaless and at the same time will still validate
 the properties explicitly declared.
 
 <a name="simplifyResultExplained"></a>
@@ -172,6 +174,32 @@ var entitySchema = new Schema({
         simplifyResult : false
     }
 });
+```
+
+### Schema methods
+#### path()
+Getter / Setter for schemas paths.
+
+```
+var mySchema = new Schema({name:{type:'string'});
+
+// Getter
+mySchema.path('name'); // returns {type:'string'}
+
+// Setter
+mySchema.path('email', {type:'string', validate :'isEmail'});
+
+// From an entity instance
+var user = new User({name:'John'});
+
+// add new path to Schema
+user.schema.path('age', {type:'number'});
+user.set('age', 20);
+
+user.save(function(err, entity) {
+    // validation ok
+})
+
 ```
 
 ## Model
@@ -198,7 +226,7 @@ To create instances of a model call: `new Model(data, id /*optional*/, ancestors
 - namespace {string} (optional)
 
 #### id param (optional)
-By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an 
+By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an
 id, pass as a second parameter during the instantiation.
 
 ```
@@ -222,7 +250,7 @@ var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
 ```
 
 #### namespace param (optional)
-By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on 
+By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on
 another namespace by passing it as a third argument.
 
 ```
@@ -297,7 +325,7 @@ blogPost.save(function(err) {
 ```
 
 #### Update()
-To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed 
+To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed
 and save it back to the Datastore with validation before.
 
 ```
@@ -327,7 +355,7 @@ BlogPost.update(123, data, ['Grandpa', 123, 'Dad', 123], function(err, entity) {
 ```
 
 #### Delete()
-You can delete an entity by calling `delete(id, ancestors /*optional*/, callback)` on the Model. The callback has a "success" properties that it set to true if 
+You can delete an entity by calling `delete(id, ancestors /*optional*/, callback)` on the Model. The callback has a "success" properties that it set to true if
 an entity was deleted or false if no entity where deleted.
 
 ```
@@ -471,7 +499,7 @@ Use the **namespace** setting to override the default namespace defined globally
 ```
 var newSettings = {
     limit : 20,
-    ... 
+    ...
     simplifyResult : false,
     namespace:'com.domain-dev'
 };
@@ -488,22 +516,22 @@ Sometimes you need to delete all the entities of a certain kind. This shortcut q
 ```
 BlogPost.deleteAll(function(err, result){
     if (err) {// deal with err}
-    
+
     console.log(result.message);
 });
 
 // With ancestors path and namespace
-BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
+BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...})
 ```
 
 ## Middelware (Hooks)
-Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.  
+Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.
 For now, hooks are available for the following actions:
 - save (are also executed when doing an **update()**)
 - delete
 
 ### Pre hooks
-Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A 
+Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A
 common use case would be to hash a user's password before saving it into the Datastore.
 
 ```
@@ -581,7 +609,7 @@ user.fullName(function(err, result) {
 });
 ```
 
-Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom 
+Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom
 method:
 
 ```
@@ -601,6 +629,6 @@ user.getImage(function(err, imageEntity) {
 ```
 
 ## Credits
-I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity 
+I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
-Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node). 
+Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).

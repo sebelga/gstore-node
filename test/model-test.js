@@ -91,9 +91,6 @@ describe('Model', () => {
             }
             cb = args.pop();
 
-            // setTimeout(() => {
-            //     return cb(null, mockEntities);
-            // }, 20);
             return cb(null, mockEntities);
         });
 
@@ -187,7 +184,7 @@ describe('Model', () => {
         });
 
         it('properties passed ko', () => {
-            let model = new ModelInstance({unkown:123});
+            let model = new ModelInstance({unknown:123});
 
             let valid = model.validate();
 
@@ -201,7 +198,7 @@ describe('Model', () => {
                 explicitOnly : false
             });
             ModelInstance = Model.compile('Blog', schema, ds);
-            let model = new ModelInstance({unkown:123});
+            let model = new ModelInstance({unknown:123});
 
             let valid = model.validate();
 
@@ -1072,6 +1069,54 @@ describe('Model', () => {
                     expect(msg).not.exist;
                     done();
                 });
+            });
+        });
+
+        describe('findAround()', function() {
+            it ('should get 3 entities after a given date', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, () => {});
+                let query = ds.runQuery.getCall(0).args[0];
+
+                expect(query.filters[0].name).equal('createdOn');
+                expect(query.filters[0].op).equal('>');
+                expect(query.filters[0].val).equal('2016-1-1');
+                expect(query.limitVal).equal(3);
+            });
+
+            it ('should get 3 entities before a given date', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:12}, () => {});
+                let query = ds.runQuery.getCall(0).args[0];
+
+                expect(query.filters[0].op).equal('<');
+                expect(query.limitVal).equal(12);
+            });
+
+            it('should validate that options passed is an object', function(done) {
+                ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
+                    expect(err.code).equal(400);
+                    done();
+                });
+            });
+
+            it('should validate that options has a "after" or "before" property', function(done) {
+                ModelInstance.findAround('createdOn', '2016-1-1', {}, (err) => {
+                    expect(err.code).equal(400);
+                    done();
+                });
+            });
+
+            it('should validate that options has not both "after" & "before" properties', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3, before:3}, (err) => {
+                    expect(err.code).equal(400);
+                });
+            });
+
+            it('should add a namespace', function() {
+                let namespace = 'com.new-domain.dev';
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:3, namespace:namespace}, () => {});
+
+                let query = ds.runQuery.getCall(0).args[0];
+                expect(query.namespace).equal(namespace);
             });
         });
 
