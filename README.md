@@ -298,7 +298,7 @@ blogPost.save(function(err) {
 
 #### Update()
 To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed 
-and save it back to the Datastore with validation before.
+and save it back to the Datastore with validation before...
 
 ```
 ...
