@@ -251,7 +251,7 @@ var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
 
 #### namespace param (optional)
 By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on
-another namespace by passing it as a third argument.
+another namespace by passing it as a third parameter.
 
 ```
 // Creates an entity with auto-generated id on the namespace "dev-com.my-domain"
@@ -407,7 +407,7 @@ var query = User.query('com.domain-dev').filter('name', '=', 'John');
 
 <a name="simplifyResultInline"></a>
 **options**:
-query.run() accepts a first options argument with the following properties
+query.run() accepts a first options parameter with the following properties
 - simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
 ```
@@ -474,7 +474,7 @@ var querySettings = {
 ```
 
 #####Override
-These settings can be overridden anytime by passing another object settings as first argument
+These settings can be overridden anytime by passing another object settings as first parameter
 
 ```
 var newSettings = {
@@ -531,7 +531,7 @@ For now, hooks are available for the following actions:
 - delete
 
 ### Pre hooks
-Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A
+Each pre hook has a "next" parameter that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A
 common use case would be to hash a user's password before saving it into the Datastore.
 
 ```
