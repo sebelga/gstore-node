@@ -127,8 +127,12 @@ describe('Entity', () => {
         });
 
         describe('should create correct Datastore Key when instantiated', () => {
+            let Model;
+
             beforeEach(() => {
                 sinon.spy(ds, 'key');
+
+                Model  = datastools.model('BlogPost', schema);
             });
 
             afterEach(() => {
@@ -136,33 +140,25 @@ describe('Entity', () => {
             });
 
             it('---> with a full Key (String keyname passed)', () => {
-                var model  = datastools.model('BlogPost', schema);
-
-                var entity = new model({}, 'keyid');
+                var entity = new Model({}, 'keyid');
 
                 expect(entity.entityKey.kind).equal('BlogPost');
                 expect(entity.entityKey.name).equal('keyid');
             });
 
             it ('---> with a full Key (Integer keyname passed)', () => {
-                var Model  = datastools.model('BlogPost', schema);
-
                 var entity = new Model({}, '123');
 
                 expect(entity.entityKey.id).equal(123);
             });
 
             it ('---> with a partial Key (auto-generated id)', () => {
-                var Model  = datastools.model('BlogPost', schema);
-
                 var model = new Model({});
 
                 expect(model.entityKey.kind).to.deep.equal('BlogPost');
             });
 
             it('---> with an ancestor path (auto-generated id)', () => {
-                var Model  = datastools.model('BlogPost', schema);
-
                 var entity = new Model({}, null, ['Parent', 1234]);
 
                 expect(entity.entityKey.parent.kind).equal('Parent');
@@ -171,8 +167,6 @@ describe('Entity', () => {
             });
 
             it('---> with an ancestor path (manual id)', () => {
-                var Model  = datastools.model('BlogPost', schema);
-
                 var entity = new Model({}, 'entityName', ['Parent', 1234]);
 
                 expect(entity.entityKey.parent.kind).equal('Parent');
@@ -182,11 +176,25 @@ describe('Entity', () => {
             });
 
             it('---> with a namespace', () => {
-                let Model  = datastools.model('BlogPost', schema);
-
                 let model = new Model({}, null, null, 'com.otherdomain');
 
                 expect(model.entityKey.namespace).equal('com.otherdomain');
+            });
+
+            it('---> with a gcloud Key', () => {
+                var key = ds.key('BlogPost', 1234);
+
+                var entity = new Model({}, null, null, null, key);
+
+                expect(entity.entityKey).equal(key);
+            });
+
+            it('---> throw error if key is not instance of Key', () => {
+                function fn() {
+                    new Model({}, null, null, null, {});
+                }
+
+                expect(fn).to.throw();
             });
         });
 
@@ -248,7 +256,7 @@ describe('Entity', () => {
         });
     });
 
-    describe.only('get / set', function() {
+    describe('get / set', function() {
         var user;
 
         beforeEach(function() {
@@ -269,4 +277,16 @@ describe('Entity', () => {
             expect(name).equal('Gregory');
         });
     });
+
+    describe('simplify()', function() {
+        // TODO add test simplify method
+        // it('resulting "entity.simplify()" should create a simpler object of entity', () => {
+        //     ModelInstance.get(123, (err, entity) => {
+        //         let output = entity.simplify();
+        //
+        //         expect(output.id).equal(entity.key.id);
+        //         expect(output.key).not.exist;
+        //     });
+        // });
+    })
 });

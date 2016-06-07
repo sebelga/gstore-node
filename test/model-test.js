@@ -14,6 +14,7 @@ var ds = gcloud.datastore({
 
 var datastools          = require('../');
 var Model               = require('../lib/model');
+var Entity              = require('../lib/entity');
 var Schema              = require('../lib').Schema;
 var datastoreSerializer = require('../lib/serializer').Datastore;
 var queryHelpers        = require('../lib/helper').QueryHelpers;
@@ -59,26 +60,16 @@ describe('Model', () => {
 
         mockEntities = [
             {
-                key: {
-                    namespace: undefined,
-                    id: 1234,
-                    kind: "BlogPost",
-                    path: ["BlogPost", 1234]
-                },
+                key : ds.key(['BlogPost', 1234]),
                 data: {
-                    name: "John",
+                    name: 'John',
                     lastname : 'Snow'
                 }
             },
             {
-                key: {
-                    namespace: undefined,
-                    name: 'keyname',
-                    kind: "BlogPost",
-                    path: ["BlogPost", 'keyname']
-                },
+                key : ds.key(['BlogPost', 'keyname']),
                 data: {
-                    name: "Mick",
+                    name: 'Mick',
                     lastname : 'Jagger'
                 }
             }
@@ -91,7 +82,7 @@ describe('Model', () => {
             }
             cb = args.pop();
 
-            return cb(null, mockEntities);
+            return cb(null, mockEntities, {});
         });
 
         ModelInstance = datastools.model('Blog', schema, ds);
@@ -375,7 +366,7 @@ describe('Model', () => {
 
         beforeEach(() => {
             entity = {
-                key:{id:123, path:['BlogPost', 123]},
+                key: ds.key(['BlogPost', 123]),
                 data:{name:'John'}
             };
             sinon.stub(ds, 'get', (key, cb) => {
@@ -389,17 +380,19 @@ describe('Model', () => {
 
         it('passing an integer id', () => {
             let result;
-            ModelInstance.get(123, (err, res) => {result = res;});
+            ModelInstance.get(123, (err, entity) => {
+                result = entity;
+            });
 
             expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(result).equal(entity);
+            expect(result instanceof Entity).be.true;
         });
 
         it('passing an string id', () => {
             let result;
             ModelInstance.get('keyname', (err, res) => {result = res;});
 
-            expect(result).equal(entity);
+            expect(result instanceof Entity).be.true;
         });
 
         it('converting a string integer to real integer', () => {
@@ -417,21 +410,6 @@ describe('Model', () => {
             expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
             expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
             expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
-        });
-
-        it('should add a "simplify()" method to the entity', () => {
-            ModelInstance.get(123, () => {});
-
-            expect(entity.simplify).exist;
-        });
-
-        it('resulting "entity.simplify()" should create a simpler object of entity', () => {
-            ModelInstance.get(123, (err, entity) => {
-                let output = entity.simplify();
-
-                expect(output.id).equal(entity.key.id);
-                expect(output.key).not.exist;
-            });
         });
 
         it('on datastore get error, should return its error', () => {
@@ -524,20 +502,6 @@ describe('Model', () => {
             spySerializerToDatastore.restore();
         });
 
-        it('should save to datastore and add a "simplify()" method to entity', () => {
-            let output;
-            let error;
-
-             model.save({}, (err, entity) => {
-                 error = err;
-                 output = entity.simplify();
-             });
-             clock.tick(20);
-
-             expect(error).not.exist;
-             expect(output.id).equal(model.entityKey.path[1]);
-        });
-
         it('if Datastore error, return the error and don\'t call emit', () => {
             ds.save.restore();
 
@@ -561,7 +525,9 @@ describe('Model', () => {
             emitStub.restore();
         });
 
-        it('should save entity into a transaction');
+        it('should save entity into a transaction', function() {
+
+        });
 
         it('should call pre hooks', () => {
             let mockDs = {save:function() {}, key:function(){}};
@@ -616,10 +582,7 @@ describe('Model', () => {
 
     describe('update()', () => {
         let mockEntity = {
-            key:{
-                id:1,
-                path:['BlogPost', 1234]
-            },
+            key:ds.key(['BlogPost', 1234]),
             data:{
                 name:'John',
                 email:'john@snow.com'
@@ -630,7 +593,7 @@ describe('Model', () => {
             sinon.stub(ds, 'get', (key, cb) => {
                 // return cb(null, mockEntity);
                 setTimeout(() => {
-                    cb(null ,mockEntity);
+                    cb(null, mockEntity);
                 }, 20);
             });
         });
@@ -691,9 +654,9 @@ describe('Model', () => {
                 lastname : 'Snow'
             };
             ModelInstance.update(123, data, ['Parent', 'keyNameParent'], (err, entity) => {
-                expect(entity.data.name).equal('Sebas');
-                expect(entity.data.lastname).equal('Snow');
-                expect(entity.data.email).equal('john@snow.com');
+                expect(entity.entityData.name).equal('Sebas');
+                expect(entity.entityData.lastname).equal('Snow');
+                expect(entity.entityData.email).equal('john@snow.com');
             });
 
             clock.tick(60);
@@ -710,7 +673,6 @@ describe('Model', () => {
             clock.tick(40);
 
             expect(ds.save.called).be.true;
-            expect(_entity.simplify).exist;
 
             done();
         });
@@ -1137,7 +1099,7 @@ describe('Model', () => {
                 schema.post('findOne', findOnePost);
                 ModelInstance = Model.compile('Blog', schema, ds);
 
-                ModelInstance.findOne({});
+                ModelInstance.findOne({}, () => {});
 
                 expect(findOnePre.calledOnce).be.true;
                 expect(findOnePost.calledOnce).to.be.true;

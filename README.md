@@ -442,7 +442,7 @@ var blogPostSchema = new datastools.Schema({
 // List settings
 var querySettings = {
     limit    : 10,
-    order    : {property: 'title'},
+    order    : {property: 'title', descending:true}, // descending defaults to false and is optional
     select   : 'title'
     ancestors: ['Parent', 123],  // will add a hasAncestor filter
     filters  : ['title', 'My first post'] // operator defaults to "="
