@@ -571,18 +571,19 @@ var userSchema = new Schema({
 userSchema.pre('save', hashPassword);
 
 function hashPassword(next) {
-    var entityData = this.entityData;
+    var _this    = this;
+    var password = this.get('password');
 
-    if (!entityData.hasOwnProperty('password')) {
+    if (!password) {
         return next();
     }
 
     bcrypt.genSalt(5, function (err, salt) {
         if (err) return next(err);
 
-        bcrypt.hash(entityData.password, salt, null, function (err, hash) {
+        bcrypt.hash(password, salt, null, function (err, hash) {
             if (err) return next(err);
-            entityData.password = hash;
+             _this.set('password', hash);
             next();
         });
     });
@@ -605,7 +606,7 @@ Post are defined the same way as pre hooks. The only difference is that there is
 ```
 var schema = new Schema({username:{...}});
 schema.post('save', function(){
-    var entityData = this.entityData;
+    var email = this.get('email');
     // do anything needed, maybe send an email of confirmation?
 });
 ```
@@ -618,8 +619,7 @@ var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
 
 // add a fullName() method
 schema.methods.fullName = function(cb) {
-    var entityData = this.entityData;
-    cb(null, entityData.name + ' ' + entityData.lastname);
+    cb(null, this.get('name') + ' ' + this.get('lastname'));
 };
 var User = datastools.model('User', schema);
 
@@ -640,13 +640,13 @@ method:
 // custom getImage() method on the User Schema
 userSchema.methods.getImage = function(cb) {
     // Any type of query can be done here
-    return this.model('Image').get(this.entityData.imageIdx, cb);
+    return this.model('Image').get(this.get('imageIdx'), cb);
 };
 ...
 // In your controller
 var user = new User({name:'John', imageIdx:1234});
 user.getImage(function(err, imageEntity) {
-    user.entityData.profilePict = imageEntity.data.url;
+    user.set('profilePict', imageEntity.data.url);
     user.save(function(err){...});
 });
 ```

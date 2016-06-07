@@ -155,8 +155,7 @@ describe('Model', () => {
                 cb(null, mockEntities[0]);
             });
             schema.methods.fullName = function(cb) {
-                var entityData = this.entityData;
-                cb(null, entityData.name + ' ' + entityData.lastname);
+                cb(null, this.get('name') + ' ' + this.get('lastname'));
             };
             schema.methods.getImage = function(cb) {
                 return this.model('Image').get(this.entityData.imageIdx, cb);
