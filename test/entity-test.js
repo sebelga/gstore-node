@@ -15,10 +15,12 @@ var datastools = require('../lib');
 datastools.connect(ds);
 
 var Schema = require('../lib').Schema;
-var schema;
 
 describe('Entity', () => {
     "use strict";
+
+    var schema;
+    var ModelInstance;
 
     beforeEach(function() {
         datastools.models       = {};
@@ -26,8 +28,11 @@ describe('Entity', () => {
         datastools.options      = {};
 
         schema = new Schema({
-            name    : {type: 'string'}
+            name    : {type: 'string', password:'string'}
         });
+
+        ModelInstance = datastools.model('User', schema);
+
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
         });
@@ -37,207 +42,231 @@ describe('Entity', () => {
         ds.save.restore();
     });
 
-    it('should initialized properties', (done) => {
-        let model  = datastools.model('BlogPost', schema);
+    describe('intantiate', function() {
+        it('should initialized properties', (done) => {
+            let model  = datastools.model('BlogPost', schema);
 
-        let entity = new model({}, 'keyid');
+            let entity = new model({}, 'keyid');
 
-        expect(entity.entityData).to.exist;
-        expect(entity.entityKey).to.exist;
-        expect(entity.schema).to.exist;
-        expect(entity.excludeFromIndexes).deep.equal([]);
-        expect(entity.pre).to.exist;
-        expect(entity.post).to.exist;
+            expect(entity.entityData).to.exist;
+            expect(entity.entityKey).to.exist;
+            expect(entity.schema).to.exist;
+            expect(entity.excludeFromIndexes).deep.equal([]);
+            expect(entity.pre).to.exist;
+            expect(entity.post).to.exist;
 
-        done();
-    });
-
-    it('should add data passed to entityData', () => {
-        let model  = datastools.model('BlogPost', schema);
-
-        let entity = new model({name:'John'});
-
-        expect(entity.entityData.name).to.equal('John');
-    });
-
-    it('should not add any data if nothing is passed', () => {
-        schema = new Schema({
-            name    : {type: 'string', optional:true}
-        });
-        let model = datastools.model('BlogPost', schema);
-
-        let entity = new model();
-
-        expect(Object.keys(entity.entityData).length).to.equal(0);
-    });
-
-    it ('should set default values or null from schema', () => {
-        schema = new Schema({
-            name:{type:'string', default:'John'},
-            lastname: {type: 'string'},
-            email:{optional:true}
-        });
-        let model = datastools.model('BlogPost', schema);
-
-        let entity = new model({});
-
-        expect(entity.entityData.name).equal('John');
-        expect(entity.entityData.lastname).equal(null);
-        expect(entity.entityData.email).equal(undefined);
-    });
-
-    it ('should not add default to optional properties', () => {
-        schema = new Schema({
-            name:{type:'string'},
-            email:{optional:true}
-        });
-        let model = datastools.model('BlogPost', schema);
-
-        let entity = new model({});
-
-        expect(entity.entityData.email).equal(undefined);
-    });
-
-    it ('should its array of excludeFromIndexes', () => {
-        schema = new Schema({
-            name    : {excludeFromIndexes:true},
-            lastname: {excludeFromIndexes:true}
-        });
-        let model = datastools.model('BlogPost', schema);
-
-        let entity = new model({name:'John'});
-
-        expect(entity.excludeFromIndexes).deep.equal(['name', 'lastname']);
-    });
-
-    it('should set entity Data modifiedOn to new Date if property in Schema', () => {
-        schema = new Schema({modifiedOn: {type: 'datetime'}});
-        var model  = datastools.model('BlogPost', schema);
-
-        var entity = new model({}, 'keyid');
-
-        expect(entity.entityData.modifiedOn).to.exist;
-        expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
-    });
-
-    describe('should create correct Datastore Key when instantiated', () => {
-        beforeEach(() => {
-            sinon.spy(ds, 'key');
+            done();
         });
 
-        afterEach(() => {
-            ds.key.restore();
+        it('should add data passed to entityData', () => {
+            let model  = datastools.model('BlogPost', schema);
+
+            let entity = new model({name:'John'});
+
+            expect(entity.entityData.name).to.equal('John');
         });
 
-        it('---> with a full Key (String keyname passed)', () => {
+        it('should not add any data if nothing is passed', () => {
+            schema = new Schema({
+                name    : {type: 'string', optional:true}
+            });
+            let model = datastools.model('BlogPost', schema);
+
+            let entity = new model();
+
+            expect(Object.keys(entity.entityData).length).to.equal(0);
+        });
+
+        it ('should set default values or null from schema', () => {
+            schema = new Schema({
+                name:{type:'string', default:'John'},
+                lastname: {type: 'string'},
+                email:{optional:true}
+            });
+            let model = datastools.model('BlogPost', schema);
+
+            let entity = new model({});
+
+            expect(entity.entityData.name).equal('John');
+            expect(entity.entityData.lastname).equal(null);
+            expect(entity.entityData.email).equal(undefined);
+        });
+
+        it ('should not add default to optional properties', () => {
+            schema = new Schema({
+                name:{type:'string'},
+                email:{optional:true}
+            });
+            let model = datastools.model('BlogPost', schema);
+
+            let entity = new model({});
+
+            expect(entity.entityData.email).equal(undefined);
+        });
+
+        it ('should its array of excludeFromIndexes', () => {
+            schema = new Schema({
+                name    : {excludeFromIndexes:true},
+                lastname: {excludeFromIndexes:true}
+            });
+            let model = datastools.model('BlogPost', schema);
+
+            let entity = new model({name:'John'});
+
+            expect(entity.excludeFromIndexes).deep.equal(['name', 'lastname']);
+        });
+
+        it('should set entity Data modifiedOn to new Date if property in Schema', () => {
+            schema = new Schema({modifiedOn: {type: 'datetime'}});
             var model  = datastools.model('BlogPost', schema);
 
             var entity = new model({}, 'keyid');
 
-            expect(entity.entityKey.kind).equal('BlogPost');
-            expect(entity.entityKey.name).equal('keyid');
+            expect(entity.entityData.modifiedOn).to.exist;
+            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
         });
 
-        it ('---> with a full Key (Integer keyname passed)', () => {
-            var Model  = datastools.model('BlogPost', schema);
+        describe('should create correct Datastore Key when instantiated', () => {
+            beforeEach(() => {
+                sinon.spy(ds, 'key');
+            });
 
-            var entity = new Model({}, '123');
+            afterEach(() => {
+                ds.key.restore();
+            });
 
-            expect(entity.entityKey.id).equal(123);
+            it('---> with a full Key (String keyname passed)', () => {
+                var model  = datastools.model('BlogPost', schema);
+
+                var entity = new model({}, 'keyid');
+
+                expect(entity.entityKey.kind).equal('BlogPost');
+                expect(entity.entityKey.name).equal('keyid');
+            });
+
+            it ('---> with a full Key (Integer keyname passed)', () => {
+                var Model  = datastools.model('BlogPost', schema);
+
+                var entity = new Model({}, '123');
+
+                expect(entity.entityKey.id).equal(123);
+            });
+
+            it ('---> with a partial Key (auto-generated id)', () => {
+                var Model  = datastools.model('BlogPost', schema);
+
+                var model = new Model({});
+
+                expect(model.entityKey.kind).to.deep.equal('BlogPost');
+            });
+
+            it('---> with an ancestor path (auto-generated id)', () => {
+                var Model  = datastools.model('BlogPost', schema);
+
+                var entity = new Model({}, null, ['Parent', 1234]);
+
+                expect(entity.entityKey.parent.kind).equal('Parent');
+                expect(entity.entityKey.parent.id).equal(1234);
+                expect(entity.entityKey.kind).equal('BlogPost');
+            });
+
+            it('---> with an ancestor path (manual id)', () => {
+                var Model  = datastools.model('BlogPost', schema);
+
+                var entity = new Model({}, 'entityName', ['Parent', 1234]);
+
+                expect(entity.entityKey.parent.kind).equal('Parent');
+                expect(entity.entityKey.parent.id).equal(1234);
+                expect(entity.entityKey.kind).equal('BlogPost');
+                expect(entity.entityKey.name).equal('entityName');
+            });
+
+            it('---> with a namespace', () => {
+                let Model  = datastools.model('BlogPost', schema);
+
+                let model = new Model({}, null, null, 'com.otherdomain');
+
+                expect(model.entityKey.namespace).equal('com.otherdomain');
+            });
         });
 
-        it ('---> with a partial Key (auto-generated id)', () => {
-            var Model  = datastools.model('BlogPost', schema);
+        describe('should register schema hooks', () => {
+            let model;
+            let entity;
+            let spyOn;
 
-            var model = new Model({});
+            beforeEach(() => {
+                spyOn = {
+                    fnHookPre: (next) => {next();},
+                    fnHookPost: () => {}
+                };
+            });
 
-            expect(model.entityKey.kind).to.deep.equal('BlogPost');
-        });
+            it('should call pre hooks before saving', (done) => {
+                var save = sinon.spy(spyOn, 'fnHookPre');
+                schema.pre('save', save);
+                model  = datastools.model('BlogPost', schema);
+                entity = new model({name:'John'});
 
-        it('---> with an ancestor path (auto-generated id)', () => {
-            var Model  = datastools.model('BlogPost', schema);
+                entity.save(done);
 
-            var entity = new Model({}, null, ['Parent', 1234]);
+                expect(save.callCount).to.equal(1);
+                save.restore();
+            });
 
-            expect(entity.entityKey.parent.kind).equal('Parent');
-            expect(entity.entityKey.parent.id).equal(1234);
-            expect(entity.entityKey.kind).equal('BlogPost');
-        });
+            it('should call pre and post hooks on custom method', () => {
+                var preNewMethod = sinon.spy(spyOn, 'fnHookPre');
+                var postNewMethod = sinon.spy(spyOn, 'fnHookPost');
+                schema.method('newmethod', function() {
+                    this.emit('newmethod');
+                    return true;
+                });
+                schema.pre('newmethod', preNewMethod);
+                schema.post('newmethod', postNewMethod);
+                model  = datastools.model('BlogPost', schema);
+                entity = new model({name:'John'});
 
-        it('---> with an ancestor path (manual id)', () => {
-            var Model  = datastools.model('BlogPost', schema);
+                entity.newmethod();
 
-            var entity = new Model({}, 'entityName', ['Parent', 1234]);
+                expect(preNewMethod.callCount).to.equal(1);
+                expect(postNewMethod.callCount).to.equal(1);
+                preNewMethod.restore();
+                postNewMethod.restore();
+            });
 
-            expect(entity.entityKey.parent.kind).equal('Parent');
-            expect(entity.entityKey.parent.id).equal(1234);
-            expect(entity.entityKey.kind).equal('BlogPost');
-            expect(entity.entityKey.name).equal('entityName');
-        });
+            it('should call post hooks after saving', () => {
+                let save = sinon.spy(spyOn, 'fnHookPost');
+                schema.post('save', save);
+                model  = datastools.model('BlogPost', schema);
+                entity = new model({});
 
-        it('---> with a namespace', () => {
-            let Model  = datastools.model('BlogPost', schema);
-
-            let model = new Model({}, null, null, 'com.otherdomain');
-
-            expect(model.entityKey.namespace).equal('com.otherdomain');
+                entity.save(() => {
+                    expect(spyOn.fnHookPost.called).be.true;
+                    save.restore();
+                });
+            });
         });
     });
 
-    describe('should register schema hooks', () => {
-        let model;
-        let entity;
-        let spyOn;
+    describe.only('get / set', function() {
+        var user;
 
-        beforeEach(() => {
-            spyOn = {
-                fnHookPre: (next) => {next();},
-                fnHookPost: () => {}
-            };
+        beforeEach(function() {
+            user = new ModelInstance({'name':'John'});
         });
 
-        it('should call pre hooks before saving', (done) => {
-            var save = sinon.spy(spyOn, 'fnHookPre');
-            schema.pre('save', save);
-            model  = datastools.model('BlogPost', schema);
-            entity = new model({name:'John'});
+        it ('should get an entityData property', function() {
+            let name = user.get('name');
 
-            entity.save(done);
-
-            expect(save.callCount).to.equal(1);
-            save.restore();
+            expect(name).equal('John');
         });
 
-        it('should call pre and post hooks on custom method', () => {
-            var preNewMethod = sinon.spy(spyOn, 'fnHookPre');
-            var postNewMethod = sinon.spy(spyOn, 'fnHookPost');
-            schema.method('newmethod', function() {
-                this.emit('newmethod');
-                return true;
-            });
-            schema.pre('newmethod', preNewMethod);
-            schema.post('newmethod', postNewMethod);
-            model  = datastools.model('BlogPost', schema);
-            entity = new model({name:'John'});
+        it ('should set an entityData property', function() {
+            user.set('name', 'Gregory');
 
-            entity.newmethod();
+            let name = user.get('name');
 
-            expect(preNewMethod.callCount).to.equal(1);
-            expect(postNewMethod.callCount).to.equal(1);
-            preNewMethod.restore();
-            postNewMethod.restore();
-        });
-
-        it('should call post hooks after saving', () => {
-            let save = sinon.spy(spyOn, 'fnHookPost');
-            schema.post('save', save);
-            model  = datastools.model('BlogPost', schema);
-            entity = new model({});
-
-            entity.save(() => {
-                expect(spyOn.fnHookPost.called).be.true;
-                save.restore();
-            });
+            expect(name).equal('Gregory');
         });
     });
 });

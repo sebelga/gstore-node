@@ -52,6 +52,9 @@ This library is in in active development, please report any issue you might find
     - [gcloud queries](#gcloud-queries)
     - [list()](#list)
     - [deleteAll()](#deleteall)
+- [Entity](#entity)
+  - [get(path)](#getpath)
+  - [set(path, value)](#setpath-value)
 - [Middelware (Hooks)](#middelware-hooks)
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
@@ -522,6 +525,26 @@ BlogPost.deleteAll(function(err, result){
 
 // With ancestors path and namespace
 BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...})
+```
+
+## Entity
+Each entity is an instance of its Model.
+
+### get(path)
+Get the value of an entity data at a specific path
+
+```
+user = new User({name:'John'});
+user.get('name'); // John
+```
+
+### set(path, value)
+Set the value of an entity data at a specific path
+
+```
+user = new User({name:'John'});
+user.set('name', 'Mike');
+user.get('name'); // Mike
 ```
 
 ## Middelware (Hooks)
