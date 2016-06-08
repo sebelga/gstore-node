@@ -1,7 +1,8 @@
 # Datastools
 
-[![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)
+[![npm version](https://badge.fury.io/js/datastools.svg)](https://badge.fury.io/js/datastools) [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
+[![NPM](https://nodei.co/npm/datastools.png?downloads=true)](https://nodei.co/npm/datastools/)  
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -73,7 +74,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
 
 ## Installation
  ```
- npm install gcloud datastools --save
+ npm install datastools --save
  ```
 
 ### Getting started

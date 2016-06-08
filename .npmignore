@@ -4,6 +4,7 @@ jsconfig.json
 .jshintrc
 .eslintrc.json
 .babelrc
+**/todo.txt
 
 test/
 **/.trash
