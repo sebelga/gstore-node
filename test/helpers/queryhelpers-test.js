@@ -141,5 +141,16 @@ describe('Query Helpers', () => {
 
             expect(fn).to.throw(Error);
         });
+
+        it('and add start cursor', () => {
+            let query = ds.createQuery();
+            let options = {
+                start: 'abcdef'
+            };
+
+            query = queryHelpers.buildFromOptions(query, options, ds);
+
+            expect(query.startVal).equal(options.start);
+        });
     });
 });

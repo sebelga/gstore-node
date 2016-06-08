@@ -1,7 +1,7 @@
 # Datastools
 
 [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -11,7 +11,7 @@ Its main features are:
    - queries **shortcuts**
    - pre & post **middlewares** (hooks)
    - **custom methods** on entity
-   
+
 This library is in in active development, please report any issue you might find.
 
 ----------
@@ -30,11 +30,13 @@ This library is in in active development, please report any issue you might find
   - [Other properties options](#other-properties-options)
     - [optional](#optional)
     - [default](#default)
-    - [excludedFromIndexes](#excludedfromindexes)
+    - [excludeFromIndexes](#excludefromindexes)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [unregistered properties (default false)](#unregistered-properties-default-false)
-    - [entities](#entities)
+    - [queries](#queries)
+  - [Schema methods](#schema-methods)
+    - [path()](#path)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Instances](#instances)
@@ -49,7 +51,12 @@ This library is in in active development, please report any issue you might find
   - [Queries](#queries)
     - [gcloud queries](#gcloud-queries)
     - [list()](#list)
+    - [findOne()](#findone)
+    - [findAround()](#findaround)
     - [deleteAll()](#deleteall)
+- [Entity](#entity)
+  - [get(path)](#getpath)
+  - [set(path, value)](#setpath-value)
 - [Middelware (Hooks)](#middelware-hooks)
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
@@ -59,23 +66,23 @@ This library is in in active development, please report any issue you might find
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Motivation
-The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can 
+The Google Datastore is an amazing fast, reliable and flexible database for today's modern apps. But it's flexibility and *schemaless* nature can
 sometimes lead to a lot of duplicate code to **validate** the properties passed and their values. The **pre & post 'hooks'** found in Mongoose are also
- of great value when it comes to work with entities on a NoSQL database. As it is built on top of the great gcloud-node library, all of its API can still be 
- accessed whenever needed. 
+ of great value when it comes to work with entities on a NoSQL database. As it is built on top of the great gcloud-node library, all of its API can still be
+ accessed whenever needed.
 
 ## Installation
  ```
  npm install gcloud datastools --save
  ```
- 
+
 ### Getting started
 For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
  var ds           = gcloud.datastore();
- 
+
  var datastools = require('datastools');
  datastools.connect(ds);
  ```
@@ -114,6 +121,8 @@ var entitySchema = new Schema({
 });
 ```
 
+WIP: Validation for gcloud.datastore.int, gcloud.datastore.double, gcloud.datastore.geoPoint, buffer. For now, is you need any of those property type, don't set any 'type' in the Schema.
+
 ### Properties values validations
 Datastools uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
@@ -127,21 +136,20 @@ var entitySchema = new Schema({
 ```
 ### Other properties options
 #### optional
-By default if a property value is not defined it will be set to null or to its default value if any. If you don't want this behaviour you can set 
-it as *optional* and if no value are passed for this property it will not be saved in the Datastore.
+By default if a property value is not defined it will be set to null or to its default value (if any). If you don't want this behaviour you can set it as *optional* and if no value is passed, this property will not be saved in the Datastore.
 
 #### default
 You can set a default value for the property is no value has been passed.
 
-#### excludedFromIndexes
-By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludedFromIndexes' property 
+#### excludeFromIndexes
+By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property
 to false.
 
 ```
 // Properties options example
 var entitySchema = new Schema({
     name    : {type: 'string'},
-    lastname: {excludedFromIndexes: true},
+    lastname: {excludeFromIndexes: true},
     website : {validate: 'isURL', optional: true},
     modified: {type: 'boolean', default: false},
     ...
@@ -153,13 +161,12 @@ var entitySchema = new Schema({
 To disable any validation before save/update, set it to false
 
 #### unregistered properties (default false)
-To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic os Schemaless and at the same time will still validate 
-the properties explicitly declared.
+To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic of *Schemaless* databases. The properties explicitly declared will still be validated.
 
 <a name="simplifyResultExplained"></a>
-#### entities
+#### queries
 **simplifyResult** (default true).
-By default the results coming back from the Datastore are serialized into a simpler object format. If you want the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
+By default the results coming back from Datastore queries are merged into a simpler object format. If you prefer the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
 
 ```
 // Schema options example
@@ -168,10 +175,31 @@ var entitySchema = new Schema({
 }, {
     validateBeforeSave : false,
     explicitOnly : false,
-    entities : {
+    queries : {
         simplifyResult : false
     }
 });
+```
+
+### Schema methods
+#### path()
+Getter / Setter for schemas paths.
+
+```
+var mySchema = new Schema({name:{type:'string'});
+
+// Getter
+mySchema.path('name'); // returns {type:'string'}
+
+// Setter
+mySchema.path('email', {type:'string', validate :'isEmail'});
+
+// From a Model
+var User = datastools.model('User');
+
+// add new path to User Schema
+User.schema.path('age', {type:'number'});
+
 ```
 
 ## Model
@@ -181,25 +209,25 @@ var entitySchema = new Schema({
 var datastools = require('datastools');
 var Schema     = datastools.Schema;
 
-var entitySchema = new Schema({
+var userSchema = new Schema({
     name:{},
     lastname:{},
     email:{}
 });
 
-var model = datastools.model('EntityName', entitySchema);
+var User = datastools.model('User', userSchema);
 ```
 
 ### Instances
-To create instances of a model call: `new Model(data, id /*optional*/, ancestors /*optional*/, namespace /*optional*/)`
+To create instances of a model call  
+`new Model(data, id /*optional*/, ancestors /*optional*/, namespace /*optional*/)`
 - data {object} keys / values pairs of the data to save
 - id {int or string} (optional)
 - ancestors {Array} (optional)
 - namespace {string} (optional)
 
 #### id param (optional)
-By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an 
-id, pass as a second parameter during the instantiation.
+By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an id, pass it as a second parameter during the instantiation.
 
 ```
 ...
@@ -222,8 +250,8 @@ var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
 ```
 
 #### namespace param (optional)
-By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on 
-another namespace by passing it as a third argument.
+By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on
+another namespace by passing it as a third parameter.
 
 ```
 // Creates an entity with auto-generated id on the namespace "dev-com.my-domain"
@@ -241,6 +269,8 @@ This method accepts 3 parameters:
 - ancestors {Array} (optional)
 - callback
 
+Returns: an entity **instance**.
+
 ```
 var blogPostSchema = new datastools.Schema({...});
 var BlogPost       = datastools.model('BlogPost', blogPostSchema);
@@ -250,55 +280,56 @@ BlogPost.get(1234, function(err, entity) {
     if (err) {
         // deal with err
     }
-    console.log('Entity:', entity);
+    console.log('Blogpost title:', entity.get('title'));
 });
 
 // Passing an ancestor path
 BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
     if (err) { // deal with err }
-    console.log(entity);
+    ...
 });
 ```
 
-**simplify()** The resulting entity has a simplify() method attached to it that outputs a simplified object with just the entity data and the entity id.
+**plain()** The resulting entity has a plain() method attached to it that outputs the entity data and its id.
 
 ```
 BlogPost.get(123, function(err, entity) {
     if (err) { // deal with err }
-    console.log(entity.simplify());
+    console.log(entity.plain());
 });
 ```
 
 #### Save()
-After the instantiation of a model with some data (and maybe an ancestors or a namespace), you can persist it to the Datastore with `save(callback)`
+After the instantiation of a Model, you can persist its data to the Datastore with `model.save(callback)`
 
 ```
 var datastools = require('datastools');
 
 var blogPostSchema = new datastools.Schema({
     title :     {type:'string'},
-    createdOn : {type:'datetime'}
+    createdOn : {type:'datetime', default:new Date()}
 });
 
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 var data = {
-    title :    'My first blog post',
-    createdOn : new Date()
+    title : 'My first blog post'
 };
 var blogPost = new BlogPost(data);
 
 blogPost.save(function(err) {
-    if (err) {
-        // deal with err
-    }
-    console.log('Great! post saved');
+    if (err) {// deal with err}
+
+    console.log(this.plain());
+    console.log(this.get('title')); // 'My first blog post'
+    console.log(this.entityKey.id); // contains the auto generated id
 });
 ```
 
 #### Update()
-To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed 
-and save it back to the Datastore with validation before.
+To update a Model, call `Model.update(id, data, [ancestors], callback)`. This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
+
+Returns: an entity **instance**.
 
 ```
 ...
@@ -306,14 +337,14 @@ and save it back to the Datastore with validation before.
 var BlogPost = datastools.model('BlogPost');
 
 var data = {
-    title :    'New title'
+    title : 'New title'
 };
 
 BlogPost.update(123, data, function(err, entity) {
     if (err) {
         // deal with err
     }
-    console.log(entity.simplify()); // entity has also a simplify() method attached
+    console.log(entity.plain());
 });
 
 // You can also pass an optional ancestors path
@@ -327,8 +358,7 @@ BlogPost.update(123, data, ['Grandpa', 123, 'Dad', 123], function(err, entity) {
 ```
 
 #### Delete()
-You can delete an entity by calling `delete(id, ancestors /*optional*/, callback)` on the Model. The callback has a "success" properties that it set to true if 
-an entity was deleted or false if no entity where deleted.
+You can delete an entity by calling `delete(id, ancestors /*optional*/, callback)` on the Model. The callback has a "success" properties that is set to true if an entity has been deleted or false if not.
 
 ```
 var BlogPost = datastools.model('BlogPost');
@@ -350,11 +380,12 @@ BlogPost.delete(123, ['Parent', 123], function(err, success, apiResponse) {...}
 
 ### Queries
 #### gcloud queries
-Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/datastore/query) so you can execute any query from that library.
+Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.35.0/datastore/query) so you can execute any query from this library.
 
 ```
-var User = datastools.model('User'); // assuming that a schema has been defined previously
+var User = datastools.model('User'); // with User schema previously defined
 
+// 1. Initialize query
 var query = User.query()
             .filter('name', '=', 'John')
             .filter('age', '>=', 4)
@@ -362,40 +393,59 @@ var query = User.query()
                 descending: true
             });
 
-query.run(function(err, entities, info) {
+// 2. Execute query.
+// The callback response contains both the entities and the cursor if more results
+
+query.run(function(err, response) {
     if (err) {
         // deal with err
     }
-    console.log('Entities found:', entities);
+
+    // response contains both the entities and a nextPageCursor for pagination
+    var entities       = response.entities;
+    var nextPageCursor = response.nextPageCursor; // not present if no more results
 });
+
+// You can then use the nextPageCursor when calling the same query and passint it in a start value
+var query = User.query()
+            .filter('name', '=', 'John')
+            .filter('age', '>=', 4)
+            .order('lastname', {
+                descending: true
+            })
+            .start(nextPageCursor);
+
 ```
 
 **namespace**
 Model.query() takes an optional namespace parameter if needed.
 
 ```
-var query = User.query('com.domain-dev').filter('name', '=', 'John');
+var query = User.query('com.domain-dev')
+                .filter('name', '=', 'John');
+...
 ```
 
 <a name="simplifyResultInline"></a>
 **options**:
-query.run() accepts a first options argument with the following properties
+query.run() accepts a first options parameter with the following properties
 - simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
 ```
-query.run({simplifyResult:false}, function(err, entities, info) {
+query.run({simplifyResult:false}, function(err, response) {
     ....
 })
 ```
 
 #### list()
 Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
-Currently it support the following settings:
+Currently it support the following parameters:
 - limit
 - order
 - select
 - ancestors
 - filters (default operator is "=" and does not need to be passed
+
 
 #####Define on Schema
 
@@ -411,7 +461,7 @@ var blogPostSchema = new datastools.Schema({
 // List settings
 var querySettings = {
     limit    : 10,
-    order    : {property: 'title'},
+    order    : {property: 'title', descending:true}, // descending defaults to false and is optional
     select   : 'title'
     ancestors: ['Parent', 123],  // will add a hasAncestor filter
     filters  : ['title', 'My first post'] // operator defaults to "="
@@ -425,13 +475,18 @@ var BlogPost = datastools.model('BlogPost', blogPostSchema);
 ```
 
 #####Use anywhere
+
+`Model.list(callback)`  
+The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
+
 ```
 // anywhere in your Controllers
-BlogPost.list(function(err, entities) {
+BlogPost.list(function(err, response) {
     if (err) {
         // deal with err
     }
-    console.log(entities);
+    console.log(response.entities);
+    console.log(response.nextPageCursor); // only present if more results
 });
 ```
 
@@ -446,7 +501,7 @@ var querySettings = {
 ```
 
 #####Override
-These settings can be overridden anytime by passing another object settings as first argument
+These global settings can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
 
 ```
 var newSettings = {
@@ -470,13 +525,52 @@ Use the **namespace** setting to override the default namespace defined globally
 
 ```
 var newSettings = {
-    limit : 20,
-    ... 
+    ...
     simplifyResult : false,
     namespace:'com.domain-dev'
 };
 
 BlogPost.list(newSettings, ...);
+```
+
+#### findOne()
+```
+User.findOne({prop1:value, prop2:value2}, ancestors /*optional*/, namespace /*optional*/, callback);
+```
+
+Quickly find an entity by passing key/value pairs. You can optionaly pass an ancestors array and a namespace.
+The entity returned is a entity **instance** of the Model.
+
+```
+var User = datastools.model('User');
+
+User.findOne({email:'john@snow.com'}, function(err, entity) {
+    if (err) {... deal with error}
+
+    console.log(entity.plain());
+    console.log(entity.get('name'));
+});
+
+```
+
+#### findAround()
+`Model.findAroun(property, value, settings, callback)`
+
+Easily find entities before or after an entity based on a property and a value.  
+**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
+You can also override the "simplifyResult" global queries setting.
+
+```
+// Find the next 20 post after march 1st
+BlogPost.findAround('publishedOn', '2016-03-01', {after:20}, function(err, entities){
+   ...
+});
+
+// Find 10 users before Mick Jagger
+User.findAround('lastname', 'Jagger', {before:10, simplifyResult:false}, function(err, entities){
+   ...
+});
+
 ```
 
 #### deleteAll()
@@ -488,22 +582,42 @@ Sometimes you need to delete all the entities of a certain kind. This shortcut q
 ```
 BlogPost.deleteAll(function(err, result){
     if (err) {// deal with err}
-    
+
     console.log(result.message);
 });
 
 // With ancestors path and namespace
-BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...}) 
+BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...})
+```
+
+## Entity
+Each entity is an instance of its Model.
+
+### get(path)
+Get the value of an entity data at a specific path
+
+```
+user = new User({name:'John'});
+user.get('name'); // John
+```
+
+### set(path, value)
+Set the value of an entity data at a specific path
+
+```
+user = new User({name:'John'});
+user.set('name', 'Mike');
+user.get('name'); // Mike
 ```
 
 ## Middelware (Hooks)
-Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.  
+Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.
 For now, hooks are available for the following actions:
 - save (are also executed when doing an **update()**)
 - delete
 
 ### Pre hooks
-Each pre hook has a "next" argument that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A 
+Each pre hook has a "next" parameter that you have to call at the end of your function in order to run the next "pre" hook or proceed to saving the entity. A
 common use case would be to hash a user's password before saving it into the Datastore.
 
 ```
@@ -514,24 +628,25 @@ var bscrypt = require('bcrypt-nodejs');
 var userSchema = new Schema({
     user :     {'string'},
     email :    {'string', validate:'isEmail'},
-    password : {'string', excludedFromIndexes: true}
+    password : {'string', excludeFromIndexes: true}
 });
 
 userSchema.pre('save', hashPassword);
 
 function hashPassword(next) {
-    var entityData = this.entityData;
+    var _this    = this;
+    var password = this.get('password');
 
-    if (!entityData.hasOwnProperty('password')) {
+    if (!password) {
         return next();
     }
 
     bcrypt.genSalt(5, function (err, salt) {
         if (err) return next(err);
 
-        bcrypt.hash(entityData.password, salt, null, function (err, hash) {
+        bcrypt.hash(password, salt, null, function (err, hash) {
             if (err) return next(err);
-            entityData.password = hash;
+             _this.set('password', hash);
             next();
         });
     });
@@ -554,7 +669,7 @@ Post are defined the same way as pre hooks. The only difference is that there is
 ```
 var schema = new Schema({username:{...}});
 schema.post('save', function(){
-    var entityData = this.entityData;
+    var email = this.get('email');
     // do anything needed, maybe send an email of confirmation?
 });
 ```
@@ -567,8 +682,7 @@ var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
 
 // add a fullName() method
 schema.methods.fullName = function(cb) {
-    var entityData = this.entityData;
-    cb(null, entityData.name + ' ' + entityData.lastname);
+    cb(null, this.get('name') + ' ' + this.get('lastname'));
 };
 var User = datastools.model('User', schema);
 
@@ -581,26 +695,25 @@ user.fullName(function(err, result) {
 });
 ```
 
-Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom 
-method:
+Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom method:
 
 ```
 ...
 // custom getImage() method on the User Schema
 userSchema.methods.getImage = function(cb) {
     // Any type of query can be done here
-    return this.model('Image').get(this.entityData.imageIdx, cb);
+    return this.model('Image').get(this.get('imageIdx'), cb);
 };
 ...
 // In your controller
 var user = new User({name:'John', imageIdx:1234});
 user.getImage(function(err, imageEntity) {
-    user.entityData.profilePict = imageEntity.data.url;
+    user.set('profilePict', imageEntity.get('url'));
     user.save(function(err){...});
 });
 ```
 
 ## Credits
-I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity 
+I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
-Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node). 
+Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).

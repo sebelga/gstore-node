@@ -18,7 +18,7 @@ describe('Schema', () => {
             expect(schema.s).to.exist;
             expect(schema.s.hooks.constructor.name).to.equal('Kareem');
             expect(schema.options).to.exist;
-            expect(schema.options.entities).deep.equal({
+            expect(schema.options.queries).deep.equal({
                 simplifyResult:true
             });
         });
@@ -26,13 +26,13 @@ describe('Schema', () => {
         it ('should merge options passed', () => {
             let schema = new Schema({}, {
                 newOption:'myValue',
-                entities:{
+                queries:{
                     simplifyResult:false
                 }
             });
 
             expect(schema.options.newOption).equal('myValue');
-            expect(schema.options.entities.simplifyResult).be.false;
+            expect(schema.options.queries.simplifyResult).be.false;
         });
 
         it ('should create its paths from obj passed', () => {

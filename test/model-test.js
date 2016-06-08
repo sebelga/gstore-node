@@ -14,6 +14,7 @@ var ds = gcloud.datastore({
 
 var datastools          = require('../');
 var Model               = require('../lib/model');
+var Entity              = require('../lib/entity');
 var Schema              = require('../lib').Schema;
 var datastoreSerializer = require('../lib/serializer').Datastore;
 var queryHelpers        = require('../lib/helper').QueryHelpers;
@@ -59,26 +60,16 @@ describe('Model', () => {
 
         mockEntities = [
             {
-                key: {
-                    namespace: undefined,
-                    id: 1234,
-                    kind: "BlogPost",
-                    path: ["BlogPost", 1234]
-                },
+                key : ds.key(['BlogPost', 1234]),
                 data: {
-                    name: "John",
+                    name: 'John',
                     lastname : 'Snow'
                 }
             },
             {
-                key: {
-                    namespace: undefined,
-                    name: 'keyname',
-                    kind: "BlogPost",
-                    path: ["BlogPost", 'keyname']
-                },
+                key : ds.key(['BlogPost', 'keyname']),
                 data: {
-                    name: "Mick",
+                    name: 'Mick',
                     lastname : 'Jagger'
                 }
             }
@@ -91,10 +82,10 @@ describe('Model', () => {
             }
             cb = args.pop();
 
-            // setTimeout(() => {
-            //     return cb(null, mockEntities);
-            // }, 20);
-            return cb(null, mockEntities);
+            return cb(null, mockEntities, {
+                moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                endCursor: 'abcdef'
+            });
         });
 
         ModelInstance = datastools.model('Blog', schema, ds);
@@ -158,8 +149,7 @@ describe('Model', () => {
                 cb(null, mockEntities[0]);
             });
             schema.methods.fullName = function(cb) {
-                var entityData = this.entityData;
-                cb(null, entityData.name + ' ' + entityData.lastname);
+                cb(null, this.get('name') + ' ' + this.get('lastname'));
             };
             schema.methods.getImage = function(cb) {
                 return this.model('Image').get(this.entityData.imageIdx, cb);
@@ -187,7 +177,7 @@ describe('Model', () => {
         });
 
         it('properties passed ko', () => {
-            let model = new ModelInstance({unkown:123});
+            let model = new ModelInstance({unknown:123});
 
             let valid = model.validate();
 
@@ -201,7 +191,7 @@ describe('Model', () => {
                 explicitOnly : false
             });
             ModelInstance = Model.compile('Blog', schema, ds);
-            let model = new ModelInstance({unkown:123});
+            let model = new ModelInstance({unknown:123});
 
             let valid = model.validate();
 
@@ -379,7 +369,7 @@ describe('Model', () => {
 
         beforeEach(() => {
             entity = {
-                key:{id:123, path:['BlogPost', 123]},
+                key: ds.key(['BlogPost', 123]),
                 data:{name:'John'}
             };
             sinon.stub(ds, 'get', (key, cb) => {
@@ -393,17 +383,19 @@ describe('Model', () => {
 
         it('passing an integer id', () => {
             let result;
-            ModelInstance.get(123, (err, res) => {result = res;});
+            ModelInstance.get(123, (err, entity) => {
+                result = entity;
+            });
 
             expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(result).equal(entity);
+            expect(result instanceof Entity).be.true;
         });
 
         it('passing an string id', () => {
             let result;
             ModelInstance.get('keyname', (err, res) => {result = res;});
 
-            expect(result).equal(entity);
+            expect(result instanceof Entity).be.true;
         });
 
         it('converting a string integer to real integer', () => {
@@ -421,21 +413,6 @@ describe('Model', () => {
             expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
             expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
             expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
-        });
-
-        it('should add a "simplify()" method to the entity', () => {
-            ModelInstance.get(123, () => {});
-
-            expect(entity.simplify).exist;
-        });
-
-        it('resulting "entity.simplify()" should create a simpler object of entity', () => {
-            ModelInstance.get(123, (err, entity) => {
-                let output = entity.simplify();
-
-                expect(output.id).equal(entity.key.id);
-                expect(output.key).not.exist;
-            });
         });
 
         it('on datastore get error, should return its error', () => {
@@ -474,7 +451,6 @@ describe('Model', () => {
         });
 
         it('---> should validate() before', () => {
-            model  = new ModelInstance({name:'John'});
             let validateSpy = sinon.spy(model, 'validate');
 
             model.save(() => {});
@@ -512,13 +488,13 @@ describe('Model', () => {
         it('should convert to Datastore format before saving to Datastore', function(done) {
             let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
-            model.save(() => {});
+            model.save((err, entity) => {});
             clock.tick(20);
 
             expect(model.ds.save.calledOnce).be.true;
             expect(spySerializerToDatastore.called).be.true;
             expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
-            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludedFromIndexes);
+            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
             expect(model.ds.save.getCall(0).args[0].key).exist;
             expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
             expect(model.ds.save.getCall(0).args[0].data).exist;
@@ -526,20 +502,6 @@ describe('Model', () => {
 
             done();
             spySerializerToDatastore.restore();
-        });
-
-        it('should save to datastore and add a "simplify()" method to entity', () => {
-            let output;
-            let error;
-
-             model.save({}, (err, entity) => {
-                 error = err;
-                 output = entity.simplify();
-             });
-             clock.tick(20);
-
-             expect(error).not.exist;
-             expect(output.id).equal(model.entityKey.path[1]);
         });
 
         it('if Datastore error, return the error and don\'t call emit', () => {
@@ -553,19 +515,16 @@ describe('Model', () => {
                 return cb(error);
             });
 
-            let model       = new ModelInstance({});
-            let emitStub    = sinon.stub(model, 'emit');
-            let callbackSpy = sinon.spy();
+            let model = new ModelInstance({});
 
-            model.save(callbackSpy);
-
-            expect(emitStub.called).be.false;
-            expect(callbackSpy.getCall(0).args[0]).equal(error);
-
-            emitStub.restore();
+            model.save((err, entity) => {
+                expect(err).equal(error);
+            });
         });
 
-        it('should save entity into a transaction');
+        it('should save entity into a transaction', function() {
+
+        });
 
         it('should call pre hooks', () => {
             let mockDs = {save:function() {}, key:function(){}};
@@ -620,10 +579,7 @@ describe('Model', () => {
 
     describe('update()', () => {
         let mockEntity = {
-            key:{
-                id:1,
-                path:['BlogPost', 1234]
-            },
+            key:ds.key(['BlogPost', 1234]),
             data:{
                 name:'John',
                 email:'john@snow.com'
@@ -634,7 +590,7 @@ describe('Model', () => {
             sinon.stub(ds, 'get', (key, cb) => {
                 // return cb(null, mockEntity);
                 setTimeout(() => {
-                    cb(null ,mockEntity);
+                    cb(null, mockEntity);
                 }, 20);
             });
         });
@@ -661,13 +617,13 @@ describe('Model', () => {
             });
         });
 
-        it('should return 404 if entity found', () => {
+        it('should return 404 if entity not found', () => {
             ds.get.restore();
             sinon.stub(ds, 'get', (key, cb) => {
                 return cb(null);
             });
 
-            ModelInstance.update(123, (err, entity) => {
+            ModelInstance.update('keyname', (err, entity) => {
                 expect(err.code).equal(404);
                 expect(entity).not.exist;
             });
@@ -695,9 +651,9 @@ describe('Model', () => {
                 lastname : 'Snow'
             };
             ModelInstance.update(123, data, ['Parent', 'keyNameParent'], (err, entity) => {
-                expect(entity.data.name).equal('Sebas');
-                expect(entity.data.lastname).equal('Snow');
-                expect(entity.data.email).equal('john@snow.com');
+                expect(entity.entityData.name).equal('Sebas');
+                expect(entity.entityData.lastname).equal('Snow');
+                expect(entity.entityData.email).equal('john@snow.com');
             });
 
             clock.tick(60);
@@ -714,7 +670,6 @@ describe('Model', () => {
             clock.tick(40);
 
             expect(ds.save.called).be.true;
-            expect(_entity.simplify).exist;
 
             done();
         });
@@ -862,14 +817,26 @@ describe('Model', () => {
             let query = ModelInstance.query()
                         .filter('name', '=', 'John');
 
-            var result;
-            query.run((err, entities) => {
-                result = entities;
+            query.run((err, response) => {
+                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+                expect(response.entities.length).equal(2);
+                expect(response.nextPageCursor).equal('abcdef');
                 done();
             });
+        });
 
-            expect(ds.runQuery.getCall(0).args[0]).equal(query);
-            expect(result).to.exist;
+        it('should not add endCursor to response', function(done){
+            ds.runQuery.restore();
+            sinon.stub(ds, 'runQuery', function(query, cb) {
+                return cb(null, [], {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+            });
+            let query = ModelInstance.query()
+                        .filter('name', '=', 'John');
+
+            query.run((err, response) => {
+                expect(response.nextPageCursor).not.exist;
+                done();
+            });
         });
 
         it('should not return entities', (done) => {
@@ -893,12 +860,12 @@ describe('Model', () => {
         it('should allow options for query', () => {
             let query = ModelInstance.query();
 
-            var result;
-            query.run({simplifyResult:false}, (err, entities) => {
-                result = entities;
+            var _result;
+            query.run({simplifyResult:false}, (err, result) => {
+                _result = result;
             });
 
-            expect(result).equal(mockEntities);
+            expect(_result.entities).equal(mockEntities);
         });
 
         it('should allow a namespace for query', () => {
@@ -911,14 +878,38 @@ describe('Model', () => {
 
     describe('shortcut queries', () => {
         describe('list', () =>  {
-            it('should work with no settings defined', (done) => {
-                let result;
-                ModelInstance.list((err, entities) => {
-                    result = entities;
-                    done();
+            it('should work with no settings defined', function() {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', function(query, cb) {
+                    setTimeout(function() {
+                        return cb(null, mockEntities, {
+                            moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                            endCursor: 'abcdef'
+                        });
+                    }, 20);
                 });
 
-                expect(result).exist;
+                ModelInstance.list((err, response) => {
+                    expect(response.entities.length).equal(2);
+                    expect(response.nextPageCursor).equal('abcdef');
+                });
+
+                clock.tick(20);
+            });
+
+            it('should not add endCursor to response', function(){
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', function(query, cb) {
+                    setTimeout(function() {
+                        return cb(null, mockEntities, {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+                    }, 20);
+                });
+
+                ModelInstance.list((err, response) => {
+                    expect(response.nextPageCursor).not.exist;
+                });
+
+                clock.tick(20);
             });
 
             it('should read settings defined', () => {
@@ -985,10 +976,7 @@ describe('Model', () => {
                 sinon.stub(ds, 'delete', function() {
                     let args = Array.prototype.slice.call(arguments);
                     let cb = args.pop();
-
-                    //setTimeout(() => {
-                        return cb(null, true);
-                    //}, 20)
+                    return cb(null, true);
                 });
             });
 
@@ -1075,7 +1063,73 @@ describe('Model', () => {
             });
         });
 
-        describe('findOne', () => {
+        describe('findAround()', function() {
+            it('should get 3 entities after a given date', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, () => {});
+                let query = ds.runQuery.getCall(0).args[0];
+
+                expect(query.filters[0].name).equal('createdOn');
+                expect(query.filters[0].op).equal('>');
+                expect(query.filters[0].val).equal('2016-1-1');
+                expect(query.limitVal).equal(3);
+            });
+
+            it ('should get 3 entities before a given date', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:12, simplifyResult:false}, () => {});
+                let query = ds.runQuery.getCall(0).args[0];
+
+                expect(query.filters[0].op).equal('<');
+                expect(query.limitVal).equal(12);
+            });
+
+            it('should validate that all arguments are passed', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', (err) => {
+                    expect(err.code).equal(400);
+                    expect(err.message).equal('Argument missing');
+                });
+            });
+
+            it('should validate that options passed is an object', function(done) {
+                ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
+                    expect(err.code).equal(400);
+                    done();
+                });
+            });
+
+            it('should validate that options has a "after" or "before" property', function(done) {
+                ModelInstance.findAround('createdOn', '2016-1-1', {}, (err) => {
+                    expect(err.code).equal(400);
+                    done();
+                });
+            });
+
+            it('should validate that options has not both "after" & "before" properties', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3, before:3}, (err) => {
+                    expect(err.code).equal(400);
+                });
+            });
+
+            it('should accept a namespace', function() {
+                let namespace = 'com.new-domain.dev';
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:3, namespace:namespace}, () => {});
+
+                let query = ds.runQuery.getCall(0).args[0];
+                expect(query.namespace).equal(namespace);
+            });
+
+            it('should deal with err response', () => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb({code:500, message:'Server error'});
+                });
+
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err) => {
+                    expect(err.code).equal(500);
+                });
+            });
+        });
+
+        describe('findOne()', () => {
             it('should call pre and post hooks', () => {
                 var spy = {
                     fnPre : function(next) {
@@ -1093,10 +1147,87 @@ describe('Model', () => {
                 schema.post('findOne', findOnePost);
                 ModelInstance = Model.compile('Blog', schema, ds);
 
-                ModelInstance.findOne({});
+                ModelInstance.findOne({}, () => {});
 
                 expect(findOnePre.calledOnce).be.true;
                 expect(findOnePost.calledOnce).to.be.true;
+            });
+
+            it('should run correct gcloud Query', function(done) {
+                ModelInstance.findOne({name:'John', email:'john@snow.com'}, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.filters[0].name).equal('name');
+                    expect(query.filters[0].op).equal('=');
+                    expect(query.filters[0].val).equal('John');
+
+                    expect(query.filters[1].name).equal('email');
+                    expect(query.filters[1].op).equal('=');
+                    expect(query.filters[1].val).equal('john@snow.com');
+                    done();
+                });
+            });
+
+            it('should return a Model instance', function(done) {
+                ModelInstance.findOne({name:'John'}, (err, entity) => {
+                    expect(entity.entityName).equal('Blog');
+                    expect(entity instanceof Model).be.true;
+                    done();
+                });
+            });
+
+            it('should validate that params passed are object', function() {
+                ModelInstance.findOne('some string', (err, entity) => {
+                    expect(err.code).equal(400);
+                });
+            });
+
+            it('should accept ancestors', function(done) {
+                let ancestors = ['Parent', 'keyname'];
+
+                ModelInstance.findOne({name:'John'}, ancestors, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.filters[1].name).equal('__key__');
+                    expect(query.filters[1].op).equal('HAS_ANCESTOR');
+                    expect(query.filters[1].val.path).deep.equal(ancestors);
+                    done();
+                });
+            });
+
+            it('should accept a namespace', function(done) {
+                let namespace = 'com.new-domain.dev';
+
+                ModelInstance.findOne({name:'John'}, null, namespace, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.namespace).equal(namespace);
+                    done();
+                });
+            });
+
+            it('should deal with err response', (done) => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb({code:500, message:'Server error'});
+                });
+
+                ModelInstance.findOne({name:'John'}, (err, entities) => {
+                    expect(err.code).equal(500);
+                    done();
+                });
+            });
+
+            it('if entity not found should return 404', (done) => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb(null);
+                });
+
+                ModelInstance.findOne({name:'John'}, (err, entities) => {
+                    expect(err.code).equal(404);
+                    done();
+                });
             });
         })
     });
