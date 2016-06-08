@@ -1,6 +1,6 @@
 {
   "name": "datastools",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Datastools is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
