@@ -451,7 +451,6 @@ describe('Model', () => {
         });
 
         it('---> should validate() before', () => {
-            model  = new ModelInstance({name:'John'});
             let validateSpy = sinon.spy(model, 'validate');
 
             model.save(() => {});
@@ -489,7 +488,7 @@ describe('Model', () => {
         it('should convert to Datastore format before saving to Datastore', function(done) {
             let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
-            model.save(() => {});
+            model.save((err, entity) => {});
             clock.tick(20);
 
             expect(model.ds.save.calledOnce).be.true;
@@ -516,16 +515,11 @@ describe('Model', () => {
                 return cb(error);
             });
 
-            let model       = new ModelInstance({});
-            let emitStub    = sinon.stub(model, 'emit');
-            let callbackSpy = sinon.spy();
+            let model = new ModelInstance({});
 
-            model.save(callbackSpy);
-
-            expect(emitStub.called).be.false;
-            expect(callbackSpy.getCall(0).args[0]).equal(error);
-
-            emitStub.restore();
+            model.save((err, entity) => {
+                expect(err).equal(error);
+            });
         });
 
         it('should save entity into a transaction', function() {
@@ -1070,7 +1064,7 @@ describe('Model', () => {
         });
 
         describe('findAround()', function() {
-            it ('should get 3 entities after a given date', function() {
+            it('should get 3 entities after a given date', function() {
                 ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, () => {});
                 let query = ds.runQuery.getCall(0).args[0];
 
@@ -1081,7 +1075,7 @@ describe('Model', () => {
             });
 
             it ('should get 3 entities before a given date', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:12}, () => {});
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:12, simplifyResult:false}, () => {});
                 let query = ds.runQuery.getCall(0).args[0];
 
                 expect(query.filters[0].op).equal('<');
