@@ -119,6 +119,8 @@ var entitySchema = new Schema({
 });
 ```
 
+TODO: Validation for gcloud.datastore.int, gcloud.datastore.double, gcloud.datastore.geoPoint, buffer. For now, is you need any of those property type, don't set any 'type' in the Schema.
+
 ### Properties values validations
 Datastools uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
@@ -291,12 +293,12 @@ BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
 });
 ```
 
-**simplify()** The resulting entity has a simplify() method attached to it that outputs a simplified object with just the entity data and the entity id.
+**plain()** The resulting entity has a plain() method attached to it that outputs a simplified object with just the entity data and the entity id.
 
 ```
 BlogPost.get(123, function(err, entity) {
     if (err) { // deal with err }
-    console.log(entity.simplify());
+    console.log(entity.plain());
 });
 ```
 
@@ -324,6 +326,7 @@ blogPost.save(function(err) {
         // deal with err
     }
     console.log('Great! post saved');
+    console.log(blogPost.plain());
 });
 ```
 
@@ -344,7 +347,7 @@ BlogPost.update(123, data, function(err, entity) {
     if (err) {
         // deal with err
     }
-    console.log(entity.simplify()); // entity has also a simplify() method attached
+    console.log(entity.plain());
 });
 
 // You can also pass an optional ancestors path
@@ -384,8 +387,9 @@ BlogPost.delete(123, ['Parent', 123], function(err, success, apiResponse) {...}
 Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/datastore/query) so you can execute any query from that library.
 
 ```
-var User = datastools.model('User'); // assuming that a schema has been defined previously
+var User = datastools.model('User'); // User schema has been defined previously
 
+// 1. Initialize query
 var query = User.query()
             .filter('name', '=', 'John')
             .filter('age', '>=', 4)
@@ -393,19 +397,35 @@ var query = User.query()
                 descending: true
             });
 
-query.run(function(err, entities, info) {
+// 2. Execute query. The callback response contains both the entities and the cursor if more results
+query.run(function(err, response) {
     if (err) {
         // deal with err
     }
-    console.log('Entities found:', entities);
+
+    // response contains both the entities and a nextPageCursor for pagination
+    var entities       = response.entities;
+    var nextPageCursor = response.nextPageCursor; // not present if no more results
 });
+
+// You can use the nextPageCursor calling the same query and setting it as start value
+var query = User.query()
+            .filter('name', '=', 'John')
+            .filter('age', '>=', 4)
+            .order('lastname', {
+                descending: true
+            })
+            .start(nextPageCursor);
+
 ```
 
 **namespace**
 Model.query() takes an optional namespace parameter if needed.
 
 ```
-var query = User.query('com.domain-dev').filter('name', '=', 'John');
+var query = User.query('com.domain-dev')
+                .filter('name', '=', 'John');
+...
 ```
 
 <a name="simplifyResultInline"></a>
@@ -414,7 +434,7 @@ query.run() accepts a first options parameter with the following properties
 - simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
 ```
-query.run({simplifyResult:false}, function(err, entities, info) {
+query.run({simplifyResult:false}, function(err, response) {
     ....
 })
 ```
@@ -427,6 +447,7 @@ Currently it support the following settings:
 - select
 - ancestors
 - filters (default operator is "=" and does not need to be passed
+
 
 #####Define on Schema
 
@@ -456,13 +477,18 @@ var BlogPost = datastools.model('BlogPost', blogPostSchema);
 ```
 
 #####Use anywhere
+
+`Model.list(callback)`  
+The callback has a "error" and a "response" argument. The response contains both the entities and a **nextPageCursor** for pagination (that can be used in a next `Model.list({start:pageCursor}, function(){...}` call)
+
 ```
 // anywhere in your Controllers
-BlogPost.list(function(err, entities) {
+BlogPost.list(function(err, response) {
     if (err) {
         // deal with err
     }
-    console.log(entities);
+    console.log(response.entities);
+    console.log(response.nextPageCursor); // only present if more results
 });
 ```
 
@@ -509,6 +535,27 @@ var newSettings = {
 
 BlogPost.list(newSettings, ...);
 ```
+
+#### findOne()
+```
+User.findOne({prop1:value, prop2:value2}, ancestors /*optional*/, namespace /*optional*/, callback);
+```
+
+Quickly find an entity passing key / pair value. You can optionaly pass an ancestors array and a namespace.
+The entity returned is a entity instance of the Model, and any method declared on the Schema
+
+```
+var User = datastools.model('User');
+
+User.findOne({email:'john@snow.com'}, function(err, entity) {
+    if (err) {... deal with error}
+
+    console.log(entity.plain());
+});
+
+```
+
+
 
 #### deleteAll()
 ```

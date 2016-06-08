@@ -82,7 +82,10 @@ describe('Model', () => {
             }
             cb = args.pop();
 
-            return cb(null, mockEntities, {});
+            return cb(null, mockEntities, {
+                moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                endCursor: 'abcdef'
+            });
         });
 
         ModelInstance = datastools.model('Blog', schema, ds);
@@ -620,13 +623,13 @@ describe('Model', () => {
             });
         });
 
-        it('should return 404 if entity found', () => {
+        it('should return 404 if entity not found', () => {
             ds.get.restore();
             sinon.stub(ds, 'get', (key, cb) => {
                 return cb(null);
             });
 
-            ModelInstance.update(123, (err, entity) => {
+            ModelInstance.update('keyname', (err, entity) => {
                 expect(err.code).equal(404);
                 expect(entity).not.exist;
             });
@@ -820,14 +823,26 @@ describe('Model', () => {
             let query = ModelInstance.query()
                         .filter('name', '=', 'John');
 
-            var result;
-            query.run((err, entities) => {
-                result = entities;
+            query.run((err, response) => {
+                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+                expect(response.entities.length).equal(2);
+                expect(response.nextPageCursor).equal('abcdef');
                 done();
             });
+        });
 
-            expect(ds.runQuery.getCall(0).args[0]).equal(query);
-            expect(result).to.exist;
+        it('should not add endCursor to response', function(done){
+            ds.runQuery.restore();
+            sinon.stub(ds, 'runQuery', function(query, cb) {
+                return cb(null, [], {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+            });
+            let query = ModelInstance.query()
+                        .filter('name', '=', 'John');
+
+            query.run((err, response) => {
+                expect(response.nextPageCursor).not.exist;
+                done();
+            });
         });
 
         it('should not return entities', (done) => {
@@ -851,12 +866,12 @@ describe('Model', () => {
         it('should allow options for query', () => {
             let query = ModelInstance.query();
 
-            var result;
-            query.run({simplifyResult:false}, (err, entities) => {
-                result = entities;
+            var _result;
+            query.run({simplifyResult:false}, (err, result) => {
+                _result = result;
             });
 
-            expect(result).equal(mockEntities);
+            expect(_result.entities).equal(mockEntities);
         });
 
         it('should allow a namespace for query', () => {
@@ -869,14 +884,38 @@ describe('Model', () => {
 
     describe('shortcut queries', () => {
         describe('list', () =>  {
-            it('should work with no settings defined', (done) => {
-                let result;
-                ModelInstance.list((err, entities) => {
-                    result = entities;
-                    done();
+            it('should work with no settings defined', function() {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', function(query, cb) {
+                    setTimeout(function() {
+                        return cb(null, mockEntities, {
+                            moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                            endCursor: 'abcdef'
+                        });
+                    }, 20);
                 });
 
-                expect(result).exist;
+                ModelInstance.list((err, response) => {
+                    expect(response.entities.length).equal(2);
+                    expect(response.nextPageCursor).equal('abcdef');
+                });
+
+                clock.tick(20);
+            });
+
+            it('should not add endCursor to response', function(){
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', function(query, cb) {
+                    setTimeout(function() {
+                        return cb(null, mockEntities, {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+                    }, 20);
+                });
+
+                ModelInstance.list((err, response) => {
+                    expect(response.nextPageCursor).not.exist;
+                });
+
+                clock.tick(20);
             });
 
             it('should read settings defined', () => {
@@ -943,10 +982,7 @@ describe('Model', () => {
                 sinon.stub(ds, 'delete', function() {
                     let args = Array.prototype.slice.call(arguments);
                     let cb = args.pop();
-
-                    //setTimeout(() => {
-                        return cb(null, true);
-                    //}, 20)
+                    return cb(null, true);
                 });
             });
 
@@ -1052,6 +1088,13 @@ describe('Model', () => {
                 expect(query.limitVal).equal(12);
             });
 
+            it('should validate that all arguments are passed', function() {
+                ModelInstance.findAround('createdOn', '2016-1-1', (err) => {
+                    expect(err.code).equal(400);
+                    expect(err.message).equal('Argument missing');
+                });
+            });
+
             it('should validate that options passed is an object', function(done) {
                 ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
                     expect(err.code).equal(400);
@@ -1072,16 +1115,27 @@ describe('Model', () => {
                 });
             });
 
-            it('should add a namespace', function() {
+            it('should accept a namespace', function() {
                 let namespace = 'com.new-domain.dev';
                 ModelInstance.findAround('createdOn', '2016-1-1', {before:3, namespace:namespace}, () => {});
 
                 let query = ds.runQuery.getCall(0).args[0];
                 expect(query.namespace).equal(namespace);
             });
+
+            it('should deal with err response', () => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb({code:500, message:'Server error'});
+                });
+
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err) => {
+                    expect(err.code).equal(500);
+                });
+            });
         });
 
-        describe('findOne', () => {
+        describe('findOne()', () => {
             it('should call pre and post hooks', () => {
                 var spy = {
                     fnPre : function(next) {
@@ -1103,6 +1157,83 @@ describe('Model', () => {
 
                 expect(findOnePre.calledOnce).be.true;
                 expect(findOnePost.calledOnce).to.be.true;
+            });
+
+            it('should run correct gcloud Query', function(done) {
+                ModelInstance.findOne({name:'John', email:'john@snow.com'}, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.filters[0].name).equal('name');
+                    expect(query.filters[0].op).equal('=');
+                    expect(query.filters[0].val).equal('John');
+
+                    expect(query.filters[1].name).equal('email');
+                    expect(query.filters[1].op).equal('=');
+                    expect(query.filters[1].val).equal('john@snow.com');
+                    done();
+                });
+            });
+
+            it('should return a Model instance', function(done) {
+                ModelInstance.findOne({name:'John'}, (err, entity) => {
+                    expect(entity.entityName).equal('Blog');
+                    expect(entity instanceof Model).be.true;
+                    done();
+                });
+            });
+
+            it('should validate that params passed are object', function() {
+                ModelInstance.findOne('some string', (err, entity) => {
+                    expect(err.code).equal(400);
+                });
+            });
+
+            it('should accept ancestors', function(done) {
+                let ancestors = ['Parent', 'keyname'];
+
+                ModelInstance.findOne({name:'John'}, ancestors, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.filters[1].name).equal('__key__');
+                    expect(query.filters[1].op).equal('HAS_ANCESTOR');
+                    expect(query.filters[1].val.path).deep.equal(ancestors);
+                    done();
+                });
+            });
+
+            it('should accept a namespace', function(done) {
+                let namespace = 'com.new-domain.dev';
+
+                ModelInstance.findOne({name:'John'}, null, namespace, () => {
+                    let query = ds.runQuery.getCall(0).args[0];
+
+                    expect(query.namespace).equal(namespace);
+                    done();
+                });
+            });
+
+            it('should deal with err response', (done) => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb({code:500, message:'Server error'});
+                });
+
+                ModelInstance.findOne({name:'John'}, (err, entities) => {
+                    expect(err.code).equal(500);
+                    done();
+                });
+            });
+
+            it('if entity not found should return 404', (done) => {
+                ds.runQuery.restore();
+                sinon.stub(ds, 'runQuery', (query, cb) => {
+                    return cb(null);
+                });
+
+                ModelInstance.findOne({name:'John'}, (err, entities) => {
+                    expect(err.code).equal(404);
+                    done();
+                });
             });
         })
     });

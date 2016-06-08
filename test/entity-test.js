@@ -126,7 +126,7 @@ describe('Entity', () => {
             expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
         });
 
-        describe('should create correct Datastore Key when instantiated', () => {
+        describe('should create Datastore Key', () => {
             let Model;
 
             beforeEach(() => {
@@ -278,15 +278,15 @@ describe('Entity', () => {
         });
     });
 
-    describe('simplify()', function() {
-        // TODO add test simplify method
-        // it('resulting "entity.simplify()" should create a simpler object of entity', () => {
-        //     ModelInstance.get(123, (err, entity) => {
-        //         let output = entity.simplify();
-        //
-        //         expect(output.id).equal(entity.key.id);
-        //         expect(output.key).not.exist;
-        //     });
-        // });
+    describe('plain()', function() {
+
+        it('resulting "entity.simplify()" should create a simpler object of entity', () => {
+            var model = new ModelInstance({name:'John'});
+
+            let output = model.plain();
+
+            expect(output.id).equal(model.entityKey.id);
+            expect(output.key).not.exist;
+        });
     })
 });
