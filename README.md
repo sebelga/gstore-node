@@ -161,7 +161,7 @@ var entitySchema = new Schema({
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
-#### unregistered properties (default false)
+#### explicitOnly (default true)
 To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic of *Schemaless* databases. The properties explicitly declared will still be validated.
 
 <a name="simplifyResultExplained"></a>
@@ -318,12 +318,12 @@ var data = {
 };
 var blogPost = new BlogPost(data);
 
-blogPost.save(function(err) {
+blogPost.save(function(err, entity) {
     if (err) {// deal with err}
 
-    console.log(this.plain());
-    console.log(this.get('title')); // 'My first blog post'
-    console.log(this.entityKey.id); // contains the auto generated id
+    console.log(entity.plain());
+    console.log(entity.get('title')); // 'My first blog post'
+    console.log(entity.entityKey.id); // contains the auto generated id
 });
 ```
 
@@ -395,7 +395,7 @@ var query = User.query()
             });
 
 // 2. Execute query.
-// The callback response contains both the entities and the cursor if more results
+// The callback response contains both the entities and the cursor if there are more results
 
 query.run(function(err, response) {
     if (err) {
@@ -555,7 +555,7 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 ```
 
 #### findAround()
-`Model.findAroun(property, value, settings, callback)`
+`Model.findAround(property, value, settings, callback)`
 
 Easily find entities before or after an entity based on a property and a value.  
 **settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
@@ -660,7 +660,7 @@ function hashPassword(next) {
 var User = datastools.model('User');
 var user = new User({username:'john', password:'mypassword'});
 user.save(function(err, entity) {
-    console.log(entity.data.password); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
+    console.log(entity.get('password')); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
 });
 ```
 
