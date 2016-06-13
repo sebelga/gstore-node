@@ -2,6 +2,7 @@
 var chai   = require('chai');
 var expect = chai.expect;
 var sinon  = require('sinon');
+var extend = require('extend');
 
 var gcloud = require('gcloud')({
     projectId: 'my-project'
@@ -13,6 +14,7 @@ var ds = gcloud.datastore({
 
 var datastools = require('../lib');
 datastools.connect(ds);
+var datastoreSerializer = require('../lib/serializer').Datastore;
 
 var Schema = require('../lib').Schema;
 
@@ -116,16 +118,6 @@ describe('Entity', () => {
             expect(entity.excludeFromIndexes).deep.equal(['name', 'lastname']);
         });
 
-        it('should set entity Data modifiedOn to new Date if property in Schema', () => {
-            schema = new Schema({modifiedOn: {type: 'datetime'}});
-            var model  = datastools.model('BlogPost', schema);
-
-            var entity = new model({}, 'keyid');
-
-            expect(entity.entityData.modifiedOn).to.exist;
-            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
-        });
-
         describe('should create Datastore Key', () => {
             let Model;
 
@@ -167,12 +159,12 @@ describe('Entity', () => {
             });
 
             it('---> with an ancestor path (manual id)', () => {
-                var entity = new Model({}, 'entityName', ['Parent', 1234]);
+                var entity = new Model({}, 'entityKind', ['Parent', 1234]);
 
                 expect(entity.entityKey.parent.kind).equal('Parent');
                 expect(entity.entityKey.parent.id).equal(1234);
                 expect(entity.entityKey.kind).equal('BlogPost');
-                expect(entity.entityKey.name).equal('entityName');
+                expect(entity.entityKey.name).equal('entityKind');
             });
 
             it('---> with a namespace', () => {
@@ -199,7 +191,7 @@ describe('Entity', () => {
         });
 
         describe('should register schema hooks', () => {
-            let model;
+            let Model;
             let entity;
             let spyOn;
 
@@ -208,13 +200,15 @@ describe('Entity', () => {
                     fnHookPre: (next) => {next();},
                     fnHookPost: () => {}
                 };
+
+
             });
 
             it('should call pre hooks before saving', (done) => {
                 var save = sinon.spy(spyOn, 'fnHookPre');
                 schema.pre('save', save);
-                model  = datastools.model('BlogPost', schema);
-                entity = new model({name:'John'});
+                Model  = datastools.model('BlogPost', schema);
+                entity = new Model({name:'John'});
 
                 entity.save(done);
 
@@ -223,7 +217,7 @@ describe('Entity', () => {
             });
 
             it('should call pre and post hooks on custom method', () => {
-                var preNewMethod = sinon.spy(spyOn, 'fnHookPre');
+                var preNewMethod  = sinon.spy(spyOn, 'fnHookPre');
                 var postNewMethod = sinon.spy(spyOn, 'fnHookPost');
                 schema.method('newmethod', function() {
                     this.emit('newmethod');
@@ -231,8 +225,8 @@ describe('Entity', () => {
                 });
                 schema.pre('newmethod', preNewMethod);
                 schema.post('newmethod', postNewMethod);
-                model  = datastools.model('BlogPost', schema);
-                entity = new model({name:'John'});
+                Model  = datastools.model('BlogPost', schema);
+                entity = new Model({name:'John'});
 
                 entity.newmethod();
 
@@ -245,13 +239,32 @@ describe('Entity', () => {
             it('should call post hooks after saving', () => {
                 let save = sinon.spy(spyOn, 'fnHookPost');
                 schema.post('save', save);
-                model  = datastools.model('BlogPost', schema);
-                entity = new model({});
+                Model  = datastools.model('BlogPost', schema);
+                entity = new Model({});
 
                 entity.save(() => {
                     expect(spyOn.fnHookPost.called).be.true;
                     save.restore();
                 });
+            });
+
+            it('should not do anything if no hooks on schema', function() {
+                schema.callQueue = [];
+                Model  = datastools.model('BlogPost', schema);
+                entity = new Model({name:'John'});
+
+                expect(entity._pres).not.exist;
+                expect(entity._posts).not.exist;
+            });
+
+            it('should not register unknown methods', () => {
+                schema.callQueue = [];
+                schema.pre('unknown', () => {});
+                Model  = datastools.model('BlogPost', schema);
+                entity = new Model({});
+
+                expect(entity._pres).not.exist;
+                expect(entity._posts).not.exist;
             });
         });
     });
@@ -279,14 +292,44 @@ describe('Entity', () => {
     });
 
     describe('plain()', function() {
+        beforeEach(function() {
+            sinon.spy(datastoreSerializer, 'fromDatastore')
+        });
 
-        it('resulting "entity.simplify()" should create a simpler object of entity', () => {
-            var model = new ModelInstance({name:'John'});
+        afterEach(function() {
+            datastoreSerializer.fromDatastore.restore();
+        });
+
+        it('should call datastoreSerializer "fromDatastore"', () => {
+            var model      = new ModelInstance({name:'John'});
+            var entityKey  = model.entityKey;
+            var entityData = model.entityData;
 
             let output = model.plain();
 
-            expect(output.id).equal(model.entityKey.id);
-            expect(output.key).not.exist;
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[0]).deep.equal({key:entityKey, data:entityData});
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(false);
+        });
+
+        it('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
+            var model      = new ModelInstance({name:'John'});
+
+            let output = model.plain(true);
+
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(true);
+        });
+    });
+
+    describe('datastoreEntity()', function() {
+        it('should return ds.get passing the entityKey', function() {
+            var model = new ModelInstance({name:'John'});
+            sinon.stub(ds, 'get', function(key, cb) {
+                cb(null, {message:'ok'});
+            });
+
+            model.datastoreEntity((err, data) => {
+                expect(data.message).equal('ok');
+            });
         });
     })
 });

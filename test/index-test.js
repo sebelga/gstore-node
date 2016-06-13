@@ -133,4 +133,8 @@ describe('Datastools', function() {
 
         expect(datastools.version).equal(version);
     });
+
+    it ('should return the datastore instance', () => {
+
+    });
 });

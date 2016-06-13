@@ -41,6 +41,7 @@ describe('Query Helpers', () => {
             let options = {
                 limit : 10,
                 order : {property:'name', descending:true},
+                filters : [],
                 select : 'name'
             };
 

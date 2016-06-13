@@ -19,15 +19,17 @@ var Schema              = require('../lib').Schema;
 var datastoreSerializer = require('../lib/serializer').Datastore;
 var queryHelpers        = require('../lib/helper').QueryHelpers;
 
-describe('Model', () => {
+describe('Model', function() {
     'use strict';
 
-    let schema;
-    let ModelInstance;
-    let clock;
-    let mockEntities;
+    var schema;
+    var ModelInstance;
+    var clock;
+    var mockEntity;
+    var mockEntities;
+    var transaction;
 
-    beforeEach('Before each describe...', function() {
+    beforeEach('Before each describe...', function(done) {
         datastools.models       = {};
         datastools.modelSchemas = {};
         datastools.options      = {};
@@ -38,8 +40,8 @@ describe('Model', () => {
 
         schema = new Schema({
             name:     {type: 'string'},
-            lastname: {type: 'string', excludedFromIndex:true},
-            age:      {type: 'number', excludedFromIndex:true},
+            lastname: {type: 'string', excludeFromIndexes:true},
+            age:      {type: 'number', excludeFromIndexes:true},
             birthday: {type: 'datetime'},
             street:   {},
             website:  {validate: 'isURL'},
@@ -57,6 +59,19 @@ describe('Model', () => {
             }, 20);
             // return cb(null, entity);
         });
+
+        // mockEntity = {
+        //     key: ds.key(['BlogPost', 123]),
+        //     data:{name:'John'}
+        // };
+
+        mockEntity = {
+            key:ds.key(['BlogPost', 1234]),
+            data:{
+                name:'John',
+                email:'john@snow.com'
+            }
+        };
 
         mockEntities = [
             {
@@ -88,12 +103,25 @@ describe('Model', () => {
             });
         });
 
+        ds.runInTransaction(function(_transaction, end){
+            transaction = _transaction;
+
+            sinon.stub(transaction, 'get', (key, cb) => {
+                //setTimeout(() => {
+                cb(null, mockEntity);
+                //}, 20);
+            });
+
+            done();
+        });
+
         ModelInstance = datastools.model('Blog', schema, ds);
     });
 
     afterEach(function() {
         ds.save.restore();
         ds.runQuery.restore();
+        transaction.get.restore();
     });
 
     describe('compile()', function() {
@@ -108,15 +136,15 @@ describe('Model', () => {
             expect(ModelInstance.ds).exist;
             expect(ModelInstance.hooks).exist;
             expect(ModelInstance.hooks).deep.equal(schema.s.hooks);
-            expect(ModelInstance.entityName).exist;
+            expect(ModelInstance.entityKind).exist;
             expect(ModelInstance.init).exist;
         });
 
         it ('should create new models classes', () => {
             let User = Model.compile('User', new Schema({}), ds);
 
-            expect(User.entityName).equal('User');
-            expect(ModelInstance.entityName).equal('Blog');
+            expect(User.entityKind).equal('User');
+            expect(ModelInstance.entityKind).equal('Blog');
         });
 
         it('should be able to return model instances', () => {
@@ -285,7 +313,7 @@ describe('Model', () => {
             let model5 = new ModelInstance({birthday:12345}); // No number allowed
             let model6 = new ModelInstance({birthday:'string'});
 
-            let valid = model.validate();
+            let valid  = model.validate();
             let valid2 = model2.validate();
             let valid3 = model3.validate();
             let valid4 = model4.validate();
@@ -440,6 +468,22 @@ describe('Model', () => {
                 expect(err.code).equal(404);
             });
         });
+
+        it('should get in a transaction', function() {
+            ModelInstance.get(123, null, transaction, (err, entity) => {
+                expect(transaction.get.called).be.true;
+            });
+        });
+
+        it('should throw error if transaction not instance of Transaction', function() {
+            var fn = function() {
+                ModelInstance.get(123, null, {}, (err, entity) => {
+                    expect(transaction.get.called).be.true;
+                });
+            };
+
+            expect(fn).to.throw(Error);
+        });
     });
 
     describe('save()', () => {
@@ -522,8 +566,30 @@ describe('Model', () => {
             });
         });
 
-        it('should save entity into a transaction', function() {
+        it('should save entity in a transaction', function() {
+            sinon.stub(transaction, 'save', function() {
+                setTimeout(function() {
+                    return true;
+                }, 20);
+            });
 
+            model.save({}, transaction, function(err, entity, info) {
+                expect(transaction.save.called).be.true;
+                expect(entity.entityData).exist;
+                expect(info.op).equal('save');
+            });
+
+            clock.tick(20);
+        });
+
+        it('should throw error if transaction not instance of Transaction', function() {
+            var fn = function() {
+                model.save({}, {}, function() {});
+            };
+
+            clock.tick(20);
+
+            expect(fn).to.throw(Error);
         });
 
         it('should call pre hooks', () => {
@@ -575,51 +641,66 @@ describe('Model', () => {
 
             expect(spyPost.called).be.true;
         });
+
+        it('should update modifiedOn to new Date if property in Schema', () => {
+            schema = new Schema({modifiedOn: {type: 'datetime'}});
+            var model  = datastools.model('BlogPost', schema);
+
+            var entity = new model({});
+            entity.save((err, entity) => {});
+            clock.tick(20);
+
+            expect(entity.entityData.modifiedOn).to.exist;
+            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+        });
     });
 
     describe('update()', () => {
-        let mockEntity = {
-            key:ds.key(['BlogPost', 1234]),
-            data:{
-                name:'John',
-                email:'john@snow.com'
-            }
-        };
-
-        beforeEach(() => {
-            sinon.stub(ds, 'get', (key, cb) => {
-                // return cb(null, mockEntity);
-                setTimeout(() => {
-                    cb(null, mockEntity);
-                }, 20);
+        beforeEach(function() {
+            sinon.stub(ds, 'runInTransaction', function(cb, done) {
+                return cb(transaction, function() {
+                    done();
+                });
             });
         });
 
         afterEach(() => {
-            ds.get.restore();
+            ds.runInTransaction.restore();
         });
 
-        it ('should get the entity a Key of the id', () => {
+        it('should run in a transaction', function(){
             ModelInstance.update(123, () => {});
 
-            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(ds.get.getCall(0).args[0].path[1]).equal(123);
+            expect(ds.runInTransaction.called).be.true;
         });
 
-        it ('should not do anything if err while getting entity', () => {
-            ds.get.restore();
-            sinon.stub(ds, 'get', (id, cb) => {
+        it('should first get the entity by Key', () => {
+
+            ModelInstance.update(123, () => {});
+
+            expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
+            expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
+        });
+
+        it('should rollback if error while getting entity', function(done) {
+            transaction.get.restore();
+
+            sinon.stub(transaction, 'get', (key, cb) => {
                 return cb({code:500, message:'Houston we got a problem'});
             });
+            sinon.spy(transaction, 'rollback');
 
             ModelInstance.update(123, (err) => {
                 expect(err.code).equal(500);
+                expect(transaction.rollback.called).be.true;
+                transaction.rollback.restore();
+                done();
             });
         });
 
         it('should return 404 if entity not found', () => {
-            ds.get.restore();
-            sinon.stub(ds, 'get', (key, cb) => {
+            transaction.get.restore();
+            sinon.stub(transaction, 'get', (key, cb) => {
                 return cb(null);
             });
 
@@ -629,20 +710,22 @@ describe('Model', () => {
             });
         });
 
-        it ('should return error if any while saving', () => {
+        it('should return error if any while saving', (done) => {
             let error = {code:500, message: 'Houston wee need you.'};
-            ds.save.restore();
-            sinon.stub(ds, 'save', function() {
-                let args = Array.prototype.slice.call(arguments);
-                let cb = args.pop();
-                return cb(error);
+
+            ds.runInTransaction.restore();
+            sinon.stub(ds, 'runInTransaction', function(cb, done) {
+                return cb(transaction, function() {
+                    done(error);
+                });
             });
 
             ModelInstance.update(123, (err, entity) => {
                 expect(err).equal(error);
+                done();
             });
 
-            clock.tick(20);
+            clock.tick(40);
         });
 
         it('should merge the new data with the entity data', (done) => {
@@ -660,16 +743,13 @@ describe('Model', () => {
             done();
         });
 
-        it('should save the entity', (done) => {
-            let data = {lastname : 'Snow'};
-            let _entity;
-            ModelInstance.update(123, data, (err, entity) => {
-                _entity = entity;
-            });
+        it('should save the entity on transaction', (done) => {
+            sinon.spy(transaction, 'save');
+            ModelInstance.update(123, {}, (err, entity) => {});
 
             clock.tick(40);
 
-            expect(ds.save.called).be.true;
+            expect(transaction.save.called).be.true;
 
             done();
         });
@@ -1109,6 +1189,18 @@ describe('Model', () => {
                 });
             });
 
+            it('should override "simplifyResult" settings', function() {
+                datastoreSerializer.fromDatastore
+                sinon.spy(datastoreSerializer, 'fromDatastore');
+                schema = new Schema({name:{}}, {queries:{simplifyResult:true}});
+                ModelInstance = datastools.model('Entity', schema, ds);
+
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3, simplifyResult:false}, () => {});
+
+                expect(datastoreSerializer.fromDatastore.called).be.false;
+                datastoreSerializer.fromDatastore.restore();
+            });
+
             it('should accept a namespace', function() {
                 let namespace = 'com.new-domain.dev';
                 ModelInstance.findAround('createdOn', '2016-1-1', {before:3, namespace:namespace}, () => {});
@@ -1170,7 +1262,7 @@ describe('Model', () => {
 
             it('should return a Model instance', function(done) {
                 ModelInstance.findOne({name:'John'}, (err, entity) => {
-                    expect(entity.entityName).equal('Blog');
+                    expect(entity.entityKind).equal('Blog');
                     expect(entity instanceof Model).be.true;
                     done();
                 });
@@ -1230,5 +1322,28 @@ describe('Model', () => {
                 });
             });
         })
+
+        describe('excludeFromIndexes', function() {
+            it('should add properties to schema as optional', function() {
+                let arr = ['newProp', 'url'];
+                ModelInstance.excludeFromIndexes(arr);
+
+                let model = new ModelInstance({});
+
+                expect(model.excludeFromIndexes).deep.equal(['lastname', 'age'].concat(arr));
+                expect(schema.path('newProp').optional).be.true;
+            });
+
+            it('should only modifiy excludeFromIndexes on properties that already exist', function() {
+                let prop = 'lastname';
+                ModelInstance.excludeFromIndexes(prop);
+
+                let model = new ModelInstance({});
+
+                expect(model.excludeFromIndexes).deep.equal(['lastname', 'age']);
+                expect(schema.path('lastname').optional).not.exist;
+                expect(schema.path('lastname').excludeFromIndexes).be.true;
+            });
+        });
     });
 });
