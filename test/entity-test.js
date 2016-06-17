@@ -200,8 +200,6 @@ describe('Entity', () => {
                     fnHookPre: (next) => {next();},
                     fnHookPost: () => {}
                 };
-
-
             });
 
             it('should call pre hooks before saving', (done) => {

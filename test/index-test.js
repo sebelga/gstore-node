@@ -66,7 +66,7 @@ describe('Datastools', function() {
             expect(Model.schema.constructor.name).to.equal('Schema');
         });
 
-        it('should attach schema to compiled Model', () => {
+        it('and attach schema to compiled Model', () => {
             let Blog       = datastools.model('Blog', schema);
             let schemaUser = new datastools.Schema({name: {type: 'string'}});
             let User       = datastools.model('User', schemaUser);
@@ -134,7 +134,13 @@ describe('Datastools', function() {
         expect(datastools.version).equal(version);
     });
 
-    it ('should return the datastore instance', () => {
+    it('should return the datastore instance', () => {
+        datastools.connect(ds);
 
+        expect(datastools.ds).equal(ds);
+    });
+
+    it('should create shortcut of datastore.runInTransaction', () => {
+        expect(datastools.runInTransaction).equal(ds.runInTransaction);
     });
 });
