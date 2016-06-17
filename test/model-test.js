@@ -30,7 +30,7 @@ describe('Model', function() {
     var mockEntities;
     var transaction;
 
-    beforeEach('Before each Model (global)', function(beforeEachReady) {
+    beforeEach('Before each Model (global)', function() {
         datastools.models       = {};
         datastools.modelSchemas = {};
         datastools.options      = {};
@@ -102,26 +102,34 @@ describe('Model', function() {
             });
         });
 
+        function Transaction() {
+            var _this = this;
+            this.get = function(cb) {cb();};
+            this.save = function(cb) {cb();};
+            this.delete = function(cb) {cb();};
+            this.rollback = function(cb) {cb();};
+            this.createQuery = function() {return {
+                filter:() => {},
+                scope: _this
+            }};
+            this.runQuery = function() {};
+        }
+        transaction = new Transaction();
 
-        ds.runInTransaction(function(_transaction, end){
-            transaction = _transaction;
 
-            sinon.stub(transaction, 'get', (key, cb) => {
-                //setTimeout(() => {
-                    cb(null, mockEntity);
-                //}, 20);
-            });
-
-            sinon.stub(transaction, 'save', function() {
-                setTimeout(function() {
-                    return true;
-                }, 20);
-            });
-
-            sinon.spy(transaction, 'rollback');
-
-            beforeEachReady();
+        sinon.stub(transaction, 'get', (key, cb) => {
+            //setTimeout(() => {
+                cb(null, mockEntity);
+            //}, 20);
         });
+
+        sinon.stub(transaction, 'save', function() {
+            setTimeout(function() {
+                return true;
+            }, 20);
+        });
+
+        sinon.spy(transaction, 'rollback');
 
         ModelInstance = datastools.model('Blog', schema, ds);
     });
