@@ -1,4 +1,5 @@
 /*jshint -W030 */
+
 var chai       = require('chai');
 var expect     = chai.expect;
 var sinon      = require('sinon');

@@ -755,7 +755,7 @@ describe('Model', function() {
         });
 
         it('should save entity in a transaction', function() {
-            model.save({}, transaction, function(err, entity, info) {
+            model.save(transaction, {}, function(err, entity, info) {
                 expect(transaction.save.called).be.true;
                 expect(entity.entityData).exist;
                 expect(info.op).equal('save');
@@ -787,7 +787,7 @@ describe('Model', function() {
             ModelInstance = Model.compile('Blog', schema, mockDs);
             let model = new ModelInstance({name:'John'});
 
-            model.save({}, () => {});
+            model.save(() => {});
             clock.tick(20);
 
             expect(spyPre.calledBefore(spySave)).be.true;
@@ -819,7 +819,7 @@ describe('Model', function() {
             ModelInstance = Model.compile('Blog', schema, ds);
             let model = new ModelInstance({name:'John'});
 
-            model.save({}, () => {});
+            model.save(() => {});
             clock.tick(20);
 
             expect(spyPost.called).be.true;
@@ -833,7 +833,7 @@ describe('Model', function() {
             ModelInstance = Model.compile('Blog', schema, ds);
             let model = new ModelInstance({name:'John'});
 
-            model.save({}, transaction, () => {
+            model.save(transaction, () => {
                 transaction.execPostHooks();
             });
             clock.tick(20);
