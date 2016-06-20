@@ -1,7 +1,7 @@
 # Datastools
 
 [![npm version](https://badge.fury.io/js/datastools.svg)](https://badge.fury.io/js/datastools) [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)  
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)
 Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -94,7 +94,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
 
 ### Getting started
 For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
- 
+
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
@@ -108,8 +108,8 @@ For info on how to configure gcloud [read the docs here](https://googlecloudplat
 
 After a successfull connection, datastools has 2 aliases set up
 
-- `datastools.ds` The gcloud datastore instance 
-- `datastools.runInTransaction`. Alias of the same gcloud method 
+- `datastools.ds` The gcloud datastore instance
+- `datastools.runInTransaction`. Alias of the same gcloud method
 
 #### runInTransaction alias
 
@@ -154,8 +154,6 @@ var entitySchema = new Schema({
 });
 ```
 
-WIP: Validation for gcloud.datastore.int, gcloud.datastore.double, gcloud.datastore.geoPoint, buffer. For now, is you need any of those property type, don't set any 'type' in the Schema.
-
 ### Properties values validations
 Datastools uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
@@ -180,7 +178,7 @@ to false.
 
 <a name="schemaPropertyOptionRead"></a>
 #### read
-If you don't want certain properties to show up in the result of queries (with *simplifyResult* set to true) or when calling entity.plain(), set this property option to **false**. This is useful when you need to have entity properties only visible to your business logic and not exposed publicly.  
+If you don't want certain properties to show up in the result of queries (with *simplifyResult* set to true) or when calling entity.plain(), set this property option to **false**. This is useful when you need to have entity properties only visible to your business logic and not exposed publicly.
 
 This setting can be overridden by passing a *readAll* setting set to **true** in:
 
@@ -325,12 +323,12 @@ datastools.runInTransaction(function(transaction, done) {
 	        transaction.rollback(done);
 	        return;
 	    }
-	    
+
 	    // entity is an instance of the BlogPost model with all its properties & methods
-	    
+
 	    ... keep up until calling done();
 	});
-	
+
 }, function(transactionError, apiResp) {
 	if (transactionError || error) {
 	    // deal with err;
@@ -339,7 +337,7 @@ datastools.runInTransaction(function(transaction, done) {
 ```
 
 #### Update()
-To update a Model, call `Model.update(args)`. This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).  
+To update a Model, call `Model.update(args)`. This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
 The update() method has the following parameters
 
 - id : the id of the entity to update
@@ -417,7 +415,7 @@ BlogPost.delete(123, ['Parent', 123], 'dev.namespace.com', function(err, success
 // The same method can be executed from inside a transaction
 
 datastools.runInTransaction(function(transaction, done){
-	
+
 	BlogPost.delete(123, null, null, transaction);
 
 }, function(){...});
@@ -484,7 +482,7 @@ Each entity is an instance of its Model that has a Datastore Key and data.
 
 ### Instantiate
 
-To create instances of a model use  
+To create instances of a model use
 
 `new Model(data, id /*optional*/, ancestors /*optional*/, namespace /*optional*/)`
 
@@ -566,12 +564,12 @@ blogPostEntity.save(function(err, entity) {
 */
 
 datastools.runInTransaction(function(transaction, done){
-	
+
 	var user = new User({name:'john'}); // user could also come from a query() or get()
 	user.save(transaction);
-	
+
 	... keep up until calling done()
-	
+
 }, function(){...});
 
 ```
@@ -608,7 +606,7 @@ var user = new User({name:'John'});
 
 user.save(function(err, userEntity) {
 	// userEntity is an *Datastools* entity instance of a User Model
-	
+
 	entity.datastoreEntity(function(err, entity){
 		// here the entity is the entity saved *in* the Google Datastore
 		// with a key and data property
@@ -679,7 +677,7 @@ query.run({simplifyResult:false}, function(err, response) {
 ```
 
 ### list()
-Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.  
+Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
 
 Currently it support the following queries parameters
 
@@ -719,7 +717,7 @@ var BlogPost = datastools.model('BlogPost', blogPostSchema);
 
 ####Use anywhere
 
-`Model.list(callback)`  
+`Model.list(callback)`
 The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
 
 ```
@@ -799,8 +797,8 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 ### findAround()
 `Model.findAround(property, value, settings, callback)`
 
-Easily find entities before or after an entity based on a property and a value.  
-**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
+Easily find entities before or after an entity based on a property and a value.
+**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
 You can also override the "simplifyResult" global queries setting.
 
 ```
@@ -843,7 +841,7 @@ For now, hooks are available for the following methods
 - delete
 
 ### Pre hooks
-Each pre hook has a "**next**" parameter that you have to call at the end of your function in order to run the next "pre" hook or execute to.  
+Each pre hook has a "**next**" parameter that you have to call at the end of your function in order to run the next "pre" hook or execute to.
 
 A common use case would be to hash a user's password before saving it into the Datastore.
 
@@ -874,7 +872,7 @@ function hashPassword(next) {
         bcrypt.hash(password, salt, null, function (err, hash) {
             if (err) return next(err);
              _this.set('password', hash);
-             
+
             // don't forget to call next()
             next();
         });
@@ -892,15 +890,15 @@ user.save(function(err, entity) {
 });
 ```
 
-**Note**  
+**Note**
 The pre('delete') hook has its scope set on the entity to be deleted. **Except** if an *Array* of ids is passed when calling Model.delete().
 
 ```
 blogSchema.pre('delete', function(next) {
 	console.log(this.entityKey); // the datastore entity key to be deleted
-	
+
 	// By default this.entityData is not present because the entity is *not* retreived
-	// You could call this.datastoreEntity() here (see the Entity section) to fetch the 
+	// You could call this.datastoreEntity() here (see the Entity section) to fetch the
 	// data from the Datastore and do any other business logic before calling next()
 });
 ```
@@ -916,7 +914,7 @@ schema.post('save', function(){
 });
 ```
 
-**Note**  
+**Note**
 The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook as a first argument with the key(s) that have been deleted.
 
 ```
@@ -928,24 +926,24 @@ schema.post('delete', function(keys){
 
 ### Transactions and Hooks
 
-When you save or delete an entity from inside a transaction, Datastools adds an extra **execPostHooks()** method to the transaction.  
+When you save or delete an entity from inside a transaction, Datastools adds an extra **execPostHooks()** method to the transaction.
 If the transaction succeeds and you have any post('save') or post('delete') hooks on any of the entities modified during the transaction you need to call this method to execute them.
 
 ```
 datastools.runInTransaction(function(transaction, done){
-	
+
 	var user = new User({name:'john'}); // user could also come from a query() or get()
 	user.save(transaction);
-	
+
 	BlogPost.delete(123, null, null, transaction);
-	
+
 	done();
-	
+
 }, function(transactionError){
     if (transactionError) { // deal with error }
-    
+
     // no error, call postHooks
-    
+
     transaction.execPostHooks();
 });
 
