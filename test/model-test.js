@@ -503,6 +503,16 @@ describe('Model', function() {
             expect(data.unknown).not.exist;
         });
 
+        it('should convert "null" string to null', () => {
+            let data = {
+                name : 'null'
+            };
+
+            data = ModelInstance.sanitize(data);
+
+            expect(data.name).equal(null);
+        });
+
         it('return null if data is not an object', () => {
             let data = 'hello';
 
