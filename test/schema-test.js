@@ -19,7 +19,8 @@ describe('Schema', () => {
             expect(schema.s.hooks.constructor.name).to.equal('Kareem');
             expect(schema.options).to.exist;
             expect(schema.options.queries).deep.equal({
-                simplifyResult:true
+                simplifyResult:true,
+                readAll : false
             });
         });
 

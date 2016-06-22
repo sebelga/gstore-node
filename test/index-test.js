@@ -1,4 +1,5 @@
 /*jshint -W030 */
+
 var chai       = require('chai');
 var expect     = chai.expect;
 var sinon      = require('sinon');
@@ -66,7 +67,7 @@ describe('Datastools', function() {
             expect(Model.schema.constructor.name).to.equal('Schema');
         });
 
-        it('should attach schema to compiled Model', () => {
+        it('and attach schema to compiled Model', () => {
             let Blog       = datastools.model('Blog', schema);
             let schemaUser = new datastools.Schema({name: {type: 'string'}});
             let User       = datastools.model('User', schemaUser);
@@ -132,5 +133,24 @@ describe('Datastools', function() {
         let version = pkg.version;
 
         expect(datastools.version).equal(version);
+    });
+
+    it('should return the datastore instance', () => {
+        datastools.connect(ds);
+
+        expect(datastools.ds).equal(ds);
+    });
+
+    it('should create shortcut of datastore.runInTransaction', () => {
+        datastools.connect(ds);
+        let fn = () => {};
+        let cb = () => {};
+        sinon.spy(ds, 'runInTransaction');
+
+        datastools.runInTransaction(fn, cb);
+
+        expect(ds.runInTransaction.called).be.true;
+        expect(ds.runInTransaction.getCall(0).args[0]).equal(fn);
+        expect(ds.runInTransaction.getCall(0).args[1]).equal(cb);
     });
 });

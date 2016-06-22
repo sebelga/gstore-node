@@ -22,14 +22,14 @@ describe('ValidationError', () => {
         expect(error.message).equal(errorData);
     });
 
-    it('should return "{entityName} validation failed" if called with entity instance', () => {
-        let entityName    = 'Blog';
+    it('should return "{entityKind} validation failed" if called with entity instance', () => {
+        let entityKind    = 'Blog';
         let schema        = new Schema({});
-        let ModelInstance = Model.compile(entityName, schema, {key:()=> {}});
+        let ModelInstance = Model.compile(entityKind, schema, {key:()=> {}});
         let model         = new ModelInstance({});
         let error         = new ValidationError(model);
 
-        expect(error.message).equal(entityName + ' validation failed');
+        expect(error.message).equal(entityKind + ' validation failed');
     });
 
     it('should return "Validation failed" if called without param', () => {
