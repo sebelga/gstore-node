@@ -142,6 +142,15 @@ describe('Datastools', function() {
     });
 
     it('should create shortcut of datastore.runInTransaction', () => {
-        expect(datastools.runInTransaction).equal(ds.runInTransaction);
+        datastools.connect(ds);
+        let fn = () => {};
+        let cb = () => {};
+        sinon.spy(ds, 'runInTransaction');
+
+        datastools.runInTransaction(fn, cb);
+
+        expect(ds.runInTransaction.called).be.true;
+        expect(ds.runInTransaction.getCall(0).args[0]).equal(fn);
+        expect(ds.runInTransaction.getCall(0).args[1]).equal(cb);
     });
 });

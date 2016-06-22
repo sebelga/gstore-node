@@ -764,6 +764,14 @@ describe('Model', function() {
             clock.tick(20);
         });
 
+        it('should save entity in a transaction WITHOUT passing callback', function() {
+            model.save(transaction);
+
+            clock.tick(20);
+
+            expect(transaction.save.called).be.true;
+        });
+
         it('should throw error if transaction not instance of Transaction', function() {
             var fn = function() {
                 model.save({}, {}, function() {});
@@ -1458,7 +1466,7 @@ describe('Model', function() {
                 sinon.stub(ds, 'delete', function() {
                     let args = Array.prototype.slice.call(arguments);
                     let cb = args.pop();
-                    return cb(null, true);
+                    return cb(null, {});
                 });
 
                 sinon.spy(async, 'eachSeries');

@@ -412,11 +412,20 @@ BlogPost.delete([123, 456, 789], function(err, success, apiResponse) {...}
 // With ancestors and a namespace
 BlogPost.delete(123, ['Parent', 123], 'dev.namespace.com', function(err, success, apiResponse) {...}
 
+// Transaction
+// -----------
 // The same method can be executed from inside a transaction
+// Important: you need to execute done() from the callback as Datastools needs to execute
+// the "pre" hooks before deleting the entity
 
 datastools.runInTransaction(function(transaction, done){
 
-	BlogPost.delete(123, null, null, transaction);
+	BlogPost.delete(123, null, null, transaction, function() {
+		
+		[... any other transaction operation]
+		
+		done();
+	});
 
 }, function(){...});
 
@@ -568,7 +577,7 @@ datastools.runInTransaction(function(transaction, done){
 	var user = new User({name:'john'}); // user could also come from a query() or get()
 	user.save(transaction);
 
-	... keep up until calling done()
+	... other transaction operations until calling done()
 
 }, function(){...});
 
@@ -797,8 +806,8 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 ### findAround()
 `Model.findAround(property, value, settings, callback)`
 
-Easily find entities before or after an entity based on a property and a value.
-**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
+Find entities before or after an entity based on a property and a value.  
+**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
 You can also override the "simplifyResult" global queries setting.
 
 ```
@@ -818,7 +827,7 @@ User.findAround('lastname', 'Jagger', {before:10, simplifyResult:false}, functio
 ```
 BlogPost.deleteAll(ancestors /*optional*/, namespace /*optional*/, callback)
 ```
-Sometimes you need to delete all the entities of a certain kind. This shortcut query lets you do just that.
+If you need to delete all the entities of a certain kind, this shortcut query will do just that.
 
 ```
 BlogPost.deleteAll(function(err, result){
