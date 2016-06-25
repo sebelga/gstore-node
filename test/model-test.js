@@ -530,6 +530,12 @@ describe('Model', function() {
             expect(key.path[1]).not.exist;
         });
 
+        it('should parse string id "123" to integer', () => {
+            let key = ModelInstance.createKey('123');
+
+            expect(key.path[1]).equal(123);
+        });
+
         it('should create array of ids', () => {
             let keys = ModelInstance.createKey([22, 69]);
 
