@@ -618,12 +618,11 @@ In case you need at any moment to fetch the entity data from the Datastore, this
 ```
 var user = new User({name:'John'});
 
-user.save(function(err, userEntity) {
+user.save(function(err) {
 	// userEntity is an *Datastools* entity instance of a User Model
 
-	entity.datastoreEntity(function(err, entity){
-		// here the entity is the entity saved *in* the Google Datastore
-		// with a key and data property
+	this.datastoreEntity(function(err, entity){
+		console.log(entity.get('name')); // 'John'
 	});
 });
 ```
