@@ -421,9 +421,9 @@ BlogPost.delete(123, ['Parent', 123], 'dev.namespace.com', function(err, success
 datastools.runInTransaction(function(transaction, done){
 
 	BlogPost.delete(123, null, null, transaction, function() {
-		
+
 		[... any other transaction operation]
-		
+
 		done();
 	});
 
@@ -466,7 +466,11 @@ blogPost.save(function(err, entity) {...});
 <a name="modelSanitize"></a>
 ##### sanitize()
 
-With this method you can remove properties coming from an untrusted source that are defined as not *writable*.
+This methods will clean and do basic formatting of an entity data. It is a good practice to call it on data coming from an untrusted source.
+Executing it will:
+
+- remove properties that are marked as not *writable* in schemas
+- convert 'null' (string) values to null
 
 ```
 var userSchema = new Schema({
@@ -560,12 +564,13 @@ var data = {
 };
 var blogPostEntity = new BlogPost(data);
 
-blogPostEntity.save(function(err, entity) {
+blogPostEntity.save(function(err) {
     if (err) {// deal with err}
 
-    console.log(entity.plain());
-    console.log(entity.get('title')); // 'My first blog post'
-    console.log(entity.entityKey.id); // contains the auto generated id
+    // the function scope (this) is the entity instance.
+    console.log(this.plain());
+    console.log(this.get('title')); // 'My first blog post'
+    console.log(this.entityKey.id); // to get the auto generated id
 });
 
 /*
@@ -613,12 +618,11 @@ In case you need at any moment to fetch the entity data from the Datastore, this
 ```
 var user = new User({name:'John'});
 
-user.save(function(err, userEntity) {
+user.save(function(err) {
 	// userEntity is an *Datastools* entity instance of a User Model
 
-	entity.datastoreEntity(function(err, entity){
-		// here the entity is the entity saved *in* the Google Datastore
-		// with a key and data property
+	this.datastoreEntity(function(err, entity){
+		console.log(entity.get('name')); // 'John'
 	});
 });
 ```
@@ -654,7 +658,7 @@ query.run(function(err, response) {
     var nextPageCursor = response.nextPageCursor; // not present if no more results
 });
 
-// You can then use the nextPageCursor when calling the same query and passint it in a start value
+// You can then use the nextPageCursor when calling the same query and set it as a start value
 var query = User.query()
             .filter('name', '=', 'John')
             .filter('age', '>=', 4)
@@ -697,7 +701,7 @@ Currently it support the following queries parameters
 - filters (default operator is "=" and does not need to be passed
 
 
-####Define on Schema
+**Define on Schema**
 
 `entitySchema.queries('list', {...settings});`
 
@@ -724,7 +728,7 @@ blogPostSchema.queries('list', querySettings);
 var BlogPost = datastools.model('BlogPost', blogPostSchema);
 ```
 
-####Use anywhere
+**Use anywhere**
 
 `Model.list(callback)`
 The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
@@ -750,7 +754,7 @@ var querySettings = {
 };
 ```
 
-#### Override settings
+**Override settings**
 These global settings can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
 
 ```
@@ -806,8 +810,8 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 ### findAround()
 `Model.findAround(property, value, settings, callback)`
 
-Find entities before or after an entity based on a property and a value.  
-**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
+Find entities before or after an entity based on a property and a value.
+**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
 You can also override the "simplifyResult" global queries setting.
 
 ```
@@ -900,15 +904,15 @@ user.save(function(err, entity) {
 ```
 
 **Note**
-The pre('delete') hook has its scope set on the entity to be deleted. **Except** if an *Array* of ids is passed when calling Model.delete().
+The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids is passed when calling Model.delete().
 
 ```
 blogSchema.pre('delete', function(next) {
 	console.log(this.entityKey); // the datastore entity key to be deleted
 
-	// By default this.entityData is not present because the entity is *not* retreived
-	// You could call this.datastoreEntity() here (see the Entity section) to fetch the
-	// data from the Datastore and do any other business logic before calling next()
+	// By default this.entityData is not present because the entity is *not* fetched from the Datastore.
+	// You can call this.datastoreEntity() here (see the Entity section) to fetch the
+	// data from the Datastore and do any other logic before calling next()
 });
 ```
 
@@ -924,11 +928,11 @@ schema.post('save', function(){
 ```
 
 **Note**
-The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook as a first argument with the key(s) that have been deleted.
+The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook has a first argument with the key(s) that have been deleted.
 
 ```
 schema.post('delete', function(keys){
-	// keys can be one or an array of entity Keys that have been deleted.
+	// keys can be one Key or an array of entity Keys that have been deleted.
 });
 ```
 
@@ -958,7 +962,7 @@ datastools.runInTransaction(function(transaction, done){
 
 ```
 
-## Methods
+## Custom Methods
 Custom methods can be attached to entities instances.
 
 ```
