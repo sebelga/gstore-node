@@ -564,12 +564,13 @@ var data = {
 };
 var blogPostEntity = new BlogPost(data);
 
-blogPostEntity.save(function(err, entity) {
+blogPostEntity.save(function(err) {
     if (err) {// deal with err}
 
-    console.log(entity.plain());
-    console.log(entity.get('title')); // 'My first blog post'
-    console.log(entity.entityKey.id); // contains the auto generated id
+    // the function scope (this) is the entity instance.
+    console.log(this.plain());
+    console.log(this.get('title')); // 'My first blog post'
+    console.log(this.entityKey.id); // to get the auto generated id
 });
 
 /*
@@ -658,7 +659,7 @@ query.run(function(err, response) {
     var nextPageCursor = response.nextPageCursor; // not present if no more results
 });
 
-// You can then use the nextPageCursor when calling the same query and passint it in a start value
+// You can then use the nextPageCursor when calling the same query and set it as a start value
 var query = User.query()
             .filter('name', '=', 'John')
             .filter('age', '>=', 4)
@@ -904,15 +905,15 @@ user.save(function(err, entity) {
 ```
 
 **Note**
-The pre('delete') hook has its scope set on the entity to be deleted. **Except** if an *Array* of ids is passed when calling Model.delete().
+The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids is passed when calling Model.delete().
 
 ```
 blogSchema.pre('delete', function(next) {
 	console.log(this.entityKey); // the datastore entity key to be deleted
 
-	// By default this.entityData is not present because the entity is *not* retreived
-	// You could call this.datastoreEntity() here (see the Entity section) to fetch the
-	// data from the Datastore and do any other business logic before calling next()
+	// By default this.entityData is not present because the entity is *not* fetched from the Datastore.
+	// You can call this.datastoreEntity() here (see the Entity section) to fetch the
+	// data from the Datastore and do any other logic before calling next()
 });
 ```
 
