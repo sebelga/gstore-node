@@ -13,7 +13,7 @@ var ds = gcloud.datastore({
 });
 
 var gstore = require('../lib');
-datastools.connect(ds);
+gstore.connect(ds);
 var datastoreSerializer = require('../lib/serializer').Datastore;
 
 var Schema = require('../lib').Schema;
@@ -29,9 +29,9 @@ describe('Entity', () => {
     beforeEach(function() {
         clock = sinon.useFakeTimers();
 
-        datastools.models       = {};
-        datastools.modelSchemas = {};
-        datastools.options      = {};
+        gstore.models       = {};
+        gstore.modelSchemas = {};
+        gstore.options      = {};
 
         schema = new Schema({
             name    : {type: 'string'},
@@ -49,7 +49,7 @@ describe('Entity', () => {
             this.lastname = split[1];
         });
 
-        ModelInstance = datastools.model('User', schema);
+        ModelInstance = gstore.model('User', schema);
 
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
@@ -62,7 +62,7 @@ describe('Entity', () => {
 
     describe('intantiate', function() {
         it('should initialized properties', (done) => {
-            let model  = datastools.model('BlogPost', schema);
+            let model  = gstore.model('BlogPost', schema);
 
             let entity = new model({}, 'keyid');
 
@@ -77,7 +77,7 @@ describe('Entity', () => {
         });
 
         it('should add data passed to entityData', () => {
-            let model  = datastools.model('BlogPost', schema);
+            let model  = gstore.model('BlogPost', schema);
 
             let entity = new model({name:'John'});
 
@@ -88,7 +88,7 @@ describe('Entity', () => {
             schema = new Schema({
                 name    : {type: 'string', optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model();
 
@@ -101,7 +101,7 @@ describe('Entity', () => {
                 lastname: {type: 'string'},
                 email:{optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({});
 
@@ -115,7 +115,7 @@ describe('Entity', () => {
                 name:{type:'string'},
                 email:{optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({});
 
@@ -127,7 +127,7 @@ describe('Entity', () => {
                 name    : {excludeFromIndexes:true},
                 lastname: {excludeFromIndexes:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({name:'John'});
 
@@ -140,7 +140,7 @@ describe('Entity', () => {
             beforeEach(() => {
                 sinon.spy(ds, 'key');
 
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
             });
 
             afterEach(() => {
@@ -221,7 +221,7 @@ describe('Entity', () => {
             it('should call pre hooks before saving', (done) => {
                 var save = sinon.spy(spyOn, 'fnHookPre');
                 schema.pre('save', save);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 entity.save(done);
@@ -239,7 +239,7 @@ describe('Entity', () => {
                 });
                 schema.pre('newmethod', preNewMethod);
                 schema.post('newmethod', postNewMethod);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 entity.newmethod();
@@ -253,7 +253,7 @@ describe('Entity', () => {
             it('should call post hooks after saving', () => {
                 let save = sinon.spy(spyOn, 'fnHookPost');
                 schema.post('save', save);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({});
 
                 entity.save(() => {
@@ -264,7 +264,7 @@ describe('Entity', () => {
 
             it('should not do anything if no hooks on schema', function() {
                 schema.callQueue = [];
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 expect(entity._pres).not.exist;
@@ -274,7 +274,7 @@ describe('Entity', () => {
             it('should not register unknown methods', () => {
                 schema.callQueue = [];
                 schema.pre('unknown', () => {});
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({});
 
                 expect(entity._pres).not.exist;
@@ -403,7 +403,7 @@ describe('Entity', () => {
     describe('model()', () => {
         it('should be able to return model instances', () => {
             let imageSchema = new Schema({});
-            let ImageModel  = datastools.model('Image', imageSchema);
+            let ImageModel  = gstore.model('Image', imageSchema);
 
             let blog = new ModelInstance({});
 
@@ -412,7 +412,7 @@ describe('Entity', () => {
 
         it('should be able to execute methods from other model instances', () => {
             let imageSchema  = new Schema({});
-            let ImageModel   = datastools.model('Image', imageSchema);
+            let ImageModel   = gstore.model('Image', imageSchema);
             let mockEntities = [{key : ds.key(['BlogPost', 1234])}];
 
             sinon.stub(ImageModel, 'get', (cb) => {
@@ -444,7 +444,7 @@ describe('Entity', () => {
                 this.lastname  = split[1];
             });
 
-            User = datastools.model('Client', schema);
+            User = gstore.model('Client', schema);
 
             model = new User({firstname:'John', lastname:'Snow'});
         });

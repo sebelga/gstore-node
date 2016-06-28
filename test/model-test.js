@@ -13,7 +13,7 @@ var ds = gcloud.datastore({
     apiEndpoint: 'http://localhost:8080'
 });
 
-var gstore          = require('../');
+var gstore              = require('../');
 var Model               = require('../lib/model');
 var Entity              = require('../lib/entity');
 var Schema              = require('../lib').Schema;
@@ -31,11 +31,11 @@ describe('Model', function() {
     var transaction;
 
     beforeEach('Before each Model (global)', function() {
-        datastools.models       = {};
-        datastools.modelSchemas = {};
-        datastools.options      = {};
+        gstore.models       = {};
+        gstore.modelSchemas = {};
+        gstore.options      = {};
 
-        datastools.connect(ds);
+        gstore.connect(ds);
 
         clock = sinon.useFakeTimers();
 
@@ -134,7 +134,7 @@ describe('Model', function() {
 
         sinon.spy(transaction, 'rollback');
 
-        ModelInstance = datastools.model('Blog', schema, ds);
+        ModelInstance = gstore.model('Blog', schema, ds);
     });
 
     afterEach(function() {
@@ -147,9 +147,9 @@ describe('Model', function() {
 
     describe('compile()', function() {
         beforeEach('Reset before compile', function() {
-            datastools.models       = {};
-            datastools.modelSchemas = {};
-            ModelInstance = datastools.model('Blog', schema);
+            gstore.models       = {};
+            gstore.modelSchemas = {};
+            ModelInstance = gstore.model('Blog', schema);
         });
 
         it('should set properties on compile and return ModelInstance', () => {
@@ -170,7 +170,7 @@ describe('Model', function() {
 
         it('should execute methods passed to schema.methods', () => {
             let imageSchema = new Schema({});
-            let ImageModel  = datastools.model('Image', imageSchema);
+            let ImageModel  = gstore.model('Image', imageSchema);
             sinon.stub(ImageModel, 'get', (id, cb) => {
                 cb(null, mockEntities[0]);
             });
@@ -181,7 +181,7 @@ describe('Model', function() {
                 return this.model('Image').get(this.entityData.imageIdx, cb);
             };
 
-            ModelInstance = datastools.model('MyEntity', schema);
+            ModelInstance = gstore.model('MyEntity', schema);
             var model = new ModelInstance({name:'John', lastname:'Snow'});
 
             model.fullName((err, result) => {
@@ -197,7 +197,7 @@ describe('Model', function() {
             let schema = new Schema({});
             schema.statics.doSomething = () => 123;
 
-            ModelInstance = datastools.model('MyEntity', schema);
+            ModelInstance = gstore.model('MyEntity', schema);
 
             expect(ModelInstance.doSomething()).equal(123);
         });
@@ -206,7 +206,7 @@ describe('Model', function() {
             let schema = new Schema({});
 
             schema.statics.get = () => 123;
-            let fn = () => datastools.model('MyEntity', schema);
+            let fn = () => gstore.model('MyEntity', schema);
 
             expect(fn).throw(Error);
         });
@@ -1054,7 +1054,7 @@ describe('Model', function() {
                 schema = new Schema({});
                 schema.pre('delete', function(next){next();});
                 schema.post('delete', function() {});
-                ModelInstance = datastools.model('NewBlog', schema);
+                ModelInstance = gstore.model('NewBlog', schema);
                 sinon.spy(ModelInstance, 'delete');
 
                 ModelInstance.deleteAll(function(){
@@ -1171,7 +1171,7 @@ describe('Model', function() {
                 datastoreSerializer.fromDatastore
                 sinon.spy(datastoreSerializer, 'fromDatastore');
                 schema = new Schema({name:{}}, {queries:{simplifyResult:true}});
-                ModelInstance = datastools.model('Entity', schema, ds);
+                ModelInstance = gstore.model('Entity', schema, ds);
 
                 ModelInstance.findAround('createdOn', '2016-1-1', {after:3, simplifyResult:false}, () => {});
 
@@ -1502,7 +1502,7 @@ describe('Model', function() {
 
         it('should update modifiedOn to new Date if property in Schema', () => {
             schema = new Schema({modifiedOn: {type: 'datetime'}});
-            var model  = datastools.model('BlogPost', schema);
+            var model  = gstore.model('BlogPost', schema);
 
             var entity = new model({});
             entity.save((err, entity) => {});
