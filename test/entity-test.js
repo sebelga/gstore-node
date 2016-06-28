@@ -12,28 +12,44 @@ var ds = gcloud.datastore({
     apiEndpoint: 'http://localhost:8080'
 });
 
-var datastools = require('../lib');
-datastools.connect(ds);
+var gstore = require('../lib');
+gstore.connect(ds);
 var datastoreSerializer = require('../lib/serializer').Datastore;
 
 var Schema = require('../lib').Schema;
+var Model  = require('../lib/model');
 
 describe('Entity', () => {
     "use strict";
 
+    var clock;
     var schema;
     var ModelInstance;
 
     beforeEach(function() {
-        datastools.models       = {};
-        datastools.modelSchemas = {};
-        datastools.options      = {};
+        clock = sinon.useFakeTimers();
+
+        gstore.models       = {};
+        gstore.modelSchemas = {};
+        gstore.options      = {};
 
         schema = new Schema({
-            name    : {type: 'string', password:'string'}
+            name    : {type: 'string'},
+            lastname: {type:'string'},
+            password: {type: 'string'}
         });
 
-        ModelInstance = datastools.model('User', schema);
+        schema.virtual('fullname').get(function() {
+            return this.name + ' ' + this.lastname;
+        });
+
+        schema.virtual('fullname').set(function(name) {
+            var split     = name.split(' ');
+            this.name     = split[0];
+            this.lastname = split[1];
+        });
+
+        ModelInstance = gstore.model('User', schema);
 
         sinon.stub(ds, 'save', (entity, cb) => {
             cb(null, entity);
@@ -46,7 +62,7 @@ describe('Entity', () => {
 
     describe('intantiate', function() {
         it('should initialized properties', (done) => {
-            let model  = datastools.model('BlogPost', schema);
+            let model  = gstore.model('BlogPost', schema);
 
             let entity = new model({}, 'keyid');
 
@@ -61,7 +77,7 @@ describe('Entity', () => {
         });
 
         it('should add data passed to entityData', () => {
-            let model  = datastools.model('BlogPost', schema);
+            let model  = gstore.model('BlogPost', schema);
 
             let entity = new model({name:'John'});
 
@@ -72,7 +88,7 @@ describe('Entity', () => {
             schema = new Schema({
                 name    : {type: 'string', optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model();
 
@@ -85,7 +101,7 @@ describe('Entity', () => {
                 lastname: {type: 'string'},
                 email:{optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({});
 
@@ -99,7 +115,7 @@ describe('Entity', () => {
                 name:{type:'string'},
                 email:{optional:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({});
 
@@ -111,7 +127,7 @@ describe('Entity', () => {
                 name    : {excludeFromIndexes:true},
                 lastname: {excludeFromIndexes:true}
             });
-            let model = datastools.model('BlogPost', schema);
+            let model = gstore.model('BlogPost', schema);
 
             let entity = new model({name:'John'});
 
@@ -124,7 +140,7 @@ describe('Entity', () => {
             beforeEach(() => {
                 sinon.spy(ds, 'key');
 
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
             });
 
             afterEach(() => {
@@ -205,7 +221,7 @@ describe('Entity', () => {
             it('should call pre hooks before saving', (done) => {
                 var save = sinon.spy(spyOn, 'fnHookPre');
                 schema.pre('save', save);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 entity.save(done);
@@ -223,7 +239,7 @@ describe('Entity', () => {
                 });
                 schema.pre('newmethod', preNewMethod);
                 schema.post('newmethod', postNewMethod);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 entity.newmethod();
@@ -237,7 +253,7 @@ describe('Entity', () => {
             it('should call post hooks after saving', () => {
                 let save = sinon.spy(spyOn, 'fnHookPost');
                 schema.post('save', save);
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({});
 
                 entity.save(() => {
@@ -248,7 +264,7 @@ describe('Entity', () => {
 
             it('should not do anything if no hooks on schema', function() {
                 schema.callQueue = [];
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
                 expect(entity._pres).not.exist;
@@ -258,7 +274,7 @@ describe('Entity', () => {
             it('should not register unknown methods', () => {
                 schema.callQueue = [];
                 schema.pre('unknown', () => {});
-                Model  = datastools.model('BlogPost', schema);
+                Model  = gstore.model('BlogPost', schema);
                 entity = new Model({});
 
                 expect(entity._pres).not.exist;
@@ -271,7 +287,7 @@ describe('Entity', () => {
         var user;
 
         beforeEach(function() {
-            user = new ModelInstance({'name':'John'});
+            user = new ModelInstance({name:'John', lastname:'Snow'});
         });
 
         it ('should get an entityData property', function() {
@@ -280,12 +296,24 @@ describe('Entity', () => {
             expect(name).equal('John');
         });
 
+        it('should return virtual', () => {
+            let fullname = user.get('fullname');
+
+            expect(fullname).equal('John Snow');
+        });
+
         it ('should set an entityData property', function() {
             user.set('name', 'Gregory');
 
             let name = user.get('name');
 
             expect(name).equal('Gregory');
+        });
+
+        it('should set virtual', () => {
+            user.set('fullname', 'Peter Jackson');
+
+            expect(user.entityData.name).equal('Peter');
         });
     });
 
@@ -296,6 +324,15 @@ describe('Entity', () => {
 
         afterEach(function() {
             datastoreSerializer.fromDatastore.restore();
+        });
+
+        it('should throw an error is options is not of type Object', () => {
+            let fn = () => {
+                var model  = new ModelInstance({name:'John'});
+                let output = model.plain(true);
+            }
+
+            expect(fn).throw(Error);
         });
 
         it('should call datastoreSerializer "fromDatastore"', () => {
@@ -310,24 +347,136 @@ describe('Entity', () => {
         });
 
         it('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
-            var model      = new ModelInstance({name:'John'});
+            var model = new ModelInstance({name:'John'});
 
-            let output = model.plain(true);
+            let output = model.plain({readAll:true});
 
             expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(true);
         });
+
+        it('should add virtuals', () => {
+            var model = new ModelInstance({name:'John'});
+            sinon.spy(model, 'addVirtuals');
+
+            let output = model.plain({virtuals:true});
+
+            expect(model.addVirtuals.called).be.true;
+        });
+
     });
 
     describe('datastoreEntity()', function() {
-        it('should return ds.get passing the entityKey', function() {
-            var model = new ModelInstance({name:'John'});
+        it ('should get the data from the Datastore and merge it into the entity', function() {
+            let mockData = {name:'John'};
             sinon.stub(ds, 'get', function(key, cb) {
-                cb(null, {message:'ok'});
+                cb(null, {data:mockData});
             });
 
-            model.datastoreEntity((err, data) => {
-                expect(data.message).equal('ok');
+            var model = new ModelInstance({});
+
+            model.datastoreEntity((err, entity) => {
+                expect(ds.get.called).be.true;
+                expect(ds.get.getCall(0).args[0]).equal(model.entityKey);
+                expect(entity.className).equal('Entity');
+                expect(entity.entityData).equal(mockData);
+
+                ds.get.restore();
             });
         });
-    })
+
+        it ('should deal with error while fetching the entity', function() {
+            let error = {code:500, message:'Something went bad'};
+            sinon.stub(ds, 'get', function(key, cb) {
+                cb(error);
+            });
+
+            var model = new ModelInstance({});
+
+            model.datastoreEntity((err) => {
+                expect(err).equal(error);
+
+                ds.get.restore();
+            });
+        });
+    });
+
+    describe('model()', () => {
+        it('should be able to return model instances', () => {
+            let imageSchema = new Schema({});
+            let ImageModel  = gstore.model('Image', imageSchema);
+
+            let blog = new ModelInstance({});
+
+            expect(blog.model('Image')).equal(ImageModel);
+        });
+
+        it('should be able to execute methods from other model instances', () => {
+            let imageSchema  = new Schema({});
+            let ImageModel   = gstore.model('Image', imageSchema);
+            let mockEntities = [{key : ds.key(['BlogPost', 1234])}];
+
+            sinon.stub(ImageModel, 'get', (cb) => {
+                cb(null, mockEntities[0]);
+            });
+
+            let blog = new ModelInstance({});
+
+            blog.model('Image').get((err, entity) => {
+                expect(entity).equal(mockEntities[0]);
+            });
+        });
+    });
+
+    describe('addVirtuals()', () => {
+        var model;
+        var User;
+
+        beforeEach(() => {
+            var schema = new Schema({firstname:{}, lastname:{}});
+
+            schema.virtual('fullname').get(function() {
+                return this.firstname + ' ' + this.lastname;
+            });
+
+            schema.virtual('fullname').set(function(name) {
+                let split      = name.split(' ');
+                this.firstname = split[0];
+                this.lastname  = split[1];
+            });
+
+            User = gstore.model('Client', schema);
+
+            model = new User({firstname:'John', lastname:'Snow'});
+        });
+
+        it('should create virtual (get) setting scope to entityData', () => {
+            model.addVirtuals();
+
+            expect(model.entityData.fullname).equal('John Snow');
+        });
+
+        it('should Not override', () => {
+            model = new User({firstname:'John', lastname:'Snow', fullname:'Jooohn'});
+            model.addVirtuals();
+
+            expect(model.entityData.fullname).equal('Jooohn');
+        });
+
+        it('should read and parse virtual (set)', () => {
+            model = new User({fullname:'John Snow'});
+
+            model.addVirtuals();
+
+            expect(model.entityData.firstname).equal('John');
+            expect(model.entityData.lastname).equal('Snow');
+        });
+
+        it('should override existing', () => {
+            model = new User({firstname:'Peter', fullname:'John Snow'});
+
+            model.addVirtuals();
+
+            expect(model.entityData.firstname).equal('John');
+        });
+    });
 });

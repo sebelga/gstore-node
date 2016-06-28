@@ -190,6 +190,16 @@ describe('Schema', () => {
         });
     });
 
+    describe('virtual()', () => {
+        it('should create new VirtualType', () => {
+            var schema = new Schema({});
+            var fn     = () => {};
+            schema.virtual('fullname', fn);
+
+            expect(schema.virtuals.fullname.constructor.name).equal('VirtualType');
+        });
+    });
+
     it('add shortCut queries settings', () => {
         let schema = new Schema({});
         let listQuerySettings = {limit:10, filters:[]};

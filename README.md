@@ -1,18 +1,17 @@
-# Datastools
+# gstore
 
-[![npm version](https://badge.fury.io/js/datastools.svg)](https://badge.fury.io/js/datastools) [![Build Status](https://travis-ci.org/sebelga/datastools.svg?branch=master)](https://travis-ci.org/sebelga/datastools)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/datastools/badge.svg?branch=master)](https://coveralls.io/github/sebelga/datastools?branch=master)
-Datastools is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
+[![npm version](https://badge.fury.io/js/gstore-node.svg)](https://badge.fury.io/js/gstore-node) [![Build Status](https://travis-ci.org/sebelga/gstore-node.svg?branch=master)](https://travis-ci.org/sebelga/gstore-node)
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)
+gstore is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
 
 - explicit **Schema declaration** for entities
 - properties **type validation**
 - properties **value validation**
-- queries **shortcuts**
+- **shortcuts** queries
 - pre & post **middlewares** (hooks)
 - **custom methods** on entity instances
-
 
 This library is in in active development, please report any issue you might find.
 
@@ -43,6 +42,7 @@ This library is in in active development, please report any issue you might find
     - [queries](#queries)
   - [Schema methods](#schema-methods)
     - [path()](#path)
+    - [virtual()](#virtual)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -52,6 +52,7 @@ This library is in in active development, please report any issue you might find
     - [Other methods](#other-methods)
       - [excludeFromIndexes()](#excludefromindexes)
       - [sanitize()](#sanitize)
+      - [key()](#key)
 - [Entity](#entity)
   - [Instantiate](#instantiate)
     - [id parameter (optional)](#id-parameter-optional)
@@ -61,14 +62,15 @@ This library is in in active development, please report any issue you might find
   - [Methods](#methods-1)
     - [Save()](#save)
     - [Other methods](#other-methods-1)
-      - [plain(readAll)](#plainreadall)
+      - [plain(options)](#plainoptions)
       - [get(path)](#getpath)
       - [set(path, value)](#setpath-value)
+      - [model()](#model)
       - [datastoreEntity()](#datastoreentity)
+      - [validate()](#validate)
 - [Queries](#queries)
   - [gcloud queries](#gcloud-queries)
   - [list()](#list)
-    - [Override settings](#override-settings)
   - [findOne()](#findone)
   - [findAround()](#findaround)
   - [deleteAll()](#deleteall)
@@ -76,7 +78,7 @@ This library is in in active development, please report any issue you might find
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
-- [Methods](#methods-2)
+- [Custom Methods](#custom-methods)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -89,35 +91,35 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
 
 ## Installation
  ```
- npm install datastools --save
+ npm install gstore-node --save
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/gcloud?method=gcloud).
 
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
  var ds           = gcloud.datastore();
 
- var datastools = require('datastools');
- datastools.connect(ds);
+ var gstore = require('gstore-node');
+ gstore.connect(ds);
  ```
 
 #### Aliases
 
-After a successfull connection, datastools has 2 aliases set up
+After a successfull connection, gstore has 2 aliases set up
 
-- `datastools.ds` The gcloud datastore instance
-- `datastools.runInTransaction`. Alias of the same gcloud method
+- `gstore.ds` The gcloud datastore instance
+- `gstore.runInTransaction`. Alias of the same gcloud method
 
 #### runInTransaction alias
 
 ## Schema
 ### Creation
 ```
-var datastools = require('datastools');
-var Schema     = datastools.Schema;
+var gstore = require('gstore-node');
+var Schema = gstore.Schema;
 
 var entitySchema = new Schema({
     name:{},
@@ -155,7 +157,7 @@ var entitySchema = new Schema({
 ```
 
 ### Properties values validations
-Datastools uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
+gstore uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
 ```
 var entitySchema = new Schema({
@@ -182,7 +184,7 @@ If you don't want certain properties to show up in the result of queries (with *
 
 This setting can be overridden by passing a *readAll* setting set to **true** in:
 
-- entity.**plain**(readAll); // true | false
+- entity.**plain**({readAll:true});
 - **globally** in list() and a Schema *queries* settings
 - **inline** settings of list(), query() and findAround()
 
@@ -245,19 +247,79 @@ mySchema.path('name'); // returns {type:'string'}
 mySchema.path('email', {type:'string', validate :'isEmail'});
 
 // From a Model
-var User = datastools.model('User');
+var User = gstore.model('User');
 
 // add new path to User Schema
 User.schema.path('age', {type:'number'});
 
 ```
 
+#### virtual()
+
+Virtuals are properties that are added to the entities at runtime that are not persisted in the Datastore. You can both define a **getter** and a **setter**.
+
+**getter**
+
+```
+var schema = new Schema({
+	firstname: {},
+	lastname : {}
+});
+
+schema.virtual('fullname').get(function() {
+	// the scope (this) is the entityData object
+
+	return this.firstname + ' ' + this.lastname;
+});
+
+var User = gstore.model('User', schema);
+
+var user   = new User({firstname:'John', lastname:'Snow'});
+console.log(user.fullname); // 'John Snow';
+
+/*
+* You can also set virtuals to true in plain method to add them to your output object.
+*/
+var output = user.plain({virtuals:true});
+
+console.log(output.fullname); // 'John Snow';
+
+```
+
+**setter**
+
+```
+var schema = new Schema({
+	firstname: {},
+	lastname : {}
+});
+
+schema.virtual('fullname').set(function(name) {
+	var split      = name.split(' ');
+	this.firstname = split[0];
+	this.lastname  = split[1];
+});
+
+var User = gstore.model('User', schema);
+
+var user = new User();
+user.set('fullname', 'John Snow');
+
+console.log(user.get('firstname')); // 'John';
+console.log(user.get('lastname')); // 'Snow';
+
+// You can save this entity without problem as virtuals are removed from the entity data before saving
+user.save(function() {...});
+
+```
+
+
 ## Model
 ### Creation
 
 ```
-var datastools = require('datastools');
-var Schema     = datastools.Schema;
+var gstore = require('gstore-node');
+var Schema = gstore.Schema;
 
 var userSchema = new Schema({
     name:{},
@@ -265,7 +327,7 @@ var userSchema = new Schema({
     email:{}
 });
 
-var User = datastools.model('User', userSchema);
+var User = gstore.model('User', userSchema);
 ```
 
 ----------
@@ -284,8 +346,8 @@ This method accepts the following parameters:
 Returns: an entity **instance**.
 
 ```
-var blogPostSchema = new datastools.Schema({...});
-var BlogPost       = datastools.model('BlogPost', blogPostSchema);
+var blogPostSchema = new gstore.Schema({...});
+var BlogPost       = gstore.model('BlogPost', blogPostSchema);
 
 // id can be integer or string
 BlogPost.get(1234, function(err, entity) {
@@ -316,7 +378,7 @@ If you need to retreive an entity from inside a transaction, pass it as fourth p
 ```
 var error;
 
-datastools.runInTransaction(function(transaction, done) {
+gstore.runInTransaction(function(transaction, done) {
 	BlogPost.get(123, null, null, transaction, function(err, entity) {
 	    if (err) {
 	        error = err;
@@ -337,7 +399,8 @@ datastools.runInTransaction(function(transaction, done) {
 ```
 
 #### Update()
-To update a Model, call `Model.update(args)`. This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
+To update a Model, call `Model.update(...args);`
+This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
 The update() method has the following parameters
 
 - id : the id of the entity to update
@@ -352,7 +415,7 @@ Returns: an entity **instance**.
 ```
 ...
 
-var BlogPost = datastools.model('BlogPost');
+var BlogPost = gstore.model('BlogPost');
 
 var data = {
     title : 'New title'
@@ -374,7 +437,7 @@ BlogPost.update(123, data, ['Grandpa', 123, 'Dad', 123], 'dev.namespace.com', fu
 });
 
 // The same method can be executed from inside a transaction
-datastools.runInTransaction(function(transaction, done){
+gstore.runInTransaction(function(transaction, done){
 
 	BlogPost.update(123, data, null, null, transaction, function(err, entity){...});
 
@@ -383,19 +446,21 @@ datastools.runInTransaction(function(transaction, done){
 ```
 
 #### Delete()
-You can delete an entity by calling `delete(args)` on the Model.  This method accepts the following parameters
+You can delete an entity by calling `Model.delete(...args)`.
+This method accepts the following parameters
 
 - id : the id to delete. Can also be an **array** of ids
 - ancestors (optional)
 - namespace (optional)
 - transaction (optional)
+- key (optional) Can also be an **array** of keys
 - callback
 
 
 The callback has a "success" properties that is set to true if an entity has been deleted or false if not.
 
 ```
-var BlogPost = datastools.model('BlogPost');
+var BlogPost = gstore.model('BlogPost');
 
 BlogPost.delete(123, function(err, success, apiResponse) {
     if (err) {
@@ -412,18 +477,22 @@ BlogPost.delete([123, 456, 789], function(err, success, apiResponse) {...}
 // With ancestors and a namespace
 BlogPost.delete(123, ['Parent', 123], 'dev.namespace.com', function(err, success, apiResponse) {...}
 
+// With a key (can also be an <Array> of keys)
+BlogPost.delete(null, null, null, null, key, function(err, success, apiResponse) {...}
+
+
 // Transaction
 // -----------
 // The same method can be executed from inside a transaction
-// Important: you need to execute done() from the callback as Datastools needs to execute
+// Important: you need to execute done() from the callback as gstore needs to execute
 // the "pre" hooks before deleting the entity
 
-datastools.runInTransaction(function(transaction, done){
+gstore.runInTransaction(function(transaction, done){
 
 	BlogPost.delete(123, null, null, transaction, function() {
-		
+
 		[... any other transaction operation]
-		
+
 		done();
 	});
 
@@ -442,7 +511,7 @@ var blogPostSchema = new Schema({
     title: {type:'string'}
 }, {explicitOnly:false});
 
-BlogPostModel = datastools.model('BlogPost', blogPostSchema);
+BlogPostModel = gstore.model('BlogPost', blogPostSchema);
 
 ...
 
@@ -466,7 +535,11 @@ blogPost.save(function(err, entity) {...});
 <a name="modelSanitize"></a>
 ##### sanitize()
 
-With this method you can remove properties coming from an untrusted source that are defined as not *writable*.
+This methods will clean and do basic formatting of an entity data. It is a good practice to call it on data coming from an untrusted source.
+Executing it will:
+
+- remove properties that are marked as not *writable* in schemas
+- convert 'null' (string) values to null
 
 ```
 var userSchema = new Schema({
@@ -479,12 +552,37 @@ var userSchema = new Schema({
 
 var data = req.body; // body request
 console.log(data.createdOn); // '2016-03-01T21:30:00';
+console.log(data.lastname); // "null";
 
 data = UserModel.sanitize(data);
 console.log(data.createdOn); // undefined
+console.log(data.lastname); // null
 
 
 ```
+
+##### key()
+Create entity Key(s). This method accepts the following arguments:
+
+- id (one or several in an Array)
+- ancestors (optional)
+- namespace (optional)
+
+```
+var User = gstore.model('User');
+
+var entityKey = User.key(123);
+
+// with ancestors and namespace
+var entityKey = User.key(123, ['Parent', 'keyname'], 'dev.domain.com');
+
+// passing array of ids
+
+var entityKeys = User.key([123, 456]);
+console.log(entityKeys.length); // 2
+
+```
+
 
 ## Entity
 Each entity is an instance of its Model that has a Datastore Key and data.
@@ -546,33 +644,34 @@ var blogPost = new BlogPost(data, null, null, 'dev-com.my-domain');
 After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(transaction /*optional*/, callback)`
 
 ```
-var datastools = require('datastools');
+var gstore = require('gstore-node');
 
-var blogPostSchema = new datastools.Schema({
+var blogPostSchema = new gstore.Schema({
     title :     {type:'string'},
     createdOn : {type:'datetime', default:new Date()}
 });
 
-var BlogPost = datastools.model('BlogPost', blogPostSchema);
+var BlogPost = gstore.model('BlogPost', blogPostSchema);
 
 var data = {
     title : 'My first blog post'
 };
 var blogPostEntity = new BlogPost(data);
 
-blogPostEntity.save(function(err, entity) {
+blogPostEntity.save(function(err) {
     if (err) {// deal with err}
 
-    console.log(entity.plain());
-    console.log(entity.get('title')); // 'My first blog post'
-    console.log(entity.entityKey.id); // contains the auto generated id
+    // the function scope (this) is the entity instance.
+    console.log(this.plain());
+    console.log(this.get('title')); // 'My first blog post'
+    console.log(this.entityKey.id); // to get the auto generated id
 });
 
 /*
 * From inside a transaction
 */
 
-datastools.runInTransaction(function(transaction, done){
+gstore.runInTransaction(function(transaction, done){
 
 	var user = new User({name:'john'}); // user could also come from a query() or get()
 	user.save(transaction);
@@ -587,8 +686,14 @@ datastools.runInTransaction(function(transaction, done){
 #### Other methods
 
 <a name="entityPlain"></a>
-##### plain(readAll)
-This methods returns the entity **data** and its entityKey **id** (int or string)
+##### plain(options)
+This methods returns the entity **data** and its entity key **id** (int or string)
+
+The options has 2 properties that you can set:
+
+- readAll (default false) // to output all the properties regardless of a schema "read" property setting
+- virtuals (default false) // to add virtuals to the output object
+
 
 ##### get(path)
 Get the value of an entity data at a specific path
@@ -607,31 +712,61 @@ user.set('name', 'Mike');
 user.get('name'); // Mike
 ```
 
+##### model()
+Get an entity Model from entity instance.
+
+```
+var UserModel = gstore.model('User');
+
+
+// Ex: on a schema 'pre' save hook
+commentSchema.pre('save', function(next){
+	var User = this.model('User');
+	console.log(User === UserModel); // true
+});
+
+```
+
+
 ##### datastoreEntity()
 In case you need at any moment to fetch the entity data from the Datastore, this method will do just that right on the entity instance.
 
 ```
 var user = new User({name:'John'});
 
-user.save(function(err, userEntity) {
-	// userEntity is an *Datastools* entity instance of a User Model
+user.save(function(err) {
+	// userEntity is an *gstore* entity instance of a User Model
 
-	entity.datastoreEntity(function(err, entity){
-		// here the entity is the entity saved *in* the Google Datastore
-		// with a key and data property
+	this.datastoreEntity(function(err, entity){
+		console.log(entity.get('name')); // 'John'
 	});
 });
 ```
+
+##### validate()
+This methods validates an entity data. Return true if valid, false otherwise.
+
+```
+var schema = new Schema({name:{}});
+var User   = gstore.model('User', schema);
+
+var user  = new User({name:'John', lastname:'Snow'});
+var valid = user.validate();
+
+console.log(valid); // false
+
+```
+
 
 ----------
 
 ## Queries
 ### gcloud queries
 
-Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.35.0/datastore/query) so you can execute any query from this library.
+gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/datastore/query) so you can execute any query from this library.
 
 ```
-var User = datastools.model('User'); // with User schema previously defined
+var User = gstore.model('User'); // with User schema previously defined
 
 // 1. Initialize query
 var query = User.query()
@@ -654,7 +789,7 @@ query.run(function(err, response) {
     var nextPageCursor = response.nextPageCursor; // not present if no more results
 });
 
-// You can then use the nextPageCursor when calling the same query and passint it in a start value
+// You can then use the nextPageCursor when calling the same query and set it as a start value
 var query = User.query()
             .filter('name', '=', 'John')
             .filter('age', '>=', 4)
@@ -697,14 +832,14 @@ Currently it support the following queries parameters
 - filters (default operator is "=" and does not need to be passed
 
 
-####Define on Schema
+**Define on Schema**
 
 `entitySchema.queries('list', {...settings});`
 
 Example
 ```
 // Create Schema
-var blogPostSchema = new datastools.Schema({
+var blogPostSchema = new gstore.Schema({
     title : {type:'string'}
 });
 
@@ -721,10 +856,10 @@ var querySettings = {
 blogPostSchema.queries('list', querySettings);
 
 // Create Model
-var BlogPost = datastools.model('BlogPost', blogPostSchema);
+var BlogPost = gstore.model('BlogPost', blogPostSchema);
 ```
 
-####Use anywhere
+**Use anywhere**
 
 `Model.list(callback)`
 The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
@@ -750,7 +885,7 @@ var querySettings = {
 };
 ```
 
-#### Override settings
+**Override settings**
 These global settings can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
 
 ```
@@ -792,7 +927,7 @@ Quickly find an entity by passing key/value pairs. You can optionaly pass an anc
 The entity returned is a entity **instance** of the Model.
 
 ```
-var User = datastools.model('User');
+var User = gstore.model('User');
 
 User.findOne({email:'john@snow.com'}, function(err, entity) {
     if (err) {... deal with error}
@@ -806,8 +941,8 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 ### findAround()
 `Model.findAround(property, value, settings, callback)`
 
-Find entities before or after an entity based on a property and a value.  
-**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.  
+Find entities before or after an entity based on a property and a value.
+**settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
 You can also override the "simplifyResult" global queries setting.
 
 ```
@@ -892,7 +1027,7 @@ function hashPassword(next) {
 
 // Then when you create a new user and save it (or when updating it)
 // its password will automatically be hashed
-var User = datastools.model('User');
+var User = gstore.model('User');
 var user = new User({username:'john', password:'mypassword'});
 user.save(function(err, entity) {
     console.log(entity.get('password')); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
@@ -900,15 +1035,15 @@ user.save(function(err, entity) {
 ```
 
 **Note**
-The pre('delete') hook has its scope set on the entity to be deleted. **Except** if an *Array* of ids is passed when calling Model.delete().
+The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids is passed when calling Model.delete().
 
 ```
 blogSchema.pre('delete', function(next) {
 	console.log(this.entityKey); // the datastore entity key to be deleted
 
-	// By default this.entityData is not present because the entity is *not* retreived
-	// You could call this.datastoreEntity() here (see the Entity section) to fetch the
-	// data from the Datastore and do any other business logic before calling next()
+	// By default this.entityData is not present because the entity is *not* fetched from the Datastore.
+	// You can call this.datastoreEntity() here (see the Entity section) to fetch the
+	// data from the Datastore and do any other logic before calling next()
 });
 ```
 
@@ -924,22 +1059,22 @@ schema.post('save', function(){
 ```
 
 **Note**
-The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook as a first argument with the key(s) that have been deleted.
+The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook has a first argument with the key(s) that have been deleted.
 
 ```
 schema.post('delete', function(keys){
-	// keys can be one or an array of entity Keys that have been deleted.
+	// keys can be one Key or an array of entity Keys that have been deleted.
 });
 ```
 
 
 ### Transactions and Hooks
 
-When you save or delete an entity from inside a transaction, Datastools adds an extra **execPostHooks()** method to the transaction.
+When you save or delete an entity from inside a transaction, gstore adds an extra **execPostHooks()** method to the transaction.
 If the transaction succeeds and you have any post('save') or post('delete') hooks on any of the entities modified during the transaction you need to call this method to execute them.
 
 ```
-datastools.runInTransaction(function(transaction, done){
+gstore.runInTransaction(function(transaction, done){
 
 	var user = new User({name:'john'}); // user could also come from a query() or get()
 	user.save(transaction);
@@ -958,24 +1093,33 @@ datastools.runInTransaction(function(transaction, done){
 
 ```
 
-## Methods
+## Custom Methods
 Custom methods can be attached to entities instances.
+`schema.methods.methodName = function(){}`
 
 ```
-var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
+var blogPostSchema = new Schema({title:{}});
 
-// add a fullName() method
-schema.methods.fullName = function(cb) {
-    cb(null, this.get('name') + ' ' + this.get('lastname'));
+// Custom method to query all "child" Text entities
+blogPostSchema.methods.texts = function(cb) {
+	var query = this.model('Text')
+						.query()
+						.hasAncestor(this.entityKey);
+
+	query.run(function(err, result){
+		if (err) {
+			return cb(err);
+		}
+		cb(null, result.entities);
+	});
 };
-var User = datastools.model('User', schema);
 
 ...
 
-// You can then call it on any instances of user
-var user = new User({name:'John', lastname:'Snow'});
-user.fullName(function(err, result) {
-    console.log(result); // 'John Snow';
+// You can then call it on all instances of BlogPost
+var blogPost = new BlogPost({title:'My Title'});
+blgoPost.texts(function(err, texts) {
+    console.log(texts); // texts entities;
 });
 ```
 
@@ -998,6 +1142,6 @@ user.getImage(function(err, imageEntity) {
 ```
 
 ## Credits
-I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write Datastools. Credits to them for the Schema, Model and Entity
+I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
 Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).

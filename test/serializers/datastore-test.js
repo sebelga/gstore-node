@@ -1,7 +1,7 @@
 var chai = require('chai');
 var expect = chai.expect;
 
-var datastools = require('../../');
+var gstore = require('../../');
 var Schema     = require('../../lib').Schema;
 
 var datastoreSerializer = require('../../lib/serializer').Datastore;
@@ -12,14 +12,14 @@ describe('Datastore serializer', () => {
     var ModelInstance;
 
     beforeEach(function() {
-        datastools.models       = {};
-        datastools.modelSchemas = {};
+        gstore.models       = {};
+        gstore.modelSchemas = {};
 
         var schema = new Schema({
             name: {type: 'string'},
             email : {type:'string', read:false}
         });
-        ModelInstance = datastools.model('Blog', schema, {});
+        ModelInstance = gstore.model('Blog', schema, {});
     });
 
     describe('should convert data FROM Datastore format', function() {
