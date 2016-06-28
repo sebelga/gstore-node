@@ -9,10 +9,9 @@ Its main features are:
 - explicit **Schema declaration** for entities
 - properties **type validation**
 - properties **value validation**
-- queries **shortcuts**
+- **shortcuts** queries
 - pre & post **middlewares** (hooks)
 - **custom methods** on entity instances
-
 
 This library is in in active development, please report any issue you might find.
 
@@ -43,6 +42,7 @@ This library is in in active development, please report any issue you might find
     - [queries](#queries)
   - [Schema methods](#schema-methods)
     - [path()](#path)
+    - [virtual()](#virtual)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -52,6 +52,7 @@ This library is in in active development, please report any issue you might find
     - [Other methods](#other-methods)
       - [excludeFromIndexes()](#excludefromindexes)
       - [sanitize()](#sanitize)
+      - [key()](#key)
 - [Entity](#entity)
   - [Instantiate](#instantiate)
     - [id parameter (optional)](#id-parameter-optional)
@@ -61,14 +62,15 @@ This library is in in active development, please report any issue you might find
   - [Methods](#methods-1)
     - [Save()](#save)
     - [Other methods](#other-methods-1)
-      - [plain(readAll)](#plainreadall)
+      - [plain(options)](#plainoptions)
       - [get(path)](#getpath)
       - [set(path, value)](#setpath-value)
+      - [model()](#model)
       - [datastoreEntity()](#datastoreentity)
+      - [validate()](#validate)
 - [Queries](#queries)
   - [gcloud queries](#gcloud-queries)
   - [list()](#list)
-    - [Override settings](#override-settings)
   - [findOne()](#findone)
   - [findAround()](#findaround)
   - [deleteAll()](#deleteall)
@@ -76,7 +78,7 @@ This library is in in active development, please report any issue you might find
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
-- [Methods](#methods-2)
+- [Custom Methods](#custom-methods)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -117,7 +119,7 @@ After a successfull connection, gstore has 2 aliases set up
 ### Creation
 ```
 var gstore = require('gstore-node');
-var Schema     = gstore.Schema;
+var Schema = gstore.Schema;
 
 var entitySchema = new Schema({
     name:{},
@@ -317,7 +319,7 @@ user.save(function() {...});
 
 ```
 var gstore = require('gstore-node');
-var Schema     = gstore.Schema;
+var Schema = gstore.Schema;
 
 var userSchema = new Schema({
     name:{},
