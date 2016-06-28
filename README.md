@@ -93,14 +93,14 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.34.0/gcloud?method=gcloud).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/gcloud?method=gcloud).
 
  ```
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
  var ds           = gcloud.datastore();
 
- var datastools = require('datastools');
+ var gstore = require('gstore-node');
  datastools.connect(ds);
  ```
 
@@ -116,7 +116,7 @@ After a successfull connection, datastools has 2 aliases set up
 ## Schema
 ### Creation
 ```
-var datastools = require('datastools');
+var gstore = require('gstore-node');
 var Schema     = datastools.Schema;
 
 var entitySchema = new Schema({
@@ -182,7 +182,7 @@ If you don't want certain properties to show up in the result of queries (with *
 
 This setting can be overridden by passing a *readAll* setting set to **true** in:
 
-- entity.**plain**(readAll); // true | false
+- entity.**plain**({readAll:true});
 - **globally** in list() and a Schema *queries* settings
 - **inline** settings of list(), query() and findAround()
 
@@ -252,11 +252,71 @@ User.schema.path('age', {type:'number'});
 
 ```
 
+#### virtual()
+
+Virtuals are properties that are added to the entities at runtime that are not persisted in the Datastore. You can both define a **getter** and a **setter**.
+
+**getter**
+
+```
+var schema = new Schema({
+	firstname: {},
+	lastname : {}
+});
+
+schema.virtual('fullname').get(function() {
+	// the scope (this) is the entityData object
+
+	return this.firstname + ' ' + this.lastname;
+});
+
+var User = datastools.model('User', schema);
+
+var user   = new User({firstname:'John', lastname:'Snow'});
+console.log(user.fullname); // 'John Snow';
+
+/*
+* You can also set virtuals to true in plain method to add them to your output object.
+*/
+var output = user.plain({virtuals:true});
+
+console.log(output.fullname); // 'John Snow';
+
+```
+
+**setter**
+
+```
+var schema = new Schema({
+	firstname: {},
+	lastname : {}
+});
+
+schema.virtual('fullname').set(function(name) {
+	var split      = name.split(' ');
+	this.firstname = split[0];
+	this.lastname  = split[1];
+});
+
+var User = datastools.model('User', schema);
+
+var user = new User();
+user.set('fullname', 'John Snow');
+
+console.log(user.get('firstname')); // 'John';
+console.log(user.get('lastname')); // 'Snow';
+
+// You can save this entity without problem as virtuals are removed from the entity data before saving
+user.save(function() {...});
+
+```
+
+
 ## Model
 ### Creation
 
 ```
-var datastools = require('datastools');
+var gstore = require('gstore-node');
 var Schema     = datastools.Schema;
 
 var userSchema = new Schema({
@@ -337,7 +397,8 @@ datastools.runInTransaction(function(transaction, done) {
 ```
 
 #### Update()
-To update a Model, call `Model.update(args)`. This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
+To update a Model, call `Model.update(...args);`
+This will get the entity from the Datastore, update its data with the ones passed and save it back to the Datastore (after validating the data).
 The update() method has the following parameters
 
 - id : the id of the entity to update
@@ -383,12 +444,14 @@ datastools.runInTransaction(function(transaction, done){
 ```
 
 #### Delete()
-You can delete an entity by calling `delete(args)` on the Model.  This method accepts the following parameters
+You can delete an entity by calling `Model.delete(...args)`.
+This method accepts the following parameters
 
 - id : the id to delete. Can also be an **array** of ids
 - ancestors (optional)
 - namespace (optional)
 - transaction (optional)
+- key (optional) Can also be an **array** of keys
 - callback
 
 
@@ -411,6 +474,10 @@ BlogPost.delete([123, 456, 789], function(err, success, apiResponse) {...}
 
 // With ancestors and a namespace
 BlogPost.delete(123, ['Parent', 123], 'dev.namespace.com', function(err, success, apiResponse) {...}
+
+// With a key (can also be an <Array> of keys)
+BlogPost.delete(null, null, null, null, key, function(err, success, apiResponse) {...}
+
 
 // Transaction
 // -----------
@@ -483,12 +550,37 @@ var userSchema = new Schema({
 
 var data = req.body; // body request
 console.log(data.createdOn); // '2016-03-01T21:30:00';
+console.log(data.lastname); // "null";
 
 data = UserModel.sanitize(data);
 console.log(data.createdOn); // undefined
+console.log(data.lastname); // null
 
 
 ```
+
+##### key()
+Create entity Key(s). This method accepts the following arguments:
+
+- id (one or several in an Array)
+- ancestors (optional)
+- namespace (optional)
+
+```
+var User = datastools.model('User');
+
+var entityKey = User.key(123);
+
+// with ancestors and namespace
+var entityKey = User.key(123, ['Parent', 'keyname'], 'dev.domain.com');
+
+// passing array of ids
+
+var entityKeys = User.key([123, 456]);
+console.log(entityKeys.length); // 2
+
+```
+
 
 ## Entity
 Each entity is an instance of its Model that has a Datastore Key and data.
@@ -550,7 +642,7 @@ var blogPost = new BlogPost(data, null, null, 'dev-com.my-domain');
 After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(transaction /*optional*/, callback)`
 
 ```
-var datastools = require('datastools');
+var gstore = require('gstore-node');
 
 var blogPostSchema = new datastools.Schema({
     title :     {type:'string'},
@@ -592,8 +684,14 @@ datastools.runInTransaction(function(transaction, done){
 #### Other methods
 
 <a name="entityPlain"></a>
-##### plain(readAll)
-This methods returns the entity **data** and its entityKey **id** (int or string)
+##### plain(options)
+This methods returns the entity **data** and its entity key **id** (int or string)
+
+The options has 2 properties that you can set:
+
+- readAll (default false) // to output all the properties regardless of a schema "read" property setting
+- virtuals (default false) // to add virtuals to the output object
+
 
 ##### get(path)
 Get the value of an entity data at a specific path
@@ -612,6 +710,22 @@ user.set('name', 'Mike');
 user.get('name'); // Mike
 ```
 
+##### model()
+Get an entity Model from entity instance.
+
+```
+var UserModel = datastools.model('User');
+
+
+// Ex: on a schema 'pre' save hook
+commentSchema.pre('save', function(next){
+	var User = this.model('User');
+	console.log(User === UserModel); // true
+});
+
+```
+
+
 ##### datastoreEntity()
 In case you need at any moment to fetch the entity data from the Datastore, this method will do just that right on the entity instance.
 
@@ -627,12 +741,27 @@ user.save(function(err) {
 });
 ```
 
+##### validate()
+This methods validates an entity data. Return true if valid, false otherwise.
+
+```
+var schema = new Schema({name:{}});
+var User   = datastools.model('User', schema);
+
+var user  = new User({name:'John', lastname:'Snow'});
+var valid = user.validate();
+
+console.log(valid); // false
+
+```
+
+
 ----------
 
 ## Queries
 ### gcloud queries
 
-Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.35.0/datastore/query) so you can execute any query from this library.
+Datastools is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/datastore/query) so you can execute any query from this library.
 
 ```
 var User = datastools.model('User'); // with User schema previously defined
@@ -964,22 +1093,31 @@ datastools.runInTransaction(function(transaction, done){
 
 ## Custom Methods
 Custom methods can be attached to entities instances.
+`schema.methods.methodName = function(){}`
 
 ```
-var schema = new Schema({name:{type:'string'}, lastname:{type:'string'}});
+var blogPostSchema = new Schema({title:{}});
 
-// add a fullName() method
-schema.methods.fullName = function(cb) {
-    cb(null, this.get('name') + ' ' + this.get('lastname'));
+// Custom method to query all "child" Text entities
+blogPostSchema.methods.texts = function(cb) {
+	var query = this.model('Text')
+						.query()
+						.hasAncestor(this.entityKey);
+
+	query.run(function(err, result){
+		if (err) {
+			return cb(err);
+		}
+		cb(null, result.entities);
+	});
 };
-var User = datastools.model('User', schema);
 
 ...
 
-// You can then call it on any instances of user
-var user = new User({name:'John', lastname:'Snow'});
-user.fullName(function(err, result) {
-    console.log(result); // 'John Snow';
+// You can then call it on all instances of BlogPost
+var blogPost = new BlogPost({title:'My Title'});
+blgoPost.texts(function(err, texts) {
+    console.log(texts); // texts entities;
 });
 ```
 

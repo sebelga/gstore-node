@@ -3,7 +3,7 @@
 var chai       = require('chai');
 var expect     = chai.expect;
 var sinon      = require('sinon');
-var datastools = require('../lib');
+var gstore = require('../lib');
 var Model      = require('../lib/model');
 var pkg        = require('../package.json');
 

@@ -1,7 +1,7 @@
 var chai = require('chai');
 var expect = chai.expect;
 
-var datastools = require('../../');
+var gstore = require('../../');
 var Schema     = require('../../lib').Schema;
 
 var datastoreSerializer = require('../../lib/serializer').Datastore;

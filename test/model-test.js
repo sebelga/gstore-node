@@ -13,7 +13,7 @@ var ds = gcloud.datastore({
     apiEndpoint: 'http://localhost:8080'
 });
 
-var datastools          = require('../');
+var gstore          = require('../');
 var Model               = require('../lib/model');
 var Entity              = require('../lib/entity');
 var Schema              = require('../lib').Schema;
@@ -57,11 +57,12 @@ describe('Model', function() {
             type:     {values:['image', 'video']}
         });
 
+        schema.virtual('fullname').get(function() {});
+
         sinon.stub(ds, 'save', (entity, cb) => {
             setTimeout(() => {
                 cb(null ,entity);
             }, 20);
-            // return cb(null, entity);
         });
 
         mockEntity = {
@@ -96,10 +97,12 @@ describe('Model', function() {
             }
             cb = args.pop();
 
+            //setTimeout(function() {
             return cb(null, mockEntities, {
                 moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
                 endCursor: 'abcdef'
             });
+            //}, 20);
         });
 
         function Transaction() {
@@ -165,29 +168,6 @@ describe('Model', function() {
             expect(ModelInstance.entityKind).equal('Blog');
         });
 
-        it('should be able to return model instances', () => {
-            let imageSchema = new Schema({});
-            let ImageModel  = datastools.model('Image', imageSchema);
-
-            let blog = new ModelInstance({});
-
-            expect(blog.model('Image')).equal(ImageModel);
-        });
-
-        it('should be able to execute methods from other model instances', () => {
-            let imageSchema = new Schema({});
-            let ImageModel  = datastools.model('Image', imageSchema);
-            sinon.stub(ImageModel, 'get', (cb) => {
-                cb(null, mockEntities[0]);
-            });
-
-            let blog = new ModelInstance({});
-
-            blog.model('Image').get((err, entity) => {
-                expect(entity).equal(mockEntities[0]);
-            });
-        });
-
         it('should execute methods passed to schema.methods', () => {
             let imageSchema = new Schema({});
             let ImageModel  = datastools.model('Image', imageSchema);
@@ -201,7 +181,7 @@ describe('Model', function() {
                 return this.model('Image').get(this.entityData.imageIdx, cb);
             };
 
-            ModelInstance = datastools.model('MyEntity', schema, ds);
+            ModelInstance = datastools.model('MyEntity', schema);
             var model = new ModelInstance({name:'John', lastname:'Snow'});
 
             model.fullName((err, result) => {
@@ -212,284 +192,23 @@ describe('Model', function() {
                 expect(result).equal(mockEntities[0]);
             });
         });
-    });
 
-    describe('validate()', () => {
-        it('properties passed ok', () => {
-            let model = new ModelInstance({name:'John', lastname:'Snow'});
+        it('should execute static methods', () => {
+            let schema = new Schema({});
+            schema.statics.doSomething = () => 123;
 
-            let valid = model.validate();
-            expect(valid.success).be.true;
+            ModelInstance = datastools.model('MyEntity', schema);
+
+            expect(ModelInstance.doSomething()).equal(123);
         });
 
-        it('properties passed ko', () => {
-            let model = new ModelInstance({unknown:123});
+        it('should throw error is trying to override reserved methods', () => {
+            let schema = new Schema({});
 
-            let valid = model.validate();
+            schema.statics.get = () => 123;
+            let fn = () => datastools.model('MyEntity', schema);
 
-            expect(valid.success).be.false;
-        });
-
-        it('accept unkwown properties', () => {
-            schema = new Schema({
-                name:     {type: 'string'},
-            }, {
-                explicitOnly : false
-            });
-            ModelInstance = Model.compile('Blog', schema, ds);
-            let model = new ModelInstance({unknown:123});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.true;
-        });
-
-        it ('no type validation', () => {
-            let model = new ModelInstance({street:123});
-            let model2 = new ModelInstance({street:'123'});
-            let model3 = new ModelInstance({street:true});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-        });
-
-        it ('--> string', () => {
-            let model = new ModelInstance({name:123});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
-        });
-
-        it ('--> number', () => {
-            let model = new ModelInstance({age:'string'});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
-        });
-
-        it('--> int', () => {
-            let model = new ModelInstance({age:gcloud.datastore.int('str')});
-            let valid = model.validate();
-
-            let model2 = new ModelInstance({age:gcloud.datastore.int('7')});
-            let valid2 = model2.validate();
-
-            let model3 = new ModelInstance({age:gcloud.datastore.int(7)});
-            let valid3 = model3.validate();
-
-            let model4 = new ModelInstance({age:'string'});
-            let valid4 = model4.validate();
-
-            let model5 = new ModelInstance({age:'7'});
-            let valid5 = model5.validate();
-
-            let model6 = new ModelInstance({age:7});
-            let valid6 = model6.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.true;
-        });
-
-        it('--> double', () => {
-            let model = new ModelInstance({price:gcloud.datastore.double('str')});
-            let valid = model.validate();
-
-            let model2 = new ModelInstance({price:gcloud.datastore.double('1.2')});
-            let valid2 = model2.validate();
-
-            let model3 = new ModelInstance({price:gcloud.datastore.double(7.0)});
-            let valid3 = model3.validate();
-
-            let model4 = new ModelInstance({price:'string'});
-            let valid4 = model4.validate();
-
-            let model5 = new ModelInstance({price:'7'});
-            let valid5 = model5.validate();
-
-            let model6 = new ModelInstance({price:7});
-            let valid6 = model6.validate();
-
-            let model7 = new ModelInstance({price:7.59});
-            let valid7 = model7.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.true;
-            expect(valid7.success).be.true;
-        });
-
-        it('--> buffer', () => {
-            let model = new ModelInstance({icon:'string'});
-            let valid = model.validate();
-
-            let model2 = new ModelInstance({icon:new Buffer('\uD83C\uDF69')});
-            let valid2 = model2.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-        });
-
-        it ('--> boolean', () => {
-            let model = new ModelInstance({modified:'string'});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
-        });
-
-        it('--> object', () => {
-            let model = new ModelInstance({prefs:{check:true}});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.true;
-        });
-
-        it('--> geoPoint', () => {
-            let model = new ModelInstance({location:'string'});
-            let valid = model.validate();
-
-            let model2 = new ModelInstance({location:gcloud.datastore.geoPoint({
-                                latitude: 40.6894,
-                                longitude: -74.0447
-                            })});
-            let valid2 = model2.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-        });
-
-        it('--> array ok', () => {
-            let model = new ModelInstance({tags:[]});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.true;
-        });
-
-        it('--> array ko', () => {
-            let model = new ModelInstance({tags:{}});
-            let model2 = new ModelInstance({tags:'string'});
-            let model3 = new ModelInstance({tags:123});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-        });
-
-        it('--> date ok', () => {
-            let model = new ModelInstance({birthday:'2015-01-01'});
-            let model2 = new ModelInstance({birthday:new Date()});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-        });
-
-        it ('--> date ko', () => {
-            let model = new ModelInstance({birthday:'01-2015-01'});
-            let model2 = new ModelInstance({birthday:'01-01-2015'});
-            let model3 = new ModelInstance({birthday:'2015/01/01'});
-            let model4 = new ModelInstance({birthday:'01/01/2015'});
-            let model5 = new ModelInstance({birthday:12345}); // No number allowed
-            let model6 = new ModelInstance({birthday:'string'});
-
-            let valid  = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-            let valid4 = model4.validate();
-            let valid5 = model5.validate();
-            let valid6 = model6.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.false;
-        });
-
-         it ('--> is URL ok', () => {
-            let model  = new ModelInstance({website:'http://google.com'});
-            let model2 = new ModelInstance({website:'google.com'});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-        });
-
-        it ('--> is URL ko', () => {
-            let model = new ModelInstance({website:'domain.k'});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
-        });
-
-        it ('--> is EMAIL ok', () => {
-            let model  = new ModelInstance({email:'john@snow.com'});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.true;
-        });
-
-        it ('--> is EMAIL ko', () => {
-            let model   = new ModelInstance({email:'john@snow'});
-            let model2  = new ModelInstance({email:'john@snow.'});
-            let model3  = new ModelInstance({email:'john@snow.k'});
-            let model4  = new ModelInstance({email:'johnsnow.com'});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-            let valid4 = model4.validate();
-
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-            expect(valid4.success).be.false;
-        });
-
-        it('--> is HexColor', () => {
-            let model  = new ModelInstance({color:'#fff'});
-            let model2  = new ModelInstance({color:'white'});
-
-            let valid = model.validate();
-            let valid2 = model2.validate();
-
-            expect(valid.success).be.true;
-            expect(valid2.success).be.false;
-        });
-
-        it ('and only accept value in default values', () => {
-            let model = new ModelInstance({type:'other'});
-
-            let valid = model.validate();
-
-            expect(valid.success).be.false;
+            expect(fn).throw(Error);
         });
     });
 
@@ -522,22 +241,22 @@ describe('Model', function() {
         });
     });
 
-    describe('createKey()', function() {
+    describe('key()', function() {
         it('should create from entityKind', () => {
-            let key = ModelInstance.createKey();
+            let key = ModelInstance.key();
 
             expect(key.path[0]).equal('Blog');
             expect(key.path[1]).not.exist;
         });
 
         it('should parse string id "123" to integer', () => {
-            let key = ModelInstance.createKey('123');
+            let key = ModelInstance.key('123');
 
             expect(key.path[1]).equal(123);
         });
 
         it('should create array of ids', () => {
-            let keys = ModelInstance.createKey([22, 69]);
+            let keys = ModelInstance.key([22, 69]);
 
             expect(is.array(keys)).be.true;
             expect(keys.length).equal(2);
@@ -546,7 +265,7 @@ describe('Model', function() {
 
         it('should create array of ids with ancestors and namespace', () => {
             let namespace = 'com.mydomain-dev';
-            let keys = ModelInstance.createKey([22, 69], ['Parent', 'keyParent'], namespace);
+            let keys = ModelInstance.key([22, 69], ['Parent', 'keyParent'], namespace);
 
             expect(keys[0].path[0]).equal('Parent');
             expect(keys[0].path[1]).equal('keyParent');
@@ -687,194 +406,6 @@ describe('Model', function() {
                 expect(err).equal(error);
                 expect(entity).not.exist;
             });
-        });
-    });
-
-    describe('save()', () => {
-        let model;
-        let data = {name:'John', lastname:'Snow'};
-
-        beforeEach(() => {
-            model = new ModelInstance(data);
-        });
-
-        it('---> should validate() before', () => {
-            let validateSpy = sinon.spy(model, 'validate');
-
-            model.save(() => {});
-
-            expect(validateSpy.called).be.true;
-        });
-
-        it('---> should NOT validate() data before', () => {
-            schema        = new Schema({}, {validateBeforeSave: false});
-            ModelInstance = Model.compile('Blog', schema, ds);
-            model         = new ModelInstance({name: 'John'});
-            let validateSpy = sinon.spy(model, 'validate');
-
-            model.save(() => {});
-
-            expect(validateSpy.called).be.false;
-        });
-
-        it('should NOT save to Datastore if it didn\'t pass property validation', () => {
-            model = new ModelInstance({unknown:'John'});
-
-            model.save(() => {});
-
-            expect(ds.save.called).be.false;
-        });
-
-        it('should NOT save to Datastore if it didn\'t pass value validation', () => {
-            model  = new ModelInstance({website:'mydomain'});
-
-            model.save(() => {});
-
-            expect(ds.save.called).be.false;
-        });
-
-        it('should convert to Datastore format before saving to Datastore', function(done) {
-            let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
-
-            model.save((err, entity) => {});
-            clock.tick(20);
-
-            expect(model.ds.save.calledOnce).be.true;
-            expect(spySerializerToDatastore.called).be.true;
-            expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
-            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
-            expect(model.ds.save.getCall(0).args[0].key).exist;
-            expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
-            expect(model.ds.save.getCall(0).args[0].data).exist;
-            expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
-
-            done();
-            spySerializerToDatastore.restore();
-        });
-
-        it('if Datastore error, return the error and don\'t call emit', () => {
-            ds.save.restore();
-
-            let error = {
-                code:500,
-                message:'Server Error'
-            };
-            sinon.stub(ds, 'save', (entity, cb) => {
-                return cb(error);
-            });
-
-            let model = new ModelInstance({});
-
-            model.save((err, entity) => {
-                expect(err).equal(error);
-            });
-        });
-
-        it('should save entity in a transaction', function() {
-            model.save(transaction, {}, function(err, entity, info) {
-                expect(transaction.save.called).be.true;
-                expect(entity.entityData).exist;
-                expect(info.op).equal('save');
-            });
-
-            clock.tick(20);
-        });
-
-        it('should save entity in a transaction WITHOUT passing callback', function() {
-            model.save(transaction);
-
-            clock.tick(20);
-
-            expect(transaction.save.called).be.true;
-        });
-
-        it('should throw error if transaction not instance of Transaction', function() {
-            var fn = function() {
-                model.save({}, {}, function() {});
-            };
-
-            clock.tick(20);
-
-            expect(fn).to.throw(Error);
-        });
-
-        it('should call pre hooks', () => {
-            let mockDs = {save:function() {}, key:function(){}};
-            let spyPre  = sinon.spy();
-            let spySave = sinon.spy(mockDs, 'save');
-
-            schema = new Schema({name:{type:'string'}});
-            schema.pre('save', (next) => {
-                spyPre();
-                next();
-            });
-            ModelInstance = Model.compile('Blog', schema, mockDs);
-            let model = new ModelInstance({name:'John'});
-
-            model.save(() => {});
-            clock.tick(20);
-
-            expect(spyPre.calledBefore(spySave)).be.true;
-        });
-
-        it('should emit "save" after', (done) => {
-            let model       = new ModelInstance({});
-            let emitStub    = sinon.stub(model, 'emit');
-            let callbackSpy = sinon.spy();
-
-            model.save(callbackSpy);
-            clock.tick(20);
-
-            expect(emitStub.calledWithExactly('save')).be.true;
-            expect(emitStub.calledBefore(callbackSpy)).be.true;
-            done();
-
-            emitStub.restore();
-        });
-
-        it('should call post hooks', () => {
-            let spyPost  = sinon.spy();
-
-            schema = new Schema({name:{type:'string'}});
-            schema.post('save', () => {
-                spyPost();
-            });
-
-            ModelInstance = Model.compile('Blog', schema, ds);
-            let model = new ModelInstance({name:'John'});
-
-            model.save(() => {});
-            clock.tick(20);
-
-            expect(spyPost.called).be.true;
-        });
-
-        it('transaction.execPostHooks() should call post hooks', () => {
-            let spyPost   = sinon.spy();
-            schema        = new Schema({name:{type:'string'}});
-            schema.post('save', spyPost);
-
-            ModelInstance = Model.compile('Blog', schema, ds);
-            let model = new ModelInstance({name:'John'});
-
-            model.save(transaction, () => {
-                transaction.execPostHooks();
-            });
-            clock.tick(20);
-
-            expect(spyPost.called).be.true;
-        });
-
-        it('should update modifiedOn to new Date if property in Schema', () => {
-            schema = new Schema({modifiedOn: {type: 'datetime'}});
-            var model  = datastools.model('BlogPost', schema);
-
-            var entity = new model({});
-            entity.save((err, entity) => {});
-            clock.tick(20);
-
-            expect(entity.entityData.modifiedOn).to.exist;
-            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
         });
     });
 
@@ -1481,7 +1012,7 @@ describe('Model', function() {
 
                 sinon.stub(ds, 'delete', function() {
                     let args = Array.prototype.slice.call(arguments);
-                    let cb = args.pop();
+                    let cb   = args.pop();
                     return cb(null, {});
                 });
 
@@ -1519,12 +1050,30 @@ describe('Model', function() {
                 });
             });
 
-            it('should call delete on all entities found (in series)', (done) => {
-                ModelInstance.deleteAll(() => {
+            it('if pre OR post hooks, should call delete on all entities found (in series)', function(done) {
+                schema = new Schema({});
+                schema.pre('delete', function(next){next();});
+                schema.post('delete', function() {});
+                ModelInstance = datastools.model('NewBlog', schema);
+                sinon.spy(ModelInstance, 'delete');
+
+                ModelInstance.deleteAll(function(){
                     expect(async.eachSeries.called).be.true;
                     expect(ModelInstance.delete.callCount).equal(2);
                     expect(ModelInstance.delete.getCall(0).args.length).equal(6);
                     expect(ModelInstance.delete.getCall(0).args[4].constructor.name).equal('Key');
+                    done();
+                });
+            });
+
+            it('if NO hooks, should call delete passing an array of keys', function(done) {
+                ModelInstance.deleteAll(function() {
+                    expect(ModelInstance.delete.callCount).equal(1);
+
+                    let args = ModelInstance.delete.getCall(0).args;
+                    expect(args.length).equal(6);
+                    expect(is.array(args[4])).be.true;
+                    expect(args[4]).deep.equal([mockEntities[0].key, mockEntities[1].key]);
 
                     done();
                 });
@@ -1773,6 +1322,482 @@ describe('Model', function() {
                 expect(schema.path('lastname').optional).not.exist;
                 expect(schema.path('lastname').excludeFromIndexes).be.true;
             });
+        });
+    });
+
+    describe('save()', () => {
+        let model;
+        let data = {name:'John', lastname:'Snow'};
+
+        beforeEach(() => {
+            model = new ModelInstance(data);
+        });
+
+        it('---> should validate() before', () => {
+            let validateSpy = sinon.spy(model, 'validate');
+
+            model.save(() => {});
+
+            expect(validateSpy.called).be.true;
+        });
+
+        it('---> should NOT validate() data before', () => {
+            schema        = new Schema({}, {validateBeforeSave: false});
+            ModelInstance = Model.compile('Blog', schema, ds);
+            model         = new ModelInstance({name: 'John'});
+            let validateSpy = sinon.spy(model, 'validate');
+
+            model.save(() => {});
+
+            expect(validateSpy.called).be.false;
+        });
+
+        it('should NOT save to Datastore if it didn\'t pass property validation', () => {
+            model = new ModelInstance({unknown:'John'});
+
+            model.save(() => {});
+
+            expect(ds.save.called).be.false;
+        });
+
+        it('should NOT save to Datastore if it didn\'t pass value validation', () => {
+            model = new ModelInstance({website:'mydomain'});
+
+            model.save(() => {});
+
+            expect(ds.save.called).be.false;
+        });
+
+        it('should convert to Datastore format before saving to Datastore', function(done) {
+            let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
+
+            model.save((err, entity) => {});
+            clock.tick(20);
+
+            expect(model.ds.save.calledOnce).be.true;
+            expect(spySerializerToDatastore.called).be.true;
+            expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
+            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
+            expect(model.ds.save.getCall(0).args[0].key).exist;
+            expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
+            expect(model.ds.save.getCall(0).args[0].data).exist;
+            expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
+
+            done();
+            spySerializerToDatastore.restore();
+        });
+
+        it('if Datastore error, return the error and don\'t call emit', () => {
+            ds.save.restore();
+
+            let error = {
+                code:500,
+                message:'Server Error'
+            };
+            sinon.stub(ds, 'save', (entity, cb) => {
+                return cb(error);
+            });
+
+            let model = new ModelInstance({});
+
+            model.save((err, entity) => {
+                expect(err).equal(error);
+            });
+        });
+
+        it('should save entity in a transaction', function() {
+            model.save(transaction, {}, function(err, entity, info) {
+                expect(transaction.save.called).be.true;
+                expect(entity.entityData).exist;
+                expect(info.op).equal('save');
+            });
+
+            clock.tick(20);
+        });
+
+        it('should save entity in a transaction WITHOUT passing callback', function() {
+            model.save(transaction);
+
+            clock.tick(20);
+
+            expect(transaction.save.called).be.true;
+        });
+
+        it('should throw error if transaction not instance of Transaction', function() {
+            var fn = function() {
+                model.save({}, {}, function() {});
+            };
+
+            clock.tick(20);
+
+            expect(fn).to.throw(Error);
+        });
+
+        it('should call pre hooks', () => {
+            let mockDs = {save:function() {}, key:function(){}};
+            let spyPre  = sinon.spy();
+            let spySave = sinon.spy(mockDs, 'save');
+
+            schema = new Schema({name:{type:'string'}});
+            schema.pre('save', (next) => {
+                spyPre();
+                next();
+            });
+            ModelInstance = Model.compile('Blog', schema, mockDs);
+            let model = new ModelInstance({name:'John'});
+
+            model.save(() => {});
+            clock.tick(20);
+
+            expect(spyPre.calledBefore(spySave)).be.true;
+        });
+
+        it('should emit "save" after', (done) => {
+            let model       = new ModelInstance({});
+            let emitStub    = sinon.stub(model, 'emit');
+            let callbackSpy = sinon.spy();
+
+            model.save(callbackSpy);
+            clock.tick(20);
+
+            expect(emitStub.calledWithExactly('save')).be.true;
+            expect(emitStub.calledBefore(callbackSpy)).be.true;
+            done();
+
+            emitStub.restore();
+        });
+
+        it('should call post hooks', () => {
+            let spyPost  = sinon.spy();
+
+            schema = new Schema({name:{type:'string'}});
+            schema.post('save', () => {
+                spyPost();
+            });
+
+            ModelInstance = Model.compile('Blog', schema, ds);
+            let model = new ModelInstance({name:'John'});
+
+            model.save(() => {});
+            clock.tick(20);
+
+            expect(spyPost.called).be.true;
+        });
+
+        it('transaction.execPostHooks() should call post hooks', () => {
+            let spyPost   = sinon.spy();
+            schema        = new Schema({name:{type:'string'}});
+            schema.post('save', spyPost);
+
+            ModelInstance = Model.compile('Blog', schema, ds);
+            let model = new ModelInstance({name:'John'});
+
+            model.save(transaction, () => {
+                transaction.execPostHooks();
+            });
+            clock.tick(20);
+
+            expect(spyPost.called).be.true;
+        });
+
+        it('should update modifiedOn to new Date if property in Schema', () => {
+            schema = new Schema({modifiedOn: {type: 'datetime'}});
+            var model  = datastools.model('BlogPost', schema);
+
+            var entity = new model({});
+            entity.save((err, entity) => {});
+            clock.tick(20);
+
+            expect(entity.entityData.modifiedOn).to.exist;
+            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+        });
+    });
+
+    describe('validate()', () => {
+        it('properties passed ok', () => {
+            let model = new ModelInstance({name:'John', lastname:'Snow'});
+
+            let valid = model.validate();
+            expect(valid.success).be.true;
+        });
+
+        it('properties passed ko', () => {
+            let model = new ModelInstance({unknown:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it('should remove virtuals', () => {
+            let model = new ModelInstance({fullname:'John Snow'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+            expect(model.entityData.fullname).not.exist;
+        });
+
+        it('accept unkwown properties', () => {
+            schema = new Schema({
+                name:     {type: 'string'},
+            }, {
+                explicitOnly : false
+            });
+            ModelInstance = Model.compile('Blog', schema, ds);
+            let model = new ModelInstance({unknown:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it ('no type validation', () => {
+            let model = new ModelInstance({street:123});
+            let model2 = new ModelInstance({street:'123'});
+            let model3 = new ModelInstance({street:true});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
+        });
+
+        it ('--> string', () => {
+            let model = new ModelInstance({name:123});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> number', () => {
+            let model = new ModelInstance({age:'string'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it('--> int', () => {
+            let model = new ModelInstance({age:gcloud.datastore.int('str')});
+            let valid = model.validate();
+
+            let model2 = new ModelInstance({age:gcloud.datastore.int('7')});
+            let valid2 = model2.validate();
+
+            let model3 = new ModelInstance({age:gcloud.datastore.int(7)});
+            let valid3 = model3.validate();
+
+            let model4 = new ModelInstance({age:'string'});
+            let valid4 = model4.validate();
+
+            let model5 = new ModelInstance({age:'7'});
+            let valid5 = model5.validate();
+
+            let model6 = new ModelInstance({age:7});
+            let valid6 = model6.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
+            expect(valid4.success).be.false;
+            expect(valid5.success).be.false;
+            expect(valid6.success).be.true;
+        });
+
+        it('--> double', () => {
+            let model = new ModelInstance({price:gcloud.datastore.double('str')});
+            let valid = model.validate();
+
+            let model2 = new ModelInstance({price:gcloud.datastore.double('1.2')});
+            let valid2 = model2.validate();
+
+            let model3 = new ModelInstance({price:gcloud.datastore.double(7.0)});
+            let valid3 = model3.validate();
+
+            let model4 = new ModelInstance({price:'string'});
+            let valid4 = model4.validate();
+
+            let model5 = new ModelInstance({price:'7'});
+            let valid5 = model5.validate();
+
+            let model6 = new ModelInstance({price:7});
+            let valid6 = model6.validate();
+
+            let model7 = new ModelInstance({price:7.59});
+            let valid7 = model7.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
+            expect(valid4.success).be.false;
+            expect(valid5.success).be.false;
+            expect(valid6.success).be.true;
+            expect(valid7.success).be.true;
+        });
+
+        it('--> buffer', () => {
+            let model = new ModelInstance({icon:'string'});
+            let valid = model.validate();
+
+            let model2 = new ModelInstance({icon:new Buffer('\uD83C\uDF69')});
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.true;
+        });
+
+        it ('--> boolean', () => {
+            let model = new ModelInstance({modified:'string'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it('--> object', () => {
+            let model = new ModelInstance({prefs:{check:true}});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it('--> geoPoint', () => {
+            let model = new ModelInstance({location:'string'});
+            let valid = model.validate();
+
+            let model2 = new ModelInstance({location:gcloud.datastore.geoPoint({
+                                latitude: 40.6894,
+                                longitude: -74.0447
+                            })});
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.true;
+        });
+
+        it('--> array ok', () => {
+            let model = new ModelInstance({tags:[]});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it('--> array ko', () => {
+            let model = new ModelInstance({tags:{}});
+            let model2 = new ModelInstance({tags:'string'});
+            let model3 = new ModelInstance({tags:123});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+        });
+
+        it('--> date ok', () => {
+            let model = new ModelInstance({birthday:'2015-01-01'});
+            let model2 = new ModelInstance({birthday:new Date()});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+        });
+
+        it ('--> date ko', () => {
+            let model = new ModelInstance({birthday:'01-2015-01'});
+            let model2 = new ModelInstance({birthday:'01-01-2015'});
+            let model3 = new ModelInstance({birthday:'2015/01/01'});
+            let model4 = new ModelInstance({birthday:'01/01/2015'});
+            let model5 = new ModelInstance({birthday:12345}); // No number allowed
+            let model6 = new ModelInstance({birthday:'string'});
+
+            let valid  = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+            let valid4 = model4.validate();
+            let valid5 = model5.validate();
+            let valid6 = model6.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+            expect(valid4.success).be.false;
+            expect(valid5.success).be.false;
+            expect(valid6.success).be.false;
+        });
+
+         it ('--> is URL ok', () => {
+            let model  = new ModelInstance({website:'http://google.com'});
+            let model2 = new ModelInstance({website:'google.com'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+        });
+
+        it ('--> is URL ko', () => {
+            let model = new ModelInstance({website:'domain.k'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
+        });
+
+        it ('--> is EMAIL ok', () => {
+            let model  = new ModelInstance({email:'john@snow.com'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.true;
+        });
+
+        it ('--> is EMAIL ko', () => {
+            let model   = new ModelInstance({email:'john@snow'});
+            let model2  = new ModelInstance({email:'john@snow.'});
+            let model3  = new ModelInstance({email:'john@snow.k'});
+            let model4  = new ModelInstance({email:'johnsnow.com'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+            let valid4 = model4.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+            expect(valid4.success).be.false;
+        });
+
+        it('--> is HexColor', () => {
+            let model  = new ModelInstance({color:'#fff'});
+            let model2  = new ModelInstance({color:'white'});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.false;
+        });
+
+        it ('and only accept value in default values', () => {
+            let model = new ModelInstance({type:'other'});
+
+            let valid = model.validate();
+
+            expect(valid.success).be.false;
         });
     });
 });

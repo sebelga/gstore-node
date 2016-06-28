@@ -12,25 +12,41 @@ var ds = gcloud.datastore({
     apiEndpoint: 'http://localhost:8080'
 });
 
-var datastools = require('../lib');
+var gstore = require('../lib');
 datastools.connect(ds);
 var datastoreSerializer = require('../lib/serializer').Datastore;
 
 var Schema = require('../lib').Schema;
+var Model  = require('../lib/model');
 
 describe('Entity', () => {
     "use strict";
 
+    var clock;
     var schema;
     var ModelInstance;
 
     beforeEach(function() {
+        clock = sinon.useFakeTimers();
+
         datastools.models       = {};
         datastools.modelSchemas = {};
         datastools.options      = {};
 
         schema = new Schema({
-            name    : {type: 'string', password:'string'}
+            name    : {type: 'string'},
+            lastname: {type:'string'},
+            password: {type: 'string'}
+        });
+
+        schema.virtual('fullname').get(function() {
+            return this.name + ' ' + this.lastname;
+        });
+
+        schema.virtual('fullname').set(function(name) {
+            var split     = name.split(' ');
+            this.name     = split[0];
+            this.lastname = split[1];
         });
 
         ModelInstance = datastools.model('User', schema);
@@ -271,7 +287,7 @@ describe('Entity', () => {
         var user;
 
         beforeEach(function() {
-            user = new ModelInstance({'name':'John'});
+            user = new ModelInstance({name:'John', lastname:'Snow'});
         });
 
         it ('should get an entityData property', function() {
@@ -280,12 +296,24 @@ describe('Entity', () => {
             expect(name).equal('John');
         });
 
+        it('should return virtual', () => {
+            let fullname = user.get('fullname');
+
+            expect(fullname).equal('John Snow');
+        });
+
         it ('should set an entityData property', function() {
             user.set('name', 'Gregory');
 
             let name = user.get('name');
 
             expect(name).equal('Gregory');
+        });
+
+        it('should set virtual', () => {
+            user.set('fullname', 'Peter Jackson');
+
+            expect(user.entityData.name).equal('Peter');
         });
     });
 
@@ -296,6 +324,15 @@ describe('Entity', () => {
 
         afterEach(function() {
             datastoreSerializer.fromDatastore.restore();
+        });
+
+        it('should throw an error is options is not of type Object', () => {
+            let fn = () => {
+                var model  = new ModelInstance({name:'John'});
+                let output = model.plain(true);
+            }
+
+            expect(fn).throw(Error);
         });
 
         it('should call datastoreSerializer "fromDatastore"', () => {
@@ -310,12 +347,22 @@ describe('Entity', () => {
         });
 
         it('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
-            var model      = new ModelInstance({name:'John'});
+            var model = new ModelInstance({name:'John'});
 
-            let output = model.plain(true);
+            let output = model.plain({readAll:true});
 
             expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(true);
         });
+
+        it('should add virtuals', () => {
+            var model = new ModelInstance({name:'John'});
+            sinon.spy(model, 'addVirtuals');
+
+            let output = model.plain({virtuals:true});
+
+            expect(model.addVirtuals.called).be.true;
+        });
+
     });
 
     describe('datastoreEntity()', function() {
@@ -350,6 +397,86 @@ describe('Entity', () => {
 
                 ds.get.restore();
             });
+        });
+    });
+
+    describe('model()', () => {
+        it('should be able to return model instances', () => {
+            let imageSchema = new Schema({});
+            let ImageModel  = datastools.model('Image', imageSchema);
+
+            let blog = new ModelInstance({});
+
+            expect(blog.model('Image')).equal(ImageModel);
+        });
+
+        it('should be able to execute methods from other model instances', () => {
+            let imageSchema  = new Schema({});
+            let ImageModel   = datastools.model('Image', imageSchema);
+            let mockEntities = [{key : ds.key(['BlogPost', 1234])}];
+
+            sinon.stub(ImageModel, 'get', (cb) => {
+                cb(null, mockEntities[0]);
+            });
+
+            let blog = new ModelInstance({});
+
+            blog.model('Image').get((err, entity) => {
+                expect(entity).equal(mockEntities[0]);
+            });
+        });
+    });
+
+    describe('addVirtuals()', () => {
+        var model;
+        var User;
+
+        beforeEach(() => {
+            var schema = new Schema({firstname:{}, lastname:{}});
+
+            schema.virtual('fullname').get(function() {
+                return this.firstname + ' ' + this.lastname;
+            });
+
+            schema.virtual('fullname').set(function(name) {
+                let split      = name.split(' ');
+                this.firstname = split[0];
+                this.lastname  = split[1];
+            });
+
+            User = datastools.model('Client', schema);
+
+            model = new User({firstname:'John', lastname:'Snow'});
+        });
+
+        it('should create virtual (get) setting scope to entityData', () => {
+            model.addVirtuals();
+
+            expect(model.entityData.fullname).equal('John Snow');
+        });
+
+        it('should Not override', () => {
+            model = new User({firstname:'John', lastname:'Snow', fullname:'Jooohn'});
+            model.addVirtuals();
+
+            expect(model.entityData.fullname).equal('Jooohn');
+        });
+
+        it('should read and parse virtual (set)', () => {
+            model = new User({fullname:'John Snow'});
+
+            model.addVirtuals();
+
+            expect(model.entityData.firstname).equal('John');
+            expect(model.entityData.lastname).equal('Snow');
+        });
+
+        it('should override existing', () => {
+            model = new User({firstname:'Peter', fullname:'John Snow'});
+
+            model.addVirtuals();
+
+            expect(model.entityData.firstname).equal('John');
         });
     });
 });

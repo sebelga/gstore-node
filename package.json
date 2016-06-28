@@ -1,7 +1,7 @@
 {
-  "name": "datastools",
-  "version": "0.2.1",
-  "description": "Datastools is a Google Datastore Entity Models tools",
+  "name": "gstore-node",
+  "version": "0.4.0",
+  "description": "gstore is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
     "test": "mocha test --recursive",
@@ -12,12 +12,16 @@
     "node": ">=4.0"
   },
   "keywords": [
-    "Google Datastore",
-    "Node JS"
+    "google datastore",
+    "google cloud datastore",
+    "datastore", "cloud datastore",
+    "Node.js", "google datastore entities",
+    "google cloud", "datastore entities",
+    "data modeling"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sebelga/datastools.git"
+    "url": "https://github.com/sebelga/gstore-node.git"
   },
   "author": "Sébastien Loix",
   "license": "ISC",
