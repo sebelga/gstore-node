@@ -408,6 +408,7 @@ The update() method has the following parameters
 - ancestors (optional) : an array of ancestors path
 - namespace (optional)
 - transaction (optional)
+- options (optional)
 - callback
 
 Returns: an entity **instance**.
@@ -444,6 +445,21 @@ gstore.runInTransaction(function(transaction, done){
 }, function(){...});
 
 ```
+
+**replace** property (options)  
+The options parameter has a **replace** property (default to false) that you can set to true if you want to replace all the entity data. By default, Model.update() does 2 operations inside a **Transaction**:
+
+- first a get() + merges the new data passed in the entity fetched
+- then a save()
+
+If just want to override the entity data without doing any merge with the data stored the Datastore, pass replace:true in the options parameter.
+
+```
+BlogPost.update(123, data, null, null, null, {replace:true}, function(err, entity) {
+	...
+});
+```
+
 
 #### Delete()
 You can delete an entity by calling `Model.delete(...args)`.

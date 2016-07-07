@@ -154,10 +154,30 @@ describe('Entity', () => {
                 expect(entity.entityKey.name).equal('keyid');
             });
 
+            it('---> with a full Key (String with including numbers)', () => {
+                var entity = new Model({}, '123:456');
+
+                expect(entity.entityKey.name).equal('123:456');
+            });
+
             it ('---> with a full Key (Integer keyname passed)', () => {
+                var entity = new Model({}, 123);
+
+                expect(entity.entityKey.id).equal(123);
+            });
+
+            it ('---> with a full Key ("string" Integer keyname passed)', () => {
                 var entity = new Model({}, '123');
 
                 expect(entity.entityKey.id).equal(123);
+            });
+
+            it ('---> throw error is id passed is not string or number', () => {
+                let fn = () => {
+                    var entity = new Model({}, {});
+                };
+
+                expect(fn).throw(Error);
             });
 
             it ('---> with a partial Key (auto-generated id)', () => {

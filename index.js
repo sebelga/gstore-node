@@ -1,5 +1,5 @@
 /**
- * Export lib/datastools
+ * Export lib/gstore-node
  *
  */
 
