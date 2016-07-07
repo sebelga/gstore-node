@@ -69,6 +69,7 @@ describe('Model', function() {
             key:ds.key(['BlogPost', 1234]),
             data:{
                 name:'John',
+                lastname:'Snow',
                 email:'john@snow.com'
             }
         };
@@ -502,6 +503,20 @@ describe('Model', function() {
             });
         });
 
+        it('should save and replace data', (done) => {
+            let data = {
+                name : 'Mick'
+            };
+            ModelInstance.update(123, data, null, null, null, {replace:true}, (err, entity) => {
+                expect(entity.entityData.name).equal('Mick');
+                expect(entity.entityData.lastname).not.exist;
+                expect(entity.entityData.email).not.exist;
+            });
+
+            clock.tick(60);
+            done();
+        });
+
         it('should merge the new data with the entity data', (done) => {
             let data = {
                 name : 'Sebas',
@@ -532,6 +547,16 @@ describe('Model', function() {
                 expect(err).exist;
                 expect(entity).not.exist;
                 expect(transaction.rollback.called).be.true;
+                done();
+            });
+
+            clock.tick(20);
+        });
+
+        it('should return error if not passing validation', function(done) {
+            ModelInstance.update(123, {unknown:1}, null, null, null, {replace:true}, (err, entity) => {
+                expect(err).exist;
+                expect(entity).not.exist;
                 done();
             });
 
@@ -661,7 +686,7 @@ describe('Model', function() {
         it ('should not set success neither apiRes', () => {
             ds.delete.restore();
             sinon.stub(ds, 'delete', (key, cb) => {
-                cb();
+                cb(null, {});
             });
 
             ModelInstance.delete(123, (err, response) => {
@@ -1425,7 +1450,7 @@ describe('Model', function() {
 
         it('should throw error if transaction not instance of Transaction', function() {
             var fn = function() {
-                model.save({}, {}, function() {});
+                model.save({id:0}, {}, function() {});
             };
 
             clock.tick(20);
