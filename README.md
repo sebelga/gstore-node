@@ -113,8 +113,6 @@ After a successfull connection, gstore has 2 aliases set up
 - `gstore.ds` The gcloud datastore instance
 - `gstore.runInTransaction`. Alias of the same gcloud method
 
-#### runInTransaction alias
-
 ## Schema
 ### Creation
 ```
@@ -189,7 +187,8 @@ This setting can be overridden by passing a *readAll* setting set to **true** in
 - **inline** settings of list(), query() and findAround()
 
 #### write
-If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed. Example: `var data = BlogPostModel.sanitize(req.body);`
+If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed.  
+Example: `var data = BlogPostModel.sanitize(req.body);`
 
 
 ```

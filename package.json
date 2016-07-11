@@ -12,8 +12,7 @@
     "node": ">=4.0"
   },
   "keywords": [
-    "Google Datastore",
-    "Node JS"
+    "google datastore", "gcloud node", "google app engine", "node.js"
   ],
   "repository": {
     "type": "git",
