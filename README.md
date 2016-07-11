@@ -25,7 +25,6 @@ This library is in in active development, please report any issue you might find
 - [Installation](#installation)
   - [Getting started](#getting-started)
     - [Aliases](#aliases)
-    - [runInTransaction alias](#runintransaction-alias)
 - [Schema](#schema)
   - [Creation](#creation)
   - [Properties types](#properties-types)
