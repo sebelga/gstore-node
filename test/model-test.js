@@ -334,6 +334,12 @@ describe('Model', function() {
             expect(ds.get.getCall(0).args[0].id).equal(123);
         });
 
+        it('not converting string with mix of number and non number', () => {
+            ModelInstance.get('123:456', () => {});
+
+            expect(ds.get.getCall(0).args[0].name).equal('123:456');
+        });
+
         it('passing an ancestor path array', () => {
             let ancestors = ['Parent', 'keyname'];
 
@@ -440,6 +446,12 @@ describe('Model', function() {
 
             expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
             expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
+        });
+
+        it('not converting string id with mix of number and alpha chars', () => {
+            ModelInstance.update('123:456', () => {});
+
+            expect(transaction.get.getCall(0).args[0].name).equal('123:456');
         });
 
         it('should rollback if error while getting entity', function(done) {
@@ -621,6 +633,13 @@ describe('Model', function() {
                 expect(ds.delete.called).be.true;
                 expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
                 expect(response.success).be.true;
+                done();
+            });
+        });
+
+        it('not converting string id with mix of number and alpha chars', (done) => {
+            ModelInstance.delete('123:456', () => {
+                expect(ds.delete.getCall(0).args[0].name).equal('123:456');
                 done();
             });
         });
