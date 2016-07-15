@@ -89,14 +89,14 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  accessed whenever needed.
 
 ## Installation
- ```
+ ```sh
  npm install gstore-node --save
  ```
 
 ### Getting started
 For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/gcloud?method=gcloud).
 
- ```
+ ```js
  var configGcloud = {...your config here};
  var gcloud       = require('gcloud')(configGcloud);
  var ds           = gcloud.datastore();
@@ -114,7 +114,7 @@ After a successfull connection, gstore has 2 aliases set up
 
 ## Schema
 ### Creation
-```
+```js
 var gstore = require('gstore-node');
 var Schema = gstore.Schema;
 
@@ -126,6 +126,7 @@ var entitySchema = new Schema({
 ```
 
 ### Properties types
+
 Valid types are
 
 - 'string'
@@ -138,7 +139,7 @@ Valid types are
 - 'geoPoint' —> gcloud.datastore.geoPoint
 - 'buffer' —> Buffer
 
-```
+```js
 var entitySchema = new Schema({
     name     : {type: 'string'},
     lastname : {},  // if nothing is passed, no type validation occurs (any type is allowed)
@@ -156,7 +157,7 @@ var entitySchema = new Schema({
 ### Properties values validations
 gstore uses the great validator library (https://github.com/chriso/validator.js) to validate input values so you can use any of the validations from that library.
 
-```
+```js
 var entitySchema = new Schema({
     email  : {validate: 'isEmail'},
     website: {validate: 'isURL'},
@@ -190,7 +191,7 @@ If you want to protect certain properties to be written by a user, you can set t
 Example: `var data = BlogPostModel.sanitize(req.body);`
 
 
-```
+```js
 // Properties options example
 var entitySchema = new Schema({
     name    :  {type: 'string'},
@@ -217,7 +218,7 @@ By default the results coming back from Datastore queries are merged into a simp
 **readAll** (default false)
 Override the Schema option property 'read' ([see above](#schemaPropertyOptionRead)) and read all the properties of the entities.
 
-```
+```js
 // Schema options example
 var entitySchema = new Schema({
     name : {type: 'string'}
@@ -235,7 +236,7 @@ var entitySchema = new Schema({
 #### path()
 Getter / Setter for schemas paths.
 
-```
+```js
 var mySchema = new Schema({name:{type:'string'});
 
 // Getter
@@ -258,7 +259,7 @@ Virtuals are properties that are added to the entities at runtime that are not p
 
 **getter**
 
-```
+```js
 var schema = new Schema({
 	firstname: {},
 	lastname : {}
@@ -286,7 +287,7 @@ console.log(output.fullname); // 'John Snow';
 
 **setter**
 
-```
+```js
 var schema = new Schema({
 	firstname: {},
 	lastname : {}
@@ -315,7 +316,7 @@ user.save(function() {...});
 ## Model
 ### Creation
 
-```
+```js
 var gstore = require('gstore-node');
 var Schema = gstore.Schema;
 
@@ -343,7 +344,7 @@ This method accepts the following parameters:
 
 Returns: an entity **instance**.
 
-```
+```js
 var blogPostSchema = new gstore.Schema({...});
 var BlogPost       = gstore.model('BlogPost', blogPostSchema);
 
@@ -364,7 +365,7 @@ BlogPost.get('keyname', ['Parent', 'parentName'], function(err, entity) {
 
 The resulting entity has a **plain()** method ([see below](#entityPlain)) attached to it that returns only the entity data and its id.
 
-```
+```js
 BlogPost.get(123, function(err, entity) {
     if (err) { // deal with err }
     console.log(entity.plain());
@@ -373,7 +374,7 @@ BlogPost.get(123, function(err, entity) {
 
 If you need to retreive an entity from inside a transaction, pass it as fourth parameter.
 
-```
+```js
 var error;
 
 gstore.runInTransaction(function(transaction, done) {
@@ -411,8 +412,8 @@ The update() method has the following parameters
 
 Returns: an entity **instance**.
 
-```
-...
+```js
+// ...
 
 var BlogPost = gstore.model('BlogPost');
 
@@ -452,7 +453,7 @@ The options parameter has a **replace** property (default to false) that you can
 
 If just want to override the entity data without doing any merge with the data stored the Datastore, pass replace:true in the options parameter.
 
-```
+```js
 BlogPost.update(123, data, null, null, null, {replace:true}, function(err, entity) {
 	...
 });
@@ -473,7 +474,7 @@ This method accepts the following parameters
 
 The callback has a "success" properties that is set to true if an entity has been deleted or false if not.
 
-```
+```js
 var BlogPost = gstore.model('BlogPost');
 
 BlogPost.delete(123, function(err, success, apiResponse) {
@@ -481,7 +482,7 @@ BlogPost.delete(123, function(err, success, apiResponse) {
         // deal with err
     }
     if (!success) {
-        console.log('No entity deleted. The id provided didn't return any entity');
+        console.log('No entity deleted. The id provided didn\'t return any entity');
     }
 });
 
@@ -520,7 +521,7 @@ gstore.runInTransaction(function(transaction, done){
 ##### excludeFromIndexes()
 On Schemaless Models (explicityOnly setting set to false), all the properties not declared explicitly will automatically be added to  Google Datastore indexes. If you don't want this behaviour you can call `Model.excludeFromIndexes(property)` passing a **string** property or an **array** of properties. If one of the property passed is already declared on the Schema, this method will set its excludeFromIndexes value to false.
 
-```
+```js
 var blogPostSchema = new Schema({
     title: {type:'string'}
 }, {explicitOnly:false});
@@ -536,7 +537,8 @@ var blogPost = new BlogPost({
 /*
 If you save this entity, the text won't be saved in the Datastore
 because of the size limitation of the indexes (can't be more tha 1500 bytes).
-Assuming that the text propery is dynamic and is not known at Schema instantiation, you need to remove "text" propery from indexes.
+Assuming that the text propery is dynamic and is not known at Schema instantiation,
+you need to remove "text" propery from indexes.
 */
 
 BlogPost.excludeFromIndexes('text');
@@ -555,7 +557,7 @@ Executing it will:
 - remove properties that are marked as not *writable* in schemas
 - convert 'null' (string) values to null
 
-```
+```js
 var userSchema = new Schema({
     name : {type:'string'},
     createdOn : {type:'datetime', write:false}
@@ -582,7 +584,7 @@ Create entity Key(s). This method accepts the following arguments:
 - ancestors (optional)
 - namespace (optional)
 
-```
+```js
 var User = gstore.model('User');
 
 var entityKey = User.key(123);
@@ -615,10 +617,11 @@ To create instances of a model use
 #### id parameter (optional)
 By default, if you don't pass an id when you create an instance, the entity id will be auto-generated. If you want to manually give the entity an id, pass it as a second parameter during the instantiation.
 
-```
+```js
 ...
 // String id
-var blogPost = new BlogPost(data, 'stringId'); // warning: a '1234' id will be converted to integer 1234
+var blogPost = new BlogPost(data, 'stringId');
+// warning: a '1234' id will be converted to integer 1234
 
 // Integer ir
 var blogPost = new BlogPost(data, 1234);
@@ -627,7 +630,7 @@ var blogPost = new BlogPost(data, 1234);
 #### ancestors parameter (optional)
 Array of an ancestor's path.
 
-```
+```js
 // Auto generated id on an ancestor
 var blogPost = new BlogPost(data, null, ['Parent', 'keyname']);
 
@@ -639,10 +642,9 @@ var blogPost = new BlogPost(data, 1234, ['Parent', 'keyname']);
 By default entities keys are generated with the default namespace (defined when setting up the datastore instance). You can create models instances on
 another namespace by passing it as a third parameter.
 
-```
+```js
 // Creates an entity with auto-generated id on the namespace "dev-com.my-domain"
 var blogPost = new BlogPost(data, null, null, 'dev-com.my-domain');
-
 ```
 
 ### Properties
@@ -657,7 +659,7 @@ var blogPost = new BlogPost(data, null, null, 'dev-com.my-domain');
 
 After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(transaction /*optional*/, callback)`
 
-```
+```js
 var gstore = require('gstore-node');
 
 var blogPostSchema = new gstore.Schema({
@@ -712,7 +714,7 @@ The options has 2 properties that you can set:
 ##### get(path)
 Get the value of an entity data at a specific path
 
-```
+```js
 user = new User({name:'John'});
 user.get('name'); // John
 ```
@@ -720,7 +722,7 @@ user.get('name'); // John
 ##### set(path, value)
 Set the value of an entity data at a specific path
 
-```
+```js
 user = new User({name:'John'});
 user.set('name', 'Mike');
 user.get('name'); // Mike
@@ -729,7 +731,7 @@ user.get('name'); // Mike
 ##### model()
 Get an entity Model from entity instance.
 
-```
+```js
 var UserModel = gstore.model('User');
 
 
@@ -738,14 +740,14 @@ commentSchema.pre('save', function(next){
 	var User = this.model('User');
 	console.log(User === UserModel); // true
 });
-
 ```
 
 
 ##### datastoreEntity()
+
 In case you need at any moment to fetch the entity data from the Datastore, this method will do just that right on the entity instance.
 
-```
+```js
 var user = new User({name:'John'});
 
 user.save(function(err) {
@@ -760,7 +762,7 @@ user.save(function(err) {
 ##### validate()
 This methods validates an entity data. Return true if valid, false otherwise.
 
-```
+```js
 var schema = new Schema({name:{}});
 var User   = gstore.model('User', schema);
 
@@ -768,7 +770,6 @@ var user  = new User({name:'John', lastname:'Snow'});
 var valid = user.validate();
 
 console.log(valid); // false
-
 ```
 
 
@@ -779,7 +780,7 @@ console.log(valid); // false
 
 gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/datastore/query) so you can execute any query from this library.
 
-```
+```js
 var User = gstore.model('User'); // with User schema previously defined
 
 // 1. Initialize query
@@ -811,13 +812,12 @@ var query = User.query()
                 descending: true
             })
             .start(nextPageCursor);
-
 ```
 
 **namespace**
 Model.query() takes an optional namespace parameter if needed.
 
-```
+```js
 var query = User.query('com.domain-dev')
                 .filter('name', '=', 'John');
 ...
@@ -828,7 +828,7 @@ var query = User.query('com.domain-dev')
 query.run() accepts a first options parameter with the following properties
 - simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
 
-```
+```js
 query.run({simplifyResult:false}, function(err, response) {
     ....
 })
@@ -851,7 +851,8 @@ Currently it support the following queries parameters
 `entitySchema.queries('list', {...settings});`
 
 Example
-```
+
+```js
 // Create Schema
 var blogPostSchema = new gstore.Schema({
     title : {type:'string'}
@@ -878,7 +879,7 @@ var BlogPost = gstore.model('BlogPost', blogPostSchema);
 `Model.list(callback)`
 The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
 
-```
+```js
 // anywhere in your Controllers
 BlogPost.list(function(err, response) {
     if (err) {
@@ -891,7 +892,7 @@ BlogPost.list(function(err, response) {
 
 Order, Select & filters can also be **arrays** of settings
 
-```
+```js
 var querySettings = {
     orders  : [{property: 'title'}, {property:'createdOn', descending:true}]
     select  : ['title', 'createdOn'],
@@ -902,7 +903,7 @@ var querySettings = {
 **Override settings**
 These global settings can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
 
-```
+```js
 var newSettings = {
     limit : 20
 };
@@ -922,7 +923,7 @@ BlogPost.list(newSettings, function(err, entities) {
 Just like with gcloud queries, **simplifyResult** can be set to receive the full Datastore data for each entity or a simplified response.
 Use the **namespace** setting to override the default namespace defined globally when setting up the Datastore instance.
 
-```
+```js
 var newSettings = {
     ...
     simplifyResult : false,
@@ -933,14 +934,14 @@ BlogPost.list(newSettings, ...);
 ```
 
 ### findOne()
-```
+```js
 User.findOne({prop1:value, prop2:value2}, ancestors /*optional*/, namespace /*optional*/, callback);
 ```
 
 Quickly find an entity by passing key/value pairs. You can optionaly pass an ancestors array and a namespace.
 The entity returned is a entity **instance** of the Model.
 
-```
+```js
 var User = gstore.model('User');
 
 User.findOne({email:'john@snow.com'}, function(err, entity) {
@@ -959,7 +960,7 @@ Find entities before or after an entity based on a property and a value.
 **settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
 You can also override the "simplifyResult" global queries setting.
 
-```
+```js
 // Find the next 20 post after march 1st
 BlogPost.findAround('publishedOn', '2016-03-01', {after:20}, function(err, entities){
    ...
@@ -973,12 +974,12 @@ User.findAround('lastname', 'Jagger', {before:10, simplifyResult:false}, functio
 ```
 
 ### deleteAll()
-```
+```js
 BlogPost.deleteAll(ancestors /*optional*/, namespace /*optional*/, callback)
 ```
 If you need to delete all the entities of a certain kind, this shortcut query will do just that.
 
-```
+```js
 BlogPost.deleteAll(function(err, result){
     if (err) {// deal with err}
 
@@ -1003,7 +1004,7 @@ Each pre hook has a "**next**" parameter that you have to call at the end of you
 
 A common use case would be to hash a user's password before saving it into the Datastore.
 
-```
+```js
 ...
 
 var bscrypt = require('bcrypt-nodejs');
@@ -1044,27 +1045,30 @@ function hashPassword(next) {
 var User = gstore.model('User');
 var user = new User({username:'john', password:'mypassword'});
 user.save(function(err, entity) {
-    console.log(entity.get('password')); // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
+    console.log(entity.get('password'));
+    // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
 });
 ```
 
 **Note**
 The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids is passed when calling Model.delete().
 
-```
+```js
 blogSchema.pre('delete', function(next) {
 	console.log(this.entityKey); // the datastore entity key to be deleted
 
-	// By default this.entityData is not present because the entity is *not* fetched from the Datastore.
-	// You can call this.datastoreEntity() here (see the Entity section) to fetch the
-	// data from the Datastore and do any other logic before calling next()
+	// By default this.entityData is not present because
+	// the entity is *not* fetched from the Datastore.
+	// You can call this.datastoreEntity() here (see the Entity section)
+	// to fetch the data from the Datastore and do any other logic
+	// before calling next()
 });
 ```
 
 ### Post hooks
 Post are defined the same way as pre hooks. The only difference is that there is no "next" function to call.
 
-```
+```js
 var schema = new Schema({username:{...}});
 schema.post('save', function(){
     var email = this.get('email');
@@ -1075,7 +1079,7 @@ schema.post('save', function(){
 **Note**
 The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook has a first argument with the key(s) that have been deleted.
 
-```
+```js
 schema.post('delete', function(keys){
 	// keys can be one Key or an array of entity Keys that have been deleted.
 });
@@ -1087,7 +1091,7 @@ schema.post('delete', function(keys){
 When you save or delete an entity from inside a transaction, gstore adds an extra **execPostHooks()** method to the transaction.
 If the transaction succeeds and you have any post('save') or post('delete') hooks on any of the entities modified during the transaction you need to call this method to execute them.
 
-```
+```js
 gstore.runInTransaction(function(transaction, done){
 
 	var user = new User({name:'john'}); // user could also come from a query() or get()
@@ -1111,7 +1115,7 @@ gstore.runInTransaction(function(transaction, done){
 Custom methods can be attached to entities instances.
 `schema.methods.methodName = function(){}`
 
-```
+```js
 var blogPostSchema = new Schema({title:{}});
 
 // Custom method to query all "child" Text entities
@@ -1139,7 +1143,7 @@ blgoPost.texts(function(err, texts) {
 
 Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom method:
 
-```
+```js
 ...
 // custom getImage() method on the User Schema
 userSchema.methods.getImage = function(cb) {
