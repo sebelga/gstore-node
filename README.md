@@ -173,7 +173,7 @@ You can set a default value for the property is no value has been passed.
 
 #### excludeFromIndexes
 By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property
-to false.
+to true.
 
 <a name="schemaPropertyOptionRead"></a>
 #### read
