@@ -844,6 +844,7 @@ Currently it support the following queries parameters
 - select
 - ancestors
 - filters (default operator is "=" and does not need to be passed
+- start
 
 
 **Define on Schema**
@@ -864,7 +865,8 @@ var querySettings = {
     order    : {property: 'title', descending:true}, // descending defaults to false and is optional
     select   : 'title'
     ancestors: ['Parent', 123],  // will add a hasAncestor filter
-    filters  : ['title', 'My first post'] // operator defaults to "="
+    filters  : ['title', 'My first post'] // operator defaults to "=",
+    start    : 'nextPageCursorFromPreviousQuery'
 };
 
 // Add to schema
@@ -905,7 +907,8 @@ These global settings can be overridden anytime by passing new settings as first
 
 ```js
 var newSettings = {
-    limit : 20
+    limit : 20,
+    start : 'pageCursor'
 };
 
 BlogPost.list(newSettings, function(err, entities) {
@@ -917,6 +920,7 @@ BlogPost.list(newSettings, function(err, entities) {
 ```
 
 **additional settings** in override
+
 - simplifyResult {true|false}
 - namespace {string}
 
