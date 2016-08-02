@@ -141,16 +141,13 @@ describe('Datastools', function() {
         expect(gstore.ds).equal(ds);
     });
 
-    it('should create shortcut of datastore.runInTransaction', () => {
+    it('should create shortcut of datastore.transaction', () => {
         gstore.connect(ds);
-        let fn = () => {};
-        let cb = () => {};
-        sinon.spy(ds, 'runInTransaction');
+        sinon.spy(ds, 'transaction');
 
-        gstore.runInTransaction(fn, cb);
+        var transaction = gstore.transaction();
 
-        expect(ds.runInTransaction.called).be.true;
-        expect(ds.runInTransaction.getCall(0).args[0]).equal(fn);
-        expect(ds.runInTransaction.getCall(0).args[1]).equal(cb);
+        expect(ds.transaction.called).be.true;
+        expect(transaction.constructor.name).equal('Transaction');
     });
 });

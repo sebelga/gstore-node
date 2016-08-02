@@ -1,7 +1,7 @@
 # gstore Node.js
 
 [![npm version](https://badge.fury.io/js/gstore-node.svg)](https://badge.fury.io/js/gstore-node) [![Build Status](https://travis-ci.org/sebelga/gstore-node.svg?branch=master)](https://travis-ci.org/sebelga/gstore-node)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)  
+[![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
 
 Its main features are:
@@ -94,7 +94,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/gcloud?method=gcloud).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/gcloud?method=gcloud).
 
  ```js
  var configGcloud = {...your config here};
@@ -187,7 +187,7 @@ This setting can be overridden by passing a *readAll* setting set to **true** in
 - **inline** settings of list(), query() and findAround()
 
 #### write
-If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed.  
+If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed.
 Example: `var data = BlogPostModel.sanitize(req.body);`
 
 
@@ -445,7 +445,7 @@ gstore.runInTransaction(function(transaction, done){
 
 ```
 
-**replace** property (options)  
+**replace** property (options)
 The options parameter has a **replace** property (default to false) that you can set to true if you want to replace all the entity data. By default, Model.update() does 2 operations inside a **Transaction**:
 
 - first a get() + merges the new data passed in the entity fetched
@@ -778,7 +778,7 @@ console.log(valid); // false
 ## Queries
 ### gcloud queries
 
-gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.36.0/datastore/query) so you can execute any query from this library.
+gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/datastore/query) so you can execute any query from this library.
 
 ```js
 var User = gstore.model('User'); // with User schema previously defined
