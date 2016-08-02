@@ -108,9 +108,11 @@ describe('Model', function() {
 
         function Transaction() {
             var _this = this;
-            this.get = function(cb) {cb();};
-            this.save = function(cb) {cb();};
-            this.delete = function(cb) {cb();};
+            this.run      = function(cb) {cb();};
+            this.get      = function(cb) {cb();};
+            this.save     = function(cb) {cb();};
+            this.delete   = function(cb) {cb();};
+            this.commit   = function(cb) {cb();};
             this.rollback = function(cb) {cb();};
             this.createQuery = function() {return {
                 filter:() => {},
@@ -119,7 +121,6 @@ describe('Model', function() {
             this.runQuery = function() {};
         }
         transaction = new Transaction();
-
 
         sinon.stub(transaction, 'get', (key, cb) => {
             //setTimeout(() => {
@@ -133,6 +134,8 @@ describe('Model', function() {
             }, 20);
         });
 
+        sinon.spy(transaction, 'run');
+        sinon.spy(transaction, 'commit');
         sinon.spy(transaction, 'rollback');
 
         ModelInstance = gstore.model('Blog', schema, ds);
@@ -143,6 +146,8 @@ describe('Model', function() {
         ds.runQuery.restore();
         transaction.get.restore();
         transaction.save.restore();
+        transaction.run.restore();
+        transaction.commit.restore();
         transaction.rollback.restore();
     });
 
@@ -418,21 +423,24 @@ describe('Model', function() {
 
     describe('update()', () => {
         beforeEach(function() {
-            sinon.stub(ds, 'runInTransaction', function(cb, done) {
-                return cb(transaction, function() {
-                    done();
-                });
+            sinon.stub(ds, 'transaction', function(cb, done) {
+                // return cb(transaction, function() {
+                //     done();
+                // });
+                return transaction;
             });
         });
 
         afterEach(() => {
-            ds.runInTransaction.restore();
+            ds.transaction.restore();
         });
 
         it('should run in a transaction', function(){
             ModelInstance.update(123, () => {});
 
-            expect(ds.runInTransaction.called).be.true;
+            expect(ds.transaction.called).be.true;
+            expect(transaction.run.called).be.true;
+            expect(transaction.commit.called).be.true;
         });
 
         it('should run an entity instance', function(){
@@ -456,14 +464,14 @@ describe('Model', function() {
 
         it('should rollback if error while getting entity', function(done) {
             transaction.get.restore();
-
+            let error = {code:500, message:'Houston we got a problem'};
             sinon.stub(transaction, 'get', (key, cb) => {
-                return cb({code:500, message:'Houston we got a problem'});
+                return cb(error);
             });
 
             ModelInstance.update(123, (err) => {
-                expect(err.code).equal(500);
-                expect(transaction.rollback.called).be.true;
+                expect(err).equal(error);
+                expect(transaction.commit.called).be.false;
                 done();
             });
         });
@@ -481,16 +489,13 @@ describe('Model', function() {
         });
 
         it('should return error if any while saving', (done) => {
+            transaction.run.restore();
             let error = {code:500, message: 'Houston wee need you.'};
-
-            ds.runInTransaction.restore();
-            sinon.stub(ds, 'runInTransaction', function(cb, done) {
-                return cb(transaction, function() {
-                    done(error);
-                });
+            sinon.stub(transaction, 'run', function(cb) {
+                return cb(error);
             });
 
-            ModelInstance.update(123, (err, entity) => {
+            ModelInstance.update(123, (err) => {
                 expect(err).equal(error);
                 done();
             });
@@ -577,7 +582,7 @@ describe('Model', function() {
 
         it('should run inside an EXISTING transaction', () => {
             ModelInstance.update(123, {}, null, null, transaction, (err, entity) => {
-                expect(ds.runInTransaction.called).be.false;
+                expect(ds.transaction.called).be.false;
                 expect(transaction.get.called).be.true;
                 expect(transaction.save.called).be.true;
                 expect(entity.className).equal('Entity');
