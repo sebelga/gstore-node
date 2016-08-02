@@ -13,7 +13,7 @@ Its main features are:
 - pre & post **middlewares** (hooks)
 - **custom methods** on entity instances
 
-This library is in in active development, please report any issue you might find.
+This library is in active development, please report any issue you might find.
 
 ----------
 
@@ -107,10 +107,10 @@ For info on how to configure gcloud [read the docs here](https://googlecloudplat
 
 #### Aliases
 
-After a successfull connection, gstore has 2 aliases set up
+After a successful connection, gstore has 2 aliases set up
 
 - `gstore.ds` The gcloud datastore instance
-- `gstore.runInTransaction`. Alias of the same gcloud method
+- `gstore.transaction`. Alias of the same gcloud method
 
 ## Schema
 ### Creation
