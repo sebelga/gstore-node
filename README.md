@@ -10,7 +10,7 @@ Its main features are:
 - properties **type validation**
 - properties **value validation**
 - **shortcuts** queries
-- pre & post **middlewares** (hooks)
+- pre & post **middleware** (hooks)
 - **custom methods** on entity instances
 
 This library is in active development, please report any issue you might find.
@@ -73,7 +73,7 @@ This library is in active development, please report any issue you might find.
   - [findOne()](#findone)
   - [findAround()](#findaround)
   - [deleteAll()](#deleteall)
-- [Middelwares (Hooks)](#middelwares-hooks)
+- [Middleware (Hooks)](#middleware-hooks)
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
@@ -336,7 +336,7 @@ var User = gstore.model('User', userSchema);
 Retrieving an entity by key is the fastest way to read from the Datastore.
 This method accepts the following parameters:
 
-- id {int, string} (can also be an **array** of ids to retreive)
+- id {int, string} (can also be an **array** of ids to retrieve)
 - ancestors {Array} (optional)
 - namespace (optional)
 - transaction (optional)
@@ -372,7 +372,7 @@ BlogPost.get(123, function(err, entity) {
 });
 ```
 
-If you need to retreive an entity from inside a transaction, pass it as fourth parameter.
+If you need to retrieve an entity from inside a transaction, pass it as fourth parameter.
 
 ```js
 var error;
@@ -534,7 +534,7 @@ transaction.run(function(err) {
 
 #### Other methods
 ##### excludeFromIndexes()
-On Schemaless Models (explicityOnly setting set to false), all the properties not declared explicitly will automatically be added to  Google Datastore indexes. If you don't want this behaviour you can call `Model.excludeFromIndexes(property)` passing a **string** property or an **array** of properties. If one of the property passed is already declared on the Schema, this method will set its excludeFromIndexes value to false.
+On Schemaless Models (explicityOnly setting set to false), all the properties not declared explicitly will automatically be added to Google Datastore indexes. If you don't want this behaviour you can call `Model.excludeFromIndexes(property)` passing a **string** property or an **array** of properties. If one of the property passed is already declared on the Schema, this method will set its excludeFromIndexes value to false.
 
 ```js
 var blogPostSchema = new Schema({
@@ -859,7 +859,7 @@ query.run({simplifyResult:false}, function(err, response) {
 ```
 
 ### list()
-Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entites with predefined settings.
+Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entities with predefined settings.
 
 Currently it support the following queries parameters
 
@@ -966,7 +966,7 @@ BlogPost.list(newSettings, ...);
 User.findOne({prop1:value, prop2:value2}, ancestors /*optional*/, namespace /*optional*/, callback);
 ```
 
-Quickly find an entity by passing key/value pairs. You can optionaly pass an ancestors array and a namespace.
+Quickly find an entity by passing key/value pairs. You can optionally pass an ancestors array or a namespace.
 The entity returned is a entity **instance** of the Model.
 
 ```js
@@ -1020,8 +1020,8 @@ BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', fu
 
 
 
-## Middelwares (Hooks)
-Middelwares or 'Hooks' are functions that are executed right before or right after a specific action on an entity.
+## Middleware (Hooks)
+Middleware or 'Hooks' are functions that are executed right before or right after a specific action on an entity.
 For now, hooks are available for the following methods
 
 - save (are also executed on Model.**update()**)
@@ -1105,7 +1105,7 @@ schema.post('save', function(){
 ```
 
 **Note**
-The post('delete') hook does not have its scope maped to the entity as it is not retreived. But the hook has a first argument with the key(s) that have been deleted.
+The post('delete') hook does not have its scope mapped to the entity as it is not retrieved. But the hook has a first argument with the key(s) that have been deleted.
 
 ```js
 schema.post('delete', function(keys){
