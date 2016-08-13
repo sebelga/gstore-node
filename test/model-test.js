@@ -5,7 +5,7 @@ var sinon  = require('sinon');
 var async  = require('async');
 var is     = require('is');
 
-var gcloud = require('gcloud')({
+var gcloud = require('google-cloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({

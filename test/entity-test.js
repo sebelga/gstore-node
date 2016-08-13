@@ -4,7 +4,7 @@ var expect = chai.expect;
 var sinon  = require('sinon');
 var extend = require('extend');
 
-var gcloud = require('gcloud')({
+var gcloud = require('google-cloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({
