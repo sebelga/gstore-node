@@ -377,23 +377,21 @@ If you need to retreive an entity from inside a transaction, pass it as fourth p
 ```js
 var error;
 
-gstore.runInTransaction(function(transaction, done) {
-	BlogPost.get(123, null, null, transaction, function(err, entity) {
-	    if (err) {
-	        error = err;
-	        transaction.rollback(done);
-	        return;
-	    }
+var transaction = gstore.transaction();
 
-	    // entity is an instance of the BlogPost model with all its properties & methods
-
-	    ... keep up until calling done();
-	});
-
-}, function(transactionError, apiResp) {
-	if (transactionError || error) {
-	    // deal with err;
-	}
+transaction.run(function(err) {
+    if (err) {
+        // handle error
+        return;
+    }
+    
+    BlogPost.get(123, null, null, transaction); // transaction will be automatically rolled back on failure
+    
+    transaction.commit(function(err) {
+        if (err) {
+            // handle error
+        }
+    });
 });
 ```
 
@@ -437,11 +435,22 @@ BlogPost.update(123, data, ['Grandpa', 123, 'Dad', 123], 'dev.namespace.com', fu
 });
 
 // The same method can be executed from inside a transaction
-gstore.runInTransaction(function(transaction, done){
+var transaction = gstore.transaction();
 
-	BlogPost.update(123, data, null, null, transaction, function(err, entity){...});
-
-}, function(){...});
+transaction.run(function(err) {
+    if (err) {
+        // handle error
+        return;
+    }
+    
+    BlogPost.update(123, data, null, null, transaction);
+    
+    transaction.commit(function(err) {
+        if (err) {
+            // handle error
+        }
+    });
+});
 
 ```
 
@@ -502,16 +511,22 @@ BlogPost.delete(null, null, null, null, key, function(err, success, apiResponse)
 // Important: you need to execute done() from the callback as gstore needs to execute
 // the "pre" hooks before deleting the entity
 
-gstore.runInTransaction(function(transaction, done){
+var transaction = gstore.transaction();
 
-	BlogPost.delete(123, null, null, transaction, function() {
-
-		[... any other transaction operation]
-
-		done();
-	});
-
-}, function(){...});
+transaction.run(function(err) {
+    if (err) {
+        // handle error
+        return;
+    }
+    
+    BlogPost.delete(123, null, null, transaction);
+    
+    transaction.commit(function(err) {
+        if (err) {
+            // handle error
+        }
+    });
+});
 
 ```
 
@@ -687,14 +702,23 @@ blogPostEntity.save(function(err) {
 * From inside a transaction
 */
 
-gstore.runInTransaction(function(transaction, done){
+var transaction = gstore.transaction();
 
-	var user = new User({name:'john'}); // user could also come from a query() or get()
-	user.save(transaction);
-
-	... other transaction operations until calling done()
-
-}, function(){...});
+transaction.run(function(err) {
+    if (err) {
+        // handle error
+        return;
+    }
+    
+    var user = new User({name:'john'}); // user could also come from a get()
+    user.save(transaction);
+    
+    transaction.commit(function(err) {
+        if (err) {
+            // handle error
+        }
+    });
+});
 
 ```
 
@@ -1096,21 +1120,27 @@ When you save or delete an entity from inside a transaction, gstore adds an extr
 If the transaction succeeds and you have any post('save') or post('delete') hooks on any of the entities modified during the transaction you need to call this method to execute them.
 
 ```js
-gstore.runInTransaction(function(transaction, done){
 
-	var user = new User({name:'john'}); // user could also come from a query() or get()
-	user.save(transaction);
+var transaction = gstore.transaction();
 
-	BlogPost.delete(123, null, null, transaction);
-
-	done();
-
-}, function(transactionError){
-    if (transactionError) { // deal with error }
-
-    // no error, call postHooks
-
-    transaction.execPostHooks();
+transaction.run(function(err) {
+    if (err) {
+        // handle error
+        return;
+    }
+    
+    var user = new User({name:'john'}); // user could also come from a get()
+    user.save(transaction);
+    
+    BlogPost.delete(123, null, null, transaction);
+    
+    transaction.commit(function(err) {
+        if (err) {
+            // handle error
+            return;
+        }
+        transaction.execPostHooks();
+    });
 });
 
 ```
