@@ -384,13 +384,18 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-    
-    BlogPost.get(123, null, null, transaction); // transaction will be automatically rolled back on failure
-    
-    transaction.commit(function(err) {
-        if (err) {
-            // handle error
-        }
+
+    BlogPost.get(123, null, null, transaction, function(err, entity) {
+        if (err) {... deal with error }
+
+        // entity is an instance of the BlogPost model with all its properties & methods
+
+        transaction.commit(function(err) {
+            if (err) {
+                // transaction will be automatically rolled back on failure
+                // handle error
+            }
+        });
     });
 });
 ```
@@ -442,9 +447,9 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-    
+
     BlogPost.update(123, data, null, null, transaction);
-    
+
     transaction.commit(function(err) {
         if (err) {
             // handle error
@@ -518,9 +523,9 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-    
+
     BlogPost.delete(123, null, null, transaction);
-    
+
     transaction.commit(function(err) {
         if (err) {
             // handle error
@@ -709,10 +714,10 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-    
+
     var user = new User({name:'john'}); // user could also come from a get()
     user.save(transaction);
-    
+
     transaction.commit(function(err) {
         if (err) {
             // handle error
@@ -1128,12 +1133,12 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-    
+
     var user = new User({name:'john'}); // user could also come from a get()
     user.save(transaction);
-    
+
     BlogPost.delete(123, null, null, transaction);
-    
+
     transaction.commit(function(err) {
         if (err) {
             // handle error
