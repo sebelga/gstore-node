@@ -1,6 +1,6 @@
 var chai   = require('chai');
 var expect = chai.expect;
-var gcloud = require('gcloud');
+var gcloud = require('google-cloud');
 var ds     = gcloud.datastore();
 
 var queryHelpers = require('../../lib/helper').QueryHelpers;

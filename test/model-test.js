@@ -5,7 +5,7 @@ var sinon  = require('sinon');
 var async  = require('async');
 var is     = require('is');
 
-var gcloud = require('gcloud')({
+var gcloud = require('google-cloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({
@@ -318,15 +318,26 @@ describe('Model', function() {
         it('passing an array of ids', () => {
             ds.get.restore();
 
+            let entity1 = {
+                key: ds.key(['BlogPost', 22]),
+                data:{name:'John'}
+            };
+
+            let entity2 = {
+                key: ds.key(['BlogPost', 69]),
+                data:{name:'John'}
+            };
+
             sinon.stub(ds, 'get', (key, cb) => {
                 setTimeout(function() {
-                    return cb(null, [entity, entity]);
+                    return cb(null, [entity2, entity1]); // not sorted
                 }, 20);
             });
 
             ModelInstance.get([22, 69], (err, res) => {
                 expect(is.array(ds.get.getCall(0).args[0])).be.true;
                 expect(is.array(res)).be.true;
+                expect(res[0].entityKey.id).equal(22); // sorted
             });
 
             clock.tick(20);

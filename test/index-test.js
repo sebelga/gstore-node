@@ -7,7 +7,7 @@ var gstore = require('../lib');
 var Model      = require('../lib/model');
 var pkg        = require('../package.json');
 
-var gcloud = require('gcloud')({
+var gcloud = require('google-cloud')({
     projectId: 'my-project'
 });
 var ds = gcloud.datastore({
