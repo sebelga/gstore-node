@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/gstore-node.svg)](https://badge.fury.io/js/gstore-node) [![Build Status](https://travis-ci.org/sebelga/gstore-node.svg?branch=master)](https://travis-ci.org/sebelga/gstore-node)
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)  
-gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node)** library.
+gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[google-cloud-node](https://github.com/GoogleCloudPlatform/google-cloud-node)** library.
 
 Its main features are:
 
