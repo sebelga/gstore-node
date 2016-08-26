@@ -1,6 +1,7 @@
 var chai = require('chai');
 var expect= chai.expect;
 
+var gstore          = require('../../');
 var Model           = require('../../lib/model');
 var Schema          = require('../../lib/schema');
 var ValidationError = require('../../lib/error/validation');
@@ -25,7 +26,7 @@ describe('ValidationError', () => {
     it('should return "{entityKind} validation failed" if called with entity instance', () => {
         let entityKind    = 'Blog';
         let schema        = new Schema({});
-        let ModelInstance = Model.compile(entityKind, schema, {key:()=> {}});
+        let ModelInstance = Model.compile(entityKind, schema, gstore);
         let model         = new ModelInstance({});
         let error         = new ValidationError(model);
 

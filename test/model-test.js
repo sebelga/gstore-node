@@ -138,7 +138,7 @@ describe('Model', function() {
         sinon.spy(transaction, 'commit');
         sinon.spy(transaction, 'rollback');
 
-        ModelInstance = gstore.model('Blog', schema, ds);
+        ModelInstance = gstore.model('Blog', schema, gstore);
     });
 
     afterEach(function() {
@@ -160,7 +160,7 @@ describe('Model', function() {
 
         it('should set properties on compile and return ModelInstance', () => {
             expect(ModelInstance.schema).exist;
-            expect(ModelInstance.ds).exist;
+            expect(ModelInstance.gstore).exist;
             expect(ModelInstance.hooks).exist;
             expect(ModelInstance.hooks).deep.equal(schema.s.hooks);
             expect(ModelInstance.entityKind).exist;
@@ -168,7 +168,7 @@ describe('Model', function() {
         });
 
         it('should create new models classes', () => {
-            let User = Model.compile('User', new Schema({}), ds);
+            let User = Model.compile('User', new Schema({}), gstore);
 
             expect(User.entityKind).equal('User');
             expect(ModelInstance.entityKind).equal('Blog');
@@ -749,7 +749,7 @@ describe('Model', function() {
                 spyPre();
                 next();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(123, (err, success) => {});
 
@@ -761,7 +761,7 @@ describe('Model', function() {
                 expect(this.className).equal('Entity');
                 next();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(123, (err, success) => {});
         });
@@ -771,7 +771,7 @@ describe('Model', function() {
                 expect(this).not.exist;
                 next();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete([123, 456], (err, success) => {});
         });
@@ -781,7 +781,7 @@ describe('Model', function() {
             schema.post('delete', () => {
                 spyPost();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(123, (err, result) => {
                 expect(spyPost.called).be.true;
@@ -795,7 +795,7 @@ describe('Model', function() {
                 expect(keys.id).equal(123);
                 done();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(123, (err, result) => {});
         });
@@ -807,7 +807,7 @@ describe('Model', function() {
                 expect(keys[1].id).equal(456);
                 done();
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(ids, (err, result) => {});
         });
@@ -817,7 +817,7 @@ describe('Model', function() {
             schema = new Schema({name:{type:'string'}});
             schema.post('delete', spyPost);
 
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
 
             ModelInstance.delete(123, null, null, transaction, (err, result) => {
                 transaction.execPostHooks();
@@ -1013,7 +1013,7 @@ describe('Model', function() {
                     limit:10
                 };
                 schema.queries('list', querySettings);
-                ModelInstance = Model.compile('Blog', schema, ds);
+                ModelInstance = Model.compile('Blog', schema, gstore);
                 sinon.spy(queryHelpers, 'buildFromOptions');
 
                 ModelInstance.list(() => {});
@@ -1029,7 +1029,7 @@ describe('Model', function() {
                     limit:10
                 };
                 schema.queries('list', querySettings);
-                ModelInstance = Model.compile('Blog', schema, ds);
+                ModelInstance = Model.compile('Blog', schema, gstore);
                 sinon.spy(queryHelpers, 'buildFromOptions');
 
                 ModelInstance.list({limit:15, simplifyResult:false}, () => {});
@@ -1231,7 +1231,7 @@ describe('Model', function() {
                 datastoreSerializer.fromDatastore
                 sinon.spy(datastoreSerializer, 'fromDatastore');
                 schema = new Schema({name:{}}, {queries:{simplifyResult:true}});
-                ModelInstance = gstore.model('Entity', schema, ds);
+                ModelInstance = gstore.model('Entity', schema);
 
                 ModelInstance.findAround('createdOn', '2016-1-1', {after:3, simplifyResult:false}, () => {});
 
@@ -1275,7 +1275,7 @@ describe('Model', function() {
                 var findOnePost = sinon.spy(spy, 'fnPost');
                 schema.pre('findOne', findOnePre);
                 schema.post('findOne', findOnePost);
-                ModelInstance = Model.compile('Blog', schema, ds);
+                ModelInstance = Model.compile('Blog', schema, gstore);
 
                 ModelInstance.findOne({}, () => {});
 
@@ -1403,7 +1403,7 @@ describe('Model', function() {
 
         it('---> should NOT validate() data before', () => {
             schema        = new Schema({}, {validateBeforeSave: false});
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
             model         = new ModelInstance({name: 'John'});
             let validateSpy = sinon.spy(model, 'validate');
 
@@ -1434,14 +1434,14 @@ describe('Model', function() {
             model.save((err, entity) => {});
             clock.tick(20);
 
-            expect(model.ds.save.calledOnce).be.true;
+            expect(model.gstore.ds.save.calledOnce).be.true;
             expect(spySerializerToDatastore.called).be.true;
             expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
             expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
-            expect(model.ds.save.getCall(0).args[0].key).exist;
-            expect(model.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
-            expect(model.ds.save.getCall(0).args[0].data).exist;
-            expect(model.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
+            expect(model.gstore.ds.save.getCall(0).args[0].key).exist;
+            expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
+            expect(model.gstore.ds.save.getCall(0).args[0].data).exist;
+            expect(model.gstore.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
 
             done();
             spySerializerToDatastore.restore();
@@ -1503,7 +1503,7 @@ describe('Model', function() {
                 spyPre();
                 next();
             });
-            ModelInstance = Model.compile('Blog', schema, mockDs);
+            ModelInstance = Model.compile('Blog', schema, gstore);
             let model = new ModelInstance({name:'John'});
 
             model.save(() => {});
@@ -1535,7 +1535,7 @@ describe('Model', function() {
                 spyPost();
             });
 
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
             let model = new ModelInstance({name:'John'});
 
             model.save(() => {});
@@ -1549,7 +1549,7 @@ describe('Model', function() {
             schema        = new Schema({name:{type:'string'}});
             schema.post('save', spyPost);
 
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
             let model = new ModelInstance({name:'John'});
 
             model.save(transaction, () => {
@@ -1604,7 +1604,7 @@ describe('Model', function() {
             }, {
                 explicitOnly : false
             });
-            ModelInstance = Model.compile('Blog', schema, ds);
+            ModelInstance = Model.compile('Blog', schema, gstore);
             let model = new ModelInstance({unknown:123});
 
             let valid = model.validate();
