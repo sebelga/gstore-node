@@ -340,6 +340,7 @@ This method accepts the following parameters:
 - ancestors {Array} (optional)
 - namespace (optional)
 - transaction (optional)
+- options (optional)
 - callback
 
 Returns: an entity **instance**.
@@ -399,6 +400,11 @@ transaction.run(function(err) {
     });
 });
 ```
+
+**preserveOrder** property (options)
+The options parameter has a **preserveOrder** property (default to false) that, if set to true, will retain the order of result entities as they were passed in. For example, getting IDs `[1, 2, 3]` will return in that order when **preserveOrder** is set. Otherwise, the order is undefined.
+
+Setting this to true does take some processing, especially for large sets. Only use it if you need the results in a certain order.
 
 #### Update()
 To update a Model, call `Model.update(...args);`
