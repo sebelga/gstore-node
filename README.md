@@ -94,7 +94,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/gcloud?method=gcloud).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/google-cloud/0.40.0/google-cloud?method=gcloud).
 
  ```js
  var configGcloud = {...your config here};
