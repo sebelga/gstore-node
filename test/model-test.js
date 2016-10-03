@@ -334,7 +334,7 @@ describe('Model', function() {
                 }, 20);
             });
 
-            ModelInstance.get([22, 69], (err, res) => {
+            ModelInstance.get([22, 69], null, null, null, {preserveOrder:true}, (err, res) => {
                 expect(is.array(ds.get.getCall(0).args[0])).be.true;
                 expect(is.array(res)).be.true;
                 expect(res[0].entityKey.id).equal(22); // sorted
