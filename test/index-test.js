@@ -1,16 +1,13 @@
 /*jshint -W030 */
 
-var chai       = require('chai');
-var expect     = chai.expect;
-var sinon      = require('sinon');
-var gstore = require('../lib');
-var Model      = require('../lib/model');
-var pkg        = require('../package.json');
+const chai       = require('chai');
+const expect     = chai.expect;
+const sinon      = require('sinon');
+const gstore = require('../lib');
+const Model      = require('../lib/model');
+const pkg        = require('../package.json');
 
-var gcloud = require('google-cloud')({
-    projectId: 'my-project'
-});
-var ds = gcloud.datastore({
+const ds = require('@google-cloud/datastore')({
     namespace : 'com.mydomain',
     apiEndpoint: 'http://localhost:8080'
 });
