@@ -400,7 +400,7 @@ transaction.run(function(err) {
 ```
 
 **options** parameter  
-The options object parameter has a **preserveOrder** property (default to false). Useful when an array of IDs is passed and you want to preserve the order of those ids on the resulting entities. 
+The options object parameter has a **preserveOrder** property (default to false). Useful when an array of IDs is passed and you want to preserve the order of those ids in the results. 
 
 ```js
 BlogPost.get([1,2,3], null, null, null, {preserveOrder:true}, function(err, entities) {
@@ -413,7 +413,7 @@ BlogPost.get([1,2,3], null, null, null, {preserveOrder:true}, function(err, enti
 });
 ```
 
-**Note**: setting this property to true does take some processing, especially for large sets. Only use it if absolutely need the results in a original order.
+**Note**: setting this property to true does take some processing, especially for large sets. Only use it if you absolutely need to maintain the original order passed.
 
 #### Update()
 To update a Model, call `Model.update(...args);`
