@@ -1,24 +1,21 @@
 /*jshint -W030 */
-var chai   = require('chai');
-var expect = chai.expect;
-var sinon  = require('sinon');
-var async  = require('async');
-var is     = require('is');
+const chai   = require('chai');
+const expect = chai.expect;
+const sinon  = require('sinon');
+const async  = require('async');
+const is     = require('is');
 
-var gcloud = require('google-cloud')({
-    projectId: 'my-project'
-});
-var ds = gcloud.datastore({
+const ds = require('@google-cloud/datastore')({
     namespace : 'com.mydomain',
     apiEndpoint: 'http://localhost:8080'
 });
 
-var gstore              = require('../');
-var Model               = require('../lib/model');
-var Entity              = require('../lib/entity');
-var Schema              = require('../lib').Schema;
-var datastoreSerializer = require('../lib/serializer').Datastore;
-var queryHelpers        = require('../lib/helper').QueryHelpers;
+const gstore              = require('../');
+const Model               = require('../lib/model');
+const Entity              = require('../lib/entity');
+const Schema              = require('../lib').Schema;
+const datastoreSerializer = require('../lib/serializer').Datastore;
+const queryHelpers        = require('../lib/helper').QueryHelpers;
 
 describe('Model', function() {
     'use strict';
@@ -100,7 +97,7 @@ describe('Model', function() {
 
             //setTimeout(function() {
             return cb(null, mockEntities, {
-                moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                moreResults : ds.MORE_RESULTS_AFTER_LIMIT,
                 endCursor: 'abcdef'
             });
             //}, 20);
@@ -904,7 +901,7 @@ describe('Model', function() {
         it('should not add endCursor to response', function(done){
             ds.runQuery.restore();
             sinon.stub(ds, 'runQuery', function(query, cb) {
-                return cb(null, [], {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+                return cb(null, [], {moreResults : ds.NO_MORE_RESULTS});
             });
             let query = ModelInstance.query()
                         .filter('name', '=', 'John');
@@ -979,7 +976,7 @@ describe('Model', function() {
                 sinon.stub(ds, 'runQuery', function(query, cb) {
                     setTimeout(function() {
                         return cb(null, mockEntities, {
-                            moreResults : gcloud.datastore.MORE_RESULTS_AFTER_LIMIT,
+                            moreResults : ds.MORE_RESULTS_AFTER_LIMIT,
                             endCursor: 'abcdef'
                         });
                     }, 20);
@@ -997,7 +994,7 @@ describe('Model', function() {
                 ds.runQuery.restore();
                 sinon.stub(ds, 'runQuery', function(query, cb) {
                     setTimeout(function() {
-                        return cb(null, mockEntities, {moreResults : gcloud.datastore.NO_MORE_RESULTS});
+                        return cb(null, mockEntities, {moreResults : ds.NO_MORE_RESULTS});
                     }, 20);
                 });
 
@@ -1643,13 +1640,13 @@ describe('Model', function() {
         });
 
         it('--> int', () => {
-            let model = new ModelInstance({age:gcloud.datastore.int('str')});
+            let model = new ModelInstance({age:ds.int('str')});
             let valid = model.validate();
 
-            let model2 = new ModelInstance({age:gcloud.datastore.int('7')});
+            let model2 = new ModelInstance({age:ds.int('7')});
             let valid2 = model2.validate();
 
-            let model3 = new ModelInstance({age:gcloud.datastore.int(7)});
+            let model3 = new ModelInstance({age:ds.int(7)});
             let valid3 = model3.validate();
 
             let model4 = new ModelInstance({age:'string'});
@@ -1670,13 +1667,13 @@ describe('Model', function() {
         });
 
         it('--> double', () => {
-            let model = new ModelInstance({price:gcloud.datastore.double('str')});
+            let model = new ModelInstance({price:ds.double('str')});
             let valid = model.validate();
 
-            let model2 = new ModelInstance({price:gcloud.datastore.double('1.2')});
+            let model2 = new ModelInstance({price:ds.double('1.2')});
             let valid2 = model2.validate();
 
-            let model3 = new ModelInstance({price:gcloud.datastore.double(7.0)});
+            let model3 = new ModelInstance({price:ds.double(7.0)});
             let valid3 = model3.validate();
 
             let model4 = new ModelInstance({price:'string'});
@@ -1731,7 +1728,7 @@ describe('Model', function() {
             let model = new ModelInstance({location:'string'});
             let valid = model.validate();
 
-            let model2 = new ModelInstance({location:gcloud.datastore.geoPoint({
+            let model2 = new ModelInstance({location:ds.geoPoint({
                                 latitude: 40.6894,
                                 longitude: -74.0447
                             })});

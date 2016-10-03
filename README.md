@@ -94,16 +94,14 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/google-cloud/0.40.0/google-cloud?method=gcloud).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/0.4.0/datastore).
 
- ```js
- var configGcloud = {...your config here};
- var gcloud       = require('gcloud')(configGcloud);
- var ds           = gcloud.datastore();
+```js
+var ds = require('@google-cloud/datastore')();
 
- var gstore = require('gstore-node');
- gstore.connect(ds);
- ```
+var gstore = require('gstore-node');
+gstore.connect(ds);
+```
 
 #### Aliases
 
@@ -401,10 +399,21 @@ transaction.run(function(err) {
 });
 ```
 
-**preserveOrder** property (options)
-The options parameter has a **preserveOrder** property (default to false) that, if set to true, will retain the order of result entities as they were passed in. For example, getting IDs `[1, 2, 3]` will return in that order when **preserveOrder** is set. Otherwise, the order is undefined.
+**options** parameter  
+The options object parameter has a **preserveOrder** property (default to false). Useful when an array of IDs is passed and you want to preserve the order of those ids on the resulting entities. 
 
-Setting this to true does take some processing, especially for large sets. Only use it if you need the results in a certain order.
+```js
+BlogPost.get([1,2,3], null, null, null, {preserveOrder:true}, function(err, entities) {
+    if (err) { // deal with err }
+
+    // Order is preserved
+    console.log(entities[0].entityKey.id); // 1
+    console.log(entities[1].entityKey.id); // 2
+    console.log(entities[2].entityKey.id); // 3
+});
+```
+
+**Note**: setting this property to true does take some processing, especially for large sets. Only use it if absolutely need the results in a original order.
 
 #### Update()
 To update a Model, call `Model.update(...args);`
