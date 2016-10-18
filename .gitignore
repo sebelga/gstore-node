@@ -39,3 +39,4 @@ entity_old.js
 config.json
 .coveralls.yml
 todo.txt
+.vscode/

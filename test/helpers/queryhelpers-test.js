@@ -1,13 +1,19 @@
-var chai   = require('chai');
-var expect = chai.expect;
-var ds     = require('@google-cloud/datastore')();
+const chai   = require('chai');
+const expect = chai.expect;
+const sinon  = require('sinon');
+const ds     = require('@google-cloud/datastore')();
 
-var queryHelpers = require('../../lib/helper').QueryHelpers;
+const queryHelpers = require('../../lib/helper').QueryHelpers;
 
 describe('Query Helpers', () => {
     "use strict";
+    let query;
 
     describe('should build a Query from options', () => {
+        beforeEach(() => {
+            query = ds.createQuery();
+        });
+
         it ('and throw error if no query passed', () => {
             let fn = () => {queryHelpers.buildFromOptions();};
 
@@ -21,7 +27,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and not modify query if no options passed', () => {
-            let query         = ds.createQuery();
             let originalQuery = {};
             Object.keys(query).forEach((k) => {
                 originalQuery[k] = query[k];
@@ -36,7 +41,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and update query', () => {
-            let query = ds.createQuery();
             let options = {
                 limit : 10,
                 order : {property:'name', descending:true},
@@ -54,7 +58,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and allow order on serveral properties', () => {
-            let query = ds.createQuery();
             let options = {
                 order : [{property:'name', descending:true}, {property:'age'}]
             };
@@ -65,7 +68,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and allow select to be an Array', () => {
-            let query = ds.createQuery();
             let options = {
                 select : ['name', 'lastname', 'email']
             };
@@ -76,7 +78,6 @@ describe('Query Helpers', () => {
         });
 
         it('and update hasAncestor in query', () => {
-            let query = ds.createQuery();
             let options = {
                 ancestors: ['Parent', 1234]
             };
@@ -89,7 +90,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and throw Error if no Datastore instance passed when passing ancestors', () => {
-            let query = ds.createQuery();
             let options = {
                 ancestors: ['Parent', 123]
             };
@@ -102,7 +102,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and define one filter', () => {
-            let query = ds.createQuery();
             let options = {
                 filters: ['name', '=', 'John']
             };
@@ -116,7 +115,6 @@ describe('Query Helpers', () => {
         });
 
         it ('and define several filters', () => {
-            let query = ds.createQuery();
             let options = {
                 filters: [['name', '=', 'John'], ['lastname', 'Snow'], ['age', '<', 30]]
             };
@@ -130,8 +128,19 @@ describe('Query Helpers', () => {
             expect(query.filters[2].op).equal('<');
         });
 
+        it('and execute a function in a filter value, without modifying the filters Array', () => {
+            let spy = sinon.spy();
+            let options = {
+                filters: [['modifiedOn', '<', spy]]
+            };
+
+            query = queryHelpers.buildFromOptions(query, options, ds);
+
+            expect(spy.calledOnce).be.true;
+            expect(options.filters[0][2]).to.equal(spy);
+        });
+
         it ('and throw error if wrong format for filters', () => {
-            let query = ds.createQuery();
             let options = {
                 filters: 'name'
             };
@@ -143,7 +152,6 @@ describe('Query Helpers', () => {
         });
 
         it('and add start cursor', () => {
-            let query = ds.createQuery();
             let options = {
                 start: 'abcdef'
             };

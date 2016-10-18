@@ -1021,7 +1021,7 @@ describe('Model', function() {
                 queryHelpers.buildFromOptions.restore();
             });
 
-            it('should override setting with options)', () => {
+            it('should override setting with options', () => {
                 let querySettings = {
                     limit:10
                 };
