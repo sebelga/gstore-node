@@ -55,6 +55,7 @@ describe('Entity', () => {
 
     afterEach(function() {
         ds.save.restore();
+        clock.restore();
     });
 
     describe('intantiate', function() {
@@ -105,6 +106,19 @@ describe('Entity', () => {
             expect(entity.entityData.name).equal('John');
             expect(entity.entityData.lastname).equal(null);
             expect(entity.entityData.email).equal(undefined);
+        });
+
+        it('should call handler for default values in gstore.defaultValues constants', () => {
+            clock.restore();
+            sinon.spy(gstore.defaultValues, '__handler__');
+            schema = new Schema({
+                createdOn:{type:'dateTime', default:gstore.defaultValues.NOW}
+            });
+            let model = gstore.model('BlogPost', schema);
+
+            let entity = new model({});
+
+            expect(gstore.defaultValues.__handler__.calledOnce).be.true;
         });
 
         it ('should not add default to optional properties', () => {
