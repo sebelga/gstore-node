@@ -1609,6 +1609,30 @@ describe('Model', function() {
             expect(valid.success).be.true;
         });
 
+        it('required property', () => {
+            schema = new Schema({
+                name: {type: 'string'},
+                email: {type: 'string', required:true}
+            });
+
+            ModelInstance = Model.compile('Blog', schema, gstore);
+
+            let model = new ModelInstance({name:'John Snow'});
+            let model2 = new ModelInstance({name:'John Snow', email:''});
+            let model3 = new ModelInstance({name:'John Snow', email:'   '});
+            let model4 = new ModelInstance({name:'John Snow', email: null});
+
+            let valid = model.validate();
+            let valid2 = model2.validate();
+            let valid3 = model3.validate();
+            let valid4 = model4.validate();
+
+            expect(valid.success).be.false;
+            expect(valid2.success).be.false;
+            expect(valid3.success).be.false;
+            expect(valid4.success).be.false;
+        });
+
         it ('no type validation', () => {
             let model = new ModelInstance({street:123});
             let model2 = new ModelInstance({street:'123'});
@@ -1794,7 +1818,7 @@ describe('Model', function() {
             expect(valid6.success).be.false;
         });
 
-         it ('--> is URL ok', () => {
+        it ('--> is URL ok', () => {
             let model  = new ModelInstance({website:'http://google.com'});
             let model2 = new ModelInstance({website:'google.com'});
 
