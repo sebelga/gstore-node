@@ -28,7 +28,7 @@ describe('Entity', () => {
         schema = new Schema({
             name    : {type: 'string'},
             lastname: {type:'string'},
-            password: {type: 'string'}
+            password: {type: 'string', read: false}
         });
 
         schema.virtual('fullname').get(function() {
@@ -365,22 +365,24 @@ describe('Entity', () => {
         });
 
         it('should call datastoreSerializer "fromDatastore"', () => {
-            var model      = new ModelInstance({name:'John'});
+            var model      = new ModelInstance({name:'John', password:'test'});
             var entityKey  = model.entityKey;
             var entityData = model.entityData;
 
             let output = model.plain();
 
-            expect(datastoreSerializer.fromDatastore.getCall(0).args[0]).deep.equal({key:entityKey, data:entityData});
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[0]).deep.equal(entityData);
             expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(false);
+            expect(output.password).not.exist;
         });
 
         it('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
-            var model = new ModelInstance({name:'John'});
+            var model = new ModelInstance({name:'John', password:'test'});
 
             let output = model.plain({readAll:true});
 
             expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(true);
+            expect(output.password).exist;
         });
 
         it('should add virtuals', () => {

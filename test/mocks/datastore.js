@@ -60,6 +60,10 @@ class Datastore {
     get NO_MORE_RESULTS() {
         return googleDatastore.NO_MORE_RESULTS;
     }
+
+    get KEY() {
+        return googleDatastore.KEY;
+    }
 }
 
 module.exports = function(options) {

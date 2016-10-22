@@ -53,20 +53,7 @@ describe('Datastore serializer', () => {
             };
         })
 
-        it('for legacy datastore format (< 0.5.0)', () => {
-            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, legacyDatastoreMock);
-            
-            expect(serialized.id).equal(legacyDatastoreMock.key.id);
-            expect(serialized.email).not.exist;
-
-            // Apart from the id (correctly added) and the email
-            // (correctly removed from read:false) everything else should be the same
-            delete legacyDatastoreMock.data.email;
-            delete serialized.id;
-            expect(serialized).deep.equal(legacyDatastoreMock.data);
-        });
-
-        it ('for new datastore format, adding Symbol("KEY") id to entity', () => {
+        it ('and add Symbol("KEY") id to entity', () => {
             var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock);
 
             //expect(serialized).equal = datastoreMock;
@@ -76,12 +63,6 @@ describe('Datastore serializer', () => {
 
         it('accepting "readAll" param', () => {
             var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, true);
-
-            expect(serialized.email).exist;
-        });
-        
-        it('accepting "readAll" param (legacy)', () => {
-            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, legacyDatastoreMock, true);
 
             expect(serialized.email).exist;
         });

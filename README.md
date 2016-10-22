@@ -94,7 +94,7 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/0.4.0/datastore).
+For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/0.5.0/datastore).
 
 ```js
 var ds = require('@google-cloud/datastore')();
@@ -168,7 +168,15 @@ var entitySchema = new Schema({
 By default if a property value is not defined it will be set to null or to its default value (if any). If you don't want this behaviour you can set it as *optional* and if no value is passed, this property will not be saved in the Datastore.
 
 #### default
-You can set a default value for the property is no value has been passed.
+You can set a default value for the properties.
+
+If you need to set the default value for a *datetime* property to the current time of the request there is a **special** constant for that. `gstore.defaultValues.NOW` 
+
+```
+var schema = new Schema({
+	createdOn : {type: 'datetime', default: gstore.defaultValues.NOW}
+});
+```
 
 #### excludeFromIndexes
 By default all properties are **included** in the Datastore indexes. If you don't want some properties to be indexed set their 'excludeFromIndexes' property
@@ -185,18 +193,54 @@ This setting can be overridden by passing a *readAll* setting set to **true** in
 - **inline** settings of list(), query() and findAround()
 
 #### write
-If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed.
-Example: `var data = BlogPostModel.sanitize(req.body);`
+If you want to protect certain properties to be written by a user, you can set their *write* option to **false**. You can then call [sanitize()](#modelSanitize) on a Model passing the user data and those properties will be removed.   
 
+```
+	// Schema:
+	var schema = new Schema({
+		...
+		protectedProp: { write: false }
+	});
+	
+	// In a Controller request:
+	var data = req.body; // {name: 'John', lastname: 'Snow', protectedProp: 1234};
+	
+	// Sanitize incoming user data
+	data = BlogPostModel.sanitize(data);
+	console.log(data); // {name: 'John', lastname: 'Snow'};
+
+```
+
+#### required
+If you want define a mandatory property, set its **required** value to true. If then the property value is *undefined*, *null* or an *empty string* it will not validate and will not be saved in the Datastore.
 
 ```js
-// Properties options example
+	// Schema:
+	var userSchema = new Schema({
+		name: {type: 'string'}
+		email: {type: 'string',  validate: 'isEmail', required: true}
+	});
+	
+	// In a Controller request:
+	var data = req.body; // {name: 'John'}; // ---> email is missing
+	
+	var user = new User(data);
+	user.save(function(err) {
+		--> error will be a ValidatorError
+	});
+```
+
+
+Complete properties options example:
+
+```js
 var entitySchema = new Schema({
-    name    :  {type: 'string'},
+    name:  {type: 'string'},
     lastname:  {excludeFromIndexes: true},
+    email: {validate: 'isEmail', required: true},
     website :  {validate: 'isURL', optional: true},
     modified:  {type: 'boolean', default: false, read:false}, // won't show up in queries
-    createdOn: {type:'datetime', write:false} //will be removed from data on sanitize(data)
+    createdOn: {type:'datetime', default: gstore.defaultValues.NOW, write:false} //will be removed from data on sanitize(data)
     ...
 });
 ```
@@ -210,11 +254,8 @@ To allow unregistered properties on a schema set `explicitOnly : false`. This wi
 
 <a name="simplifyResultExplained"></a>
 #### queries
-**simplifyResult** (default true).
-By default the results coming back from Datastore queries are merged into a simpler object format. If you prefer the full response that includes both the Datastore Key & Data, set simplifyResult to false. This option can be set on a per query basis ([see below](#simplifyResultInline)).
-
 **readAll** (default false)
-Override the Schema option property 'read' ([see above](#schemaPropertyOptionRead)) and read all the properties of the entities.
+Override the Schema option property '**read**' ([see above](#schemaPropertyOptionRead)) to return all the properties of the entities.
 
 ```js
 // Schema options example
@@ -224,7 +265,6 @@ var entitySchema = new Schema({
     validateBeforeSave : false,
     explicitOnly : false,
     queries : {
-        simplifyResult : false,
         readAll : true
     }
 });
@@ -867,17 +907,6 @@ var query = User.query('com.domain-dev')
 ...
 ```
 
-<a name="simplifyResultInline"></a>
-**options**:
-query.run() accepts a first options parameter with the following properties
-- simplifyResult : true|false (see [explanation above](#simplifyResultExplained))
-
-```js
-query.run({simplifyResult:false}, function(err, response) {
-    ....
-})
-```
-
 ### list()
 Shortcut for listing the entities. For complete control (pagination, start, end...) use the above gcloud queries. List queries are meant to quickly list entities with predefined settings.
 
@@ -887,11 +916,11 @@ Currently it support the following queries parameters
 - order
 - select
 - ancestors
-- filters (default operator is "=" and does not need to be passed
+- filters (default operator is "=" and does not need to be passed)
 - start
 
 
-**Define on Schema**
+**1. Define on Schema**
 
 `entitySchema.queries('list', {...settings});`
 
@@ -900,17 +929,18 @@ Example
 ```js
 // Create Schema
 var blogPostSchema = new gstore.Schema({
-    title : {type:'string'}
+    title : {type:'string'},
+    isDraft: {type: 'boolean'}
 });
 
 // List settings
 var querySettings = {
     limit    : 10,
     order    : {property: 'title', descending:true}, // descending defaults to false and is optional
-    select   : 'title'
-    ancestors: ['Parent', 123],  // will add a hasAncestor filter
-    filters  : ['title', 'My first post'] // operator defaults to "=",
-    start    : 'nextPageCursorFromPreviousQuery'
+    select   : 'title',
+    ancestors: ['Parent', 123],  // will add an "hasAncestor" filter
+    filters  : ['isDraft', false] // operator defaults to "=",
+    start    : 'nextPageCursorFromPreviousQuery' // from a previous query
 };
 
 // Add to schema
@@ -920,13 +950,13 @@ blogPostSchema.queries('list', querySettings);
 var BlogPost = gstore.model('BlogPost', blogPostSchema);
 ```
 
-**Use anywhere**
+**2. Use anywhere**
 
 `Model.list(callback)`
-The response object in the callback contains both the entities and a **nextPageCursor** for pagination (that could be used in a next `Model.list({start:pageCursor}, function(){...}` call)
+The **response** object in the callback contains both the **entities** and a **nextPageCursor** for pagination (to be used in a next `Model.list({start:pageCursor}, function(){...}` call)
 
 ```js
-// anywhere in your Controllers
+// In your Controllers
 BlogPost.list(function(err, response) {
     if (err) {
         // deal with err
@@ -946,8 +976,22 @@ var querySettings = {
 };
 ```
 
-**Override settings**
-These global settings can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
+The **value** of a filter can also be a function that **returns** a value. This function will be executed on on each request. Usefull for dynamic value like retrieving the current date.
+
+```js
+var querySettings = {
+	filters : ['publishOn', '<', () => new Date()],
+	...
+}
+
+// In a Controller request
+BlogPost.list(function(err, response) {
+	// --> will return all BlogPost with a publishOn property date previous of today's date.
+});
+```
+
+**Override settings**  
+These global settings defined on the schema can be overridden anytime by passing new settings as first parameter. `Model.list(settings, cb)`
 
 ```js
 var newSettings = {
@@ -963,18 +1007,15 @@ BlogPost.list(newSettings, function(err, entities) {
 });
 ```
 
-**additional settings** in override
+**Additional settings** in override
 
-- simplifyResult {true|false}
 - namespace {string}
 
-Just like with gcloud queries, **simplifyResult** can be set to receive the full Datastore data for each entity or a simplified response.
-Use the **namespace** setting to override the default namespace defined globally when setting up the Datastore instance.
+Use the **namespace** setting to override the default namespace.
 
 ```js
 var newSettings = {
     ...
-    simplifyResult : false,
     namespace:'com.domain-dev'
 };
 
@@ -1006,7 +1047,6 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
 
 Find entities before or after an entity based on a property and a value.
 **settings** is an object that contains *either* "before" or "after" with the number of entities to retreive.
-You can also override the "simplifyResult" global queries setting.
 
 ```js
 // Find the next 20 post after march 1st
@@ -1015,7 +1055,7 @@ BlogPost.findAround('publishedOn', '2016-03-01', {after:20}, function(err, entit
 });
 
 // Find 10 users before Mick Jagger
-User.findAround('lastname', 'Jagger', {before:10, simplifyResult:false}, function(err, entities){
+User.findAround('lastname', 'Jagger', {before:10}, function(err, entities){
    ...
 });
 
