@@ -1,13 +1,14 @@
 /*jshint -W030 */
+'use strict';
+
 const chai   = require('chai');
 const expect = chai.expect;
 const sinon  = require('sinon');
 const async  = require('async');
 const is     = require('is');
 
-const ds = require('@google-cloud/datastore')({
-    namespace : 'com.mydomain',
-    apiEndpoint: 'http://localhost:8080'
+const ds = require('./mocks/datastore')({
+    namespace : 'com.mydomain'
 });
 
 const gstore              = require('../');
@@ -18,8 +19,6 @@ const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers        = require('../lib/helper').QueryHelpers;
 
 describe('Model', function() {
-    'use strict';
-
     var schema;
     var ModelInstance;
     var clock;
@@ -39,6 +38,7 @@ describe('Model', function() {
         schema = new Schema({
             name:     {type: 'string'},
             lastname: {type: 'string', excludeFromIndexes:true},
+            password: {read:false},
             age:      {type: 'int', excludeFromIndexes:true},
             birthday: {type: 'datetime'},
             street:   {},
@@ -63,30 +63,20 @@ describe('Model', function() {
         });
 
         mockEntity = {
-            key:ds.key(['BlogPost', 1234]),
-            data:{
-                name:'John',
-                lastname:'Snow',
-                email:'john@snow.com'
-            }
+            name:'John',
+            lastname:'Snow',
+            email:'john@snow.com'
         };
 
-        mockEntities = [
-            {
-                key : ds.key(['BlogPost', 1234]),
-                data: {
-                    name: 'John',
-                    lastname : 'Snow'
-                }
-            },
-            {
-                key : ds.key(['BlogPost', 'keyname']),
-                data: {
-                    name: 'Mick',
-                    lastname : 'Jagger'
-                }
-            }
-        ];
+        mockEntity[ds.KEY] = ds.key(['BlogPost', 1234]);
+
+        var mockEntity2 = {name: 'John', lastname : 'Snow', password:'xxx'};
+        mockEntity2[ds.KEY] = ds.key(['BlogPost', 1234]);
+
+        var mockEntit3 = {name: 'Mick', lastname : 'Jagger'};
+        mockEntit3[ds.KEY] = ds.key(['BlogPost', 'keyname']);
+
+        mockEntities = [mockEntity2, mockEntit3];
 
         sinon.stub(ds, 'runQuery', function(namespace, query, cb) {
             let args = [];
@@ -315,15 +305,11 @@ describe('Model', function() {
         it('passing an array of ids', () => {
             ds.get.restore();
 
-            let entity1 = {
-                key: ds.key(['BlogPost', 22]),
-                data:{name:'John'}
-            };
+            let entity1 = {name:'John'};
+            entity1[ds.KEY] = ds.key(['BlogPost', 22]);
 
-            let entity2 = {
-                key: ds.key(['BlogPost', 69]),
-                data:{name:'John'}
-            };
+            let entity2 = {name:'John'};
+            entity2[ds.KEY] = ds.key(['BlogPost', 69]);
 
             sinon.stub(ds, 'get', (key, cb) => {
                 setTimeout(function() {
@@ -891,11 +877,36 @@ describe('Model', function() {
                         .filter('name', '=', 'John');
 
             query.run((err, response) => {
+                // We add manually the id in the mocks to deep compare
+                mockEntities[0].id = 1234;
+                mockEntities[1].id = 'keyname';
+                // we delete from the mock to deep compare
+                delete mockEntities[0].password;
+
                 expect(ds.runQuery.getCall(0).args[0]).equal(query);
                 expect(response.entities.length).equal(2);
+                expect(response.entities[0].password).not.to.exist;
+                expect(response.entities).deep.equal(mockEntities);
                 expect(response.nextPageCursor).equal('abcdef');
                 done();
             });
+        });
+
+        it('should add id to entities', (done) => {
+            let query = ModelInstance.query()
+                        .run((err, response) => {
+                            expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                            expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+                            done();
+                        });
+        });
+
+        it('should accept "readAll" option', (done) => {
+            let query = ModelInstance.query()
+                        .run(({readAll:true}), (err, response) => {
+                            expect(response.entities[0].password).to.exist;
+                            done();
+                        });
         });
 
         it('should not add endCursor to response', function(done){
@@ -928,17 +939,6 @@ describe('Model', function() {
             });
 
             expect(result).to.not.exist;
-        });
-
-        it('should allow options for query', () => {
-            let query = ModelInstance.query();
-
-            var _result;
-            query.run({simplifyResult:false}, (err, result) => {
-                _result = result;
-            });
-
-            expect(_result.entities).equal(mockEntities);
         });
 
         it('should allow a namespace for query', () => {
@@ -985,9 +985,18 @@ describe('Model', function() {
                 ModelInstance.list((err, response) => {
                     expect(response.entities.length).equal(2);
                     expect(response.nextPageCursor).equal('abcdef');
+                    expect(response.entities[0].password).not.to.exist;
                 });
 
                 clock.tick(20);
+            });
+
+            it('should add id to entities', (done) => {
+                ModelInstance.list((err, response) => {
+                    expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                    expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+                    done();
+                });
             });
 
             it('should not add endCursor to response', function(){
@@ -1021,20 +1030,24 @@ describe('Model', function() {
                 queryHelpers.buildFromOptions.restore();
             });
 
-            it('should override setting with options', () => {
+            it('should override setting with options', (done) => {
                 let querySettings = {
-                    limit:10
+                    limit:10,
+                    readAll: true
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
                 sinon.spy(queryHelpers, 'buildFromOptions');
 
-                ModelInstance.list({limit:15, simplifyResult:false}, () => {});
+                ModelInstance.list({limit:15}, (err, response) => {
+                    expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
+                    expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
+                    expect(response.entities[0].password).to.exist;
 
-                expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
-                expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
-
-                queryHelpers.buildFromOptions.restore();
+                    queryHelpers.buildFromOptions.restore();
+                    done();
+                });
+                
             });
 
             it('should deal with err response', () => {
@@ -1130,7 +1143,7 @@ describe('Model', function() {
                     let args = ModelInstance.delete.getCall(0).args;
                     expect(args.length).equal(6);
                     expect(is.array(args[4])).be.true;
-                    expect(args[4]).deep.equal([mockEntities[0].key, mockEntities[1].key]);
+                    expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
 
                     done();
                 });
@@ -1179,18 +1192,23 @@ describe('Model', function() {
         });
 
         describe('findAround()', function() {
+            
             it('should get 3 entities after a given date', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, () => {});
-                let query = ds.runQuery.getCall(0).args[0];
+                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err, entities) => {
+                    let query = ds.runQuery.getCall(0).args[0];
 
-                expect(query.filters[0].name).equal('createdOn');
-                expect(query.filters[0].op).equal('>');
-                expect(query.filters[0].val).equal('2016-1-1');
-                expect(query.limitVal).equal(3);
+                    expect(query.filters[0].name).equal('createdOn');
+                    expect(query.filters[0].op).equal('>');
+                    expect(query.filters[0].val).equal('2016-1-1');
+                    expect(query.limitVal).equal(3);
+                    
+                    // Make sure to not show properties where read is set to false
+                    expect(entities[0].password).not.to.exist;
+                });
             });
 
             it ('should get 3 entities before a given date', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:12, simplifyResult:false}, () => {});
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:12}, () => {});
                 let query = ds.runQuery.getCall(0).args[0];
 
                 expect(query.filters[0].op).equal('<');
@@ -1224,16 +1242,19 @@ describe('Model', function() {
                 });
             });
 
-            it('should override "simplifyResult" settings', function() {
-                datastoreSerializer.fromDatastore
-                sinon.spy(datastoreSerializer, 'fromDatastore');
-                schema = new Schema({name:{}}, {queries:{simplifyResult:true}});
-                ModelInstance = gstore.model('Entity', schema);
+            it('should add id to entities', (done) => {
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:3}, (err, entities) => {
+                    expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                    expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
+                    done();
+                });
+            });
 
-                ModelInstance.findAround('createdOn', '2016-1-1', {after:3, simplifyResult:false}, () => {});
-
-                expect(datastoreSerializer.fromDatastore.called).be.false;
-                datastoreSerializer.fromDatastore.restore();
+            it('should read all properties', (done) => {
+                ModelInstance.findAround('createdOn', '2016-1-1', {before:3, readAll:true}, (err, entities) => {
+                    expect(entities[0].password).exist;
+                    done();
+                });
             });
 
             it('should accept a namespace', function() {

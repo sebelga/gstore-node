@@ -17,7 +17,19 @@ describe('ValidatorError', () => {
         };
         let error = new ValidatorError(errorData);
 
-        expect(error.message).equal(errorData);
+        expect(error.message.errorName).equal('Wrong format');
+        expect(error.message.message).equal(errorData.message);
+    });
+
+    it('should set error name passed in param', () => {
+        let errorData = {
+            code : 400,
+            errorName: 'Required',
+            message: 'Something went really bad'
+        };
+        let error = new ValidatorError(errorData);
+
+        expect(error.message.errorName).equal(errorData.errorName);
     });
 
     it('should return "Validation failed" if called without param', () => {
