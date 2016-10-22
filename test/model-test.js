@@ -1,13 +1,14 @@
 /*jshint -W030 */
+'use strict';
+
 const chai   = require('chai');
 const expect = chai.expect;
 const sinon  = require('sinon');
 const async  = require('async');
 const is     = require('is');
 
-const ds = require('@google-cloud/datastore')({
-    namespace : 'com.mydomain',
-    apiEndpoint: 'http://localhost:8080'
+const ds = require('./mocks/datastore')({
+    namespace : 'com.mydomain'
 });
 
 const gstore              = require('../');
@@ -18,8 +19,6 @@ const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers        = require('../lib/helper').QueryHelpers;
 
 describe('Model', function() {
-    'use strict';
-
     var schema;
     var ModelInstance;
     var clock;

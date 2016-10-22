@@ -1,13 +1,14 @@
-var chai = require('chai');
-var expect = chai.expect;
+'use strict';
 
-var gstore = require('../../');
-var Schema     = require('../../lib').Schema;
+const chai = require('chai');
+const expect = chai.expect;
 
-var datastoreSerializer = require('../../lib/serializer').Datastore;
+const gstore = require('../../lib');
+
+const Schema = require('../../lib').Schema;
+const datastoreSerializer = require('../../lib/serializer').Datastore;
 
 describe('Datastore serializer', () => {
-    "use strict";
 
     var ModelInstance;
 
@@ -23,34 +24,64 @@ describe('Datastore serializer', () => {
     });
 
     describe('should convert data FROM Datastore format', function() {
-        var datastoreMock;
+        let datastoreMock;
+        let legacyDatastoreMock;
+        let entity;
+
+        const key = {
+            namespace: undefined,
+            id: 1234,
+            kind: "BlogPost",
+            path: ["BlogPost", 1234]
+        };
+
+        let data;
 
         beforeEach(function() {
-            datastoreMock = {
-                key: {
-                    namespace: undefined,
-                    id: 1234,
-                    kind: "BlogPost",
-                    path: ["BlogPost", 1234]
-                },
-                data: {
-                    name: "John",
-                    lastname : 'Snow',
-                    email : 'john@snow.com'
-                }
+            data = {
+                name: "John",
+                lastname : 'Snow',
+                email : 'john@snow.com'
+            };
+
+            datastoreMock = data;
+            datastoreMock[ModelInstance.gstore.ds.KEY] = key;
+
+            legacyDatastoreMock = {
+                key: key,
+                data: data
             };
         })
 
-        it('to simple object', () => {
+        it('for legacy datastore format (< 0.5.0)', () => {
+            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, legacyDatastoreMock);
+            
+            expect(serialized.id).equal(legacyDatastoreMock.key.id);
+            expect(serialized.email).not.exist;
+
+            // Apart from the id (correctly added) and the email
+            // (correctly removed from read:false) everything else should be the same
+            delete legacyDatastoreMock.data.email;
+            delete serialized.id;
+            expect(serialized).deep.equal(legacyDatastoreMock.data);
+        });
+
+        it ('for new datastore format, adding Symbol("KEY") id to entity', () => {
             var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock);
 
-            expect(serialized).equal = datastoreMock.data;
-            expect(serialized.id).equal(datastoreMock.key.id);
+            //expect(serialized).equal = datastoreMock;
+            expect(serialized.id).equal(key.id);
             expect(serialized.email).not.exist;
         });
 
         it('accepting "readAll" param', () => {
             var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, true);
+
+            expect(serialized.email).exist;
+        });
+        
+        it('accepting "readAll" param (legacy)', () => {
+            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, legacyDatastoreMock, true);
 
             expect(serialized.email).exist;
         });

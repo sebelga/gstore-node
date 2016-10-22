@@ -1,27 +1,22 @@
 /*jshint -W030 */
+'use strict';
+
 const chai   = require('chai');
 const expect = chai.expect;
 const sinon  = require('sinon');
 const extend = require('extend');
 
-const ds = require('@google-cloud/datastore')({
-    namespace : 'com.mydomain',
-    apiEndpoint: 'http://localhost:8080'
-});
-
+const ds = require('./mocks/datastore')();
+const datastoreSerializer = require('../lib/serializer').Datastore;
+const Schema = require('../lib').Schema;
+const Model  = require('../lib/model');
 const gstore = require('../lib');
 gstore.connect(ds);
-var datastoreSerializer = require('../lib/serializer').Datastore;
-
-var Schema = require('../lib').Schema;
-var Model  = require('../lib/model');
 
 describe('Entity', () => {
-    "use strict";
-
-    var clock;
-    var schema;
-    var ModelInstance;
+    let clock;
+    let schema;
+    let ModelInstance;
 
     beforeEach(function() {
         clock = sinon.useFakeTimers();
@@ -191,7 +186,7 @@ describe('Entity', () => {
                 expect(fn).throw(Error);
             });
 
-            it ('---> with a partial Key (auto-generated id)', () => {
+            it('---> with a partial Key (auto-generated id)', () => {
                 var model = new Model({});
 
                 expect(model.entityKey.kind).to.deep.equal('BlogPost');
@@ -255,8 +250,11 @@ describe('Entity', () => {
                 Model  = gstore.model('BlogPost', schema);
                 entity = new Model({name:'John'});
 
-                entity.save(done);
+                entity.save(function() {
+                    done();
+                });
 
+                clock.tick(50);
                 expect(save.callCount).to.equal(1);
                 save.restore();
             });
@@ -397,7 +395,7 @@ describe('Entity', () => {
     });
 
     describe('datastoreEntity()', function() {
-        it ('should get the data from the Datastore and merge it into the entity', function() {
+        it('should get the data from the Datastore and merge it into the entity', function() {
             let mockData = {name:'John'};
             sinon.stub(ds, 'get', function(key, cb) {
                 cb(null, {data:mockData});
