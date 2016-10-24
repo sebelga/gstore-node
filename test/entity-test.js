@@ -400,7 +400,7 @@ describe('Entity', () => {
         it('should get the data from the Datastore and merge it into the entity', function() {
             let mockData = {name:'John'};
             sinon.stub(ds, 'get', function(key, cb) {
-                cb(null, {data:mockData});
+                cb(null, mockData);
             });
 
             var model = new ModelInstance({});
