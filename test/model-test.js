@@ -1047,7 +1047,7 @@ describe('Model', function() {
                     queryHelpers.buildFromOptions.restore();
                     done();
                 });
-                
+
             });
 
             it('should deal with err response', () => {
@@ -1192,7 +1192,7 @@ describe('Model', function() {
         });
 
         describe('findAround()', function() {
-            
+
             it('should get 3 entities after a given date', function() {
                 ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err, entities) => {
                     let query = ds.runQuery.getCall(0).args[0];
@@ -1201,7 +1201,7 @@ describe('Model', function() {
                     expect(query.filters[0].op).equal('>');
                     expect(query.filters[0].val).equal('2016-1-1');
                     expect(query.limitVal).equal(3);
-                    
+
                     // Make sure to not show properties where read is set to false
                     expect(entities[0].password).not.to.exist;
                 });
