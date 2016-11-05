@@ -1,193 +1,147 @@
-/*jshint -W030 */
+
 'use strict';
 
-const chai   = require('chai');
+const chai = require('chai');
+const sinon = require('sinon');
+const is = require('is');
+
+require('sinon-as-promised');
+
 const expect = chai.expect;
-const sinon  = require('sinon');
-const async  = require('async');
-const is     = require('is');
+const assert = chai.assert;
 
 const ds = require('./mocks/datastore')({
-    namespace : 'com.mydomain'
+    namespace: 'com.mydomain',
 });
 
-const gstore              = require('../');
-const Model               = require('../lib/model');
-const Entity              = require('../lib/entity');
-const Schema              = require('../lib').Schema;
+const Transaction = require('./mocks/transaction');
+const Query = require('./mocks/query');
+
+const gstore = require('../');
+const Model = require('../lib/model');
+const Entity = require('../lib/entity');
+const Schema = require('../lib').Schema;
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const queryHelpers        = require('../lib/helper').QueryHelpers;
+const queryHelpers = require('../lib/helper').QueryHelpers;
 
-describe('Model', function() {
-    var schema;
-    var ModelInstance;
-    var clock;
-    var mockEntity;
-    var mockEntities;
-    var transaction;
+describe('Model', () => {
+    let schema;
+    let ModelInstance;
+    let mockEntity;
+    let mockEntities;
+    let transaction;
 
-    beforeEach('Before each Model (global)', function() {
-        gstore.models       = {};
+    beforeEach('Before each Model (global)', () => {
+        gstore.models = {};
         gstore.modelSchemas = {};
-        gstore.options      = {};
+        gstore.options = {};
 
         gstore.connect(ds);
 
-        clock = sinon.useFakeTimers();
-
         schema = new Schema({
-            name:     {type: 'string'},
-            lastname: {type: 'string', excludeFromIndexes:true},
-            password: {read:false},
-            age:      {type: 'int', excludeFromIndexes:true},
-            birthday: {type: 'datetime'},
-            street:   {},
-            website:  {validate: 'isURL'},
-            email:    {validate: 'isEmail'},
-            modified: {type: 'boolean'},
-            tags:     {type:'array'},
-            prefs:    {type:'object'},
-            price:    {type:'double', write:false},
-            icon:     {type:'buffer'},
-            location: {type:'geoPoint'},
-            color:    {validate:'isHexColor'},
-            type:     {values:['image', 'video']}
+            name: { type: 'string' },
+            lastname: { type: 'string', excludeFromIndexes: true },
+            password: { read: false },
+            age: { type: 'int', excludeFromIndexes: true },
+            birthday: { type: 'datetime' },
+            street: {},
+            website: { validate: 'isURL' },
+            email: { validate: 'isEmail' },
+            modified: { type: 'boolean' },
+            tags: { type: 'array' },
+            prefs: { type: 'object' },
+            price: { type: 'double', write: false },
+            icon: { type: 'buffer' },
+            location: { type: 'geoPoint' },
+            color: { validate: 'isHexColor' },
+            type: { values: ['image', 'video'] },
         });
 
-        schema.virtual('fullname').get(function() {});
-
-        sinon.stub(ds, 'save', (entity, cb) => {
-            setTimeout(() => {
-                cb(null ,entity);
-            }, 20);
-        });
+        schema.virtual('fullname').get(() => { });
 
         mockEntity = {
-            name:'John',
-            lastname:'Snow',
-            email:'john@snow.com'
+            name: 'John',
+            lastname: 'Snow',
+            email: 'john@snow.com',
         };
 
         mockEntity[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-        const mockEntity2 = {name: 'John', lastname : 'Snow', password:'xxx'};
+        const mockEntity2 = { name: 'John', lastname: 'Snow', password: 'xxx' };
         mockEntity2[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-        const mockEntit3 = {name: 'Mick', lastname : 'Jagger'};
+        const mockEntit3 = { name: 'Mick', lastname: 'Jagger' };
         mockEntit3[ds.KEY] = ds.key(['BlogPost', 'keyname']);
 
         mockEntities = [mockEntity2, mockEntit3];
-
-        sinon.stub(ds, 'runQuery', function(namespace, query, cb) {
-            let args = [];
-            for (let i = 0; i < arguments.length; i++) {
-                args.push(arguments[i]);
-            }
-            cb = args.pop();
-
-            //setTimeout(function() {
-            return cb(null, mockEntities, {
-                moreResults : ds.MORE_RESULTS_AFTER_LIMIT,
-                endCursor: 'abcdef'
-            });
-            //}, 20);
-        });
-
-        function Transaction() {
-            var _this = this;
-            this.run      = function(cb) {cb();};
-            this.get      = function(cb) {cb();};
-            this.save     = function(cb) {cb();};
-            this.delete   = function(cb) {cb();};
-            this.commit   = function(cb) {cb();};
-            this.rollback = function(cb) {cb();};
-            this.createQuery = function() {return {
-                filter:() => {},
-                scope: _this
-            }};
-            this.runQuery = function() {};
-        }
         transaction = new Transaction();
 
-        sinon.stub(transaction, 'get', (key, cb) => {
-            //setTimeout(() => {
-                cb(null, mockEntity);
-            //}, 20);
-        });
-
-        sinon.stub(transaction, 'save', function() {
-            setTimeout(function() {
-                return true;
-            }, 20);
-        });
-
-        sinon.spy(transaction, 'run');
+        sinon.spy(ds, 'save');
+        sinon.stub(ds, 'transaction', () => transaction);
+        sinon.spy(transaction, 'save');
         sinon.spy(transaction, 'commit');
         sinon.spy(transaction, 'rollback');
+        sinon.stub(transaction, 'get').resolves([mockEntity]);
+        sinon.stub(transaction, 'run').resolves([transaction, { apiData: 'ok' }]);
 
         ModelInstance = gstore.model('Blog', schema, gstore);
     });
 
-    afterEach(function() {
+    afterEach(() => {
         ds.save.restore();
-        ds.runQuery.restore();
-        transaction.get.restore();
+        ds.transaction.restore();
         transaction.save.restore();
-        transaction.run.restore();
         transaction.commit.restore();
         transaction.rollback.restore();
     });
 
-    describe('compile()', function() {
-        beforeEach('Reset before compile', function() {
-            gstore.models       = {};
+    describe('compile()', () => {
+        beforeEach('Reset before compile', () => {
+            gstore.models = {};
             gstore.modelSchemas = {};
             ModelInstance = gstore.model('Blog', schema);
         });
 
         it('should set properties on compile and return ModelInstance', () => {
-            expect(ModelInstance.schema).exist;
-            expect(ModelInstance.gstore).exist;
-            expect(ModelInstance.hooks).exist;
-            expect(ModelInstance.hooks).deep.equal(schema.s.hooks);
-            expect(ModelInstance.entityKind).exist;
-            expect(ModelInstance.init).exist;
+            assert.isDefined(ModelInstance.schema);
+            assert.isDefined(ModelInstance.gstore);
+            assert.isDefined(ModelInstance.entityKind);
         });
 
         it('should create new models classes', () => {
-            let User = Model.compile('User', new Schema({}), gstore);
+            const User = Model.compile('User', new Schema({}), gstore);
 
             expect(User.entityKind).equal('User');
             expect(ModelInstance.entityKind).equal('Blog');
         });
 
         it('should execute methods passed to schema.methods', () => {
-            let imageSchema = new Schema({});
-            let ImageModel  = gstore.model('Image', imageSchema);
+            const imageSchema = new Schema({});
+            const ImageModel = gstore.model('Image', imageSchema);
             sinon.stub(ImageModel, 'get', (id, cb) => {
                 cb(null, mockEntities[0]);
             });
-            schema.methods.fullName = function(cb) {
-                cb(null, this.get('name') + ' ' + this.get('lastname'));
+            schema.methods.fullName = function fullName(cb) {
+                return cb(null, `${this.get('name')} ${this.get('lastname')}`);
             };
-            schema.methods.getImage = function(cb) {
+            schema.methods.getImage = function getImage(cb) {
                 return this.model('Image').get(this.entityData.imageIdx, cb);
             };
 
             ModelInstance = gstore.model('MyEntity', schema);
-            var model = new ModelInstance({name:'John', lastname:'Snow'});
+            const model = new ModelInstance({ name: 'John', lastname: 'Snow' });
 
             model.fullName((err, result) => {
                 expect(result).equal('John Snow');
             });
 
-            model.getImage.call(model, function(err, result) {
+            model.getImage.call(model, (err, result) => {
                 expect(result).equal(mockEntities[0]);
             });
         });
 
         it('should execute static methods', () => {
-            let schema = new Schema({});
+            schema = new Schema({});
             schema.statics.doSomething = () => 123;
 
             ModelInstance = gstore.model('MyEntity', schema);
@@ -196,10 +150,10 @@ describe('Model', function() {
         });
 
         it('should throw error is trying to override reserved methods', () => {
-            let schema = new Schema({});
+            schema = new Schema({});
 
             schema.statics.get = () => 123;
-            let fn = () => gstore.model('MyEntity', schema);
+            const fn = () => gstore.model('MyEntity', schema);
 
             expect(fn).throw(Error);
         });
@@ -207,17 +161,17 @@ describe('Model', function() {
 
     describe('sanitize()', () => {
         it('should remove keys not "writable"', () => {
-            let data = {price: 20, unknown:'hello', name:'John'};
+            let data = { price: 20, unknown: 'hello', name: 'John' };
 
             data = ModelInstance.sanitize(data);
 
-            expect(data.price).not.exist;
-            expect(data.unknown).not.exist;
+            assert.isUndefined(data.price);
+            assert.isUndefined(data.unknown);
         });
 
         it('should convert "null" string to null', () => {
             let data = {
-                name : 'null'
+                name: 'null',
             };
 
             data = ModelInstance.sanitize(data);
@@ -234,31 +188,30 @@ describe('Model', function() {
         });
     });
 
-    describe('key()', function() {
+    describe('key()', () => {
         it('should create from entityKind', () => {
-            let key = ModelInstance.key();
+            const key = ModelInstance.key();
 
             expect(key.path[0]).equal('Blog');
-            expect(key.path[1]).not.exist;
+            assert.isUndefined(key.path[1]);
         });
 
         it('should parse string id "123" to integer', () => {
-            let key = ModelInstance.key('123');
-
+            const key = ModelInstance.key('123');
             expect(key.path[1]).equal(123);
         });
 
         it('should create array of ids', () => {
-            let keys = ModelInstance.key([22, 69]);
+            const keys = ModelInstance.key([22, 69]);
 
-            expect(is.array(keys)).be.true;
+            expect(is.array(keys)).equal(true);
             expect(keys.length).equal(2);
             expect(keys[1].path[1]).equal(69);
         });
 
         it('should create array of ids with ancestors and namespace', () => {
-            let namespace = 'com.mydomain-dev';
-            let keys = ModelInstance.key([22, 69], ['Parent', 'keyParent'], namespace);
+            const namespace = 'com.mydomain-dev';
+            const keys = ModelInstance.key([22, 69], ['Parent', 'keyParent'], namespace);
 
             expect(keys[0].path[0]).equal('Parent');
             expect(keys[0].path[1]).equal('keyParent');
@@ -270,15 +223,9 @@ describe('Model', function() {
         let entity;
 
         beforeEach(() => {
-            entity = {
-                key: ds.key(['BlogPost', 123]),
-                data:{name:'John'}
-            };
-            sinon.stub(ds, 'get', (key, cb) => {
-                //setTimeout(function() {
-                    return cb(null, entity);
-                //}, 20);
-            });
+            entity = { name: 'John' };
+            entity[ds.KEY] = ds.key(['BlogPost', 123]);
+            sinon.stub(ds, 'get').resolves([entity]);
         });
 
         afterEach(() => {
@@ -286,331 +233,274 @@ describe('Model', function() {
         });
 
         it('passing an integer id', () => {
-            let result;
-            ModelInstance.get(123, (err, entity) => {
-                result = entity;
-            });
+            return ModelInstance.get(123).then(onResult);
 
-            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(result instanceof Entity).be.true;
+            function onResult(data) {
+                entity = data[0];
+                expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+                expect(entity instanceof Entity).equal(true);
+            }
         });
 
-        it('passing an string id', () => {
-            let result;
-            ModelInstance.get('keyname', (err, res) => {result = res;});
-
-            expect(result instanceof Entity).be.true;
-        });
+        it('passing an string id', () => ModelInstance.get('keyname').then((data) => {
+            entity = data[0];
+            expect(entity instanceof Entity).equal(true);
+        }));
 
         it('passing an array of ids', () => {
             ds.get.restore();
 
-            let entity1 = {name:'John'};
+            const entity1 = { name: 'John' };
             entity1[ds.KEY] = ds.key(['BlogPost', 22]);
 
-            let entity2 = {name:'John'};
+            const entity2 = { name: 'John' };
             entity2[ds.KEY] = ds.key(['BlogPost', 69]);
 
-            sinon.stub(ds, 'get', (key, cb) => {
-                setTimeout(function() {
-                    return cb(null, [entity2, entity1]); // not sorted
-                }, 20);
-            });
+            sinon.stub(ds, 'get').resolves([[entity2, entity1]]); // not sorted
 
-            ModelInstance.get([22, 69], null, null, null, {preserveOrder:true}, (err, res) => {
-                expect(is.array(ds.get.getCall(0).args[0])).be.true;
-                expect(is.array(res)).be.true;
-                expect(res[0].entityKey.id).equal(22); // sorted
-            });
+            return ModelInstance.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult);
 
-            clock.tick(20);
+            function onResult(data) {
+                entity = data[0];
+                expect(is.array(ds.get.getCall(0).args[0])).equal(true);
+                expect(is.array(entity)).equal(true);
+                expect(entity[0].entityKey.id).equal(22); // sorted
+            }
         });
 
-        it('converting a string integer to real integer', () => {
-            ModelInstance.get('123', () => {});
-
-            expect(ds.get.getCall(0).args[0].name).not.exist;
+        it('converting a string integer to real integer', () => ModelInstance.get('123').then(() => {
+            assert.isUndefined(ds.get.getCall(0).args[0].name);
             expect(ds.get.getCall(0).args[0].id).equal(123);
-        });
+        }));
 
-        it('not converting string with mix of number and non number', () => {
-            ModelInstance.get('123:456', () => {});
-
+        it('not converting string with mix of number and non number', () => ModelInstance.get('123:456').then(() => {
             expect(ds.get.getCall(0).args[0].name).equal('123:456');
-        });
+        }));
 
         it('passing an ancestor path array', () => {
-            let ancestors = ['Parent', 'keyname'];
+            const ancestors = ['Parent', 'keyname'];
 
-            ModelInstance.get(123, ancestors, (err, result) => {});
-
-            expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
-            expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+            return ModelInstance.get(123, ancestors).then(() => {
+                expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+                expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
+                expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+            });
         });
 
         it('should allow a namespace', () => {
-            let namespace = 'com.mydomain-dev';
+            const namespace = 'com.mydomain-dev';
 
-            ModelInstance.get(123, null, namespace, (err, result) => {});
-
-            expect(ds.get.getCall(0).args[0].namespace).equal(namespace);
+            return ModelInstance.get(123, null, namespace).then(() => {
+                expect(ds.get.getCall(0).args[0].namespace).equal(namespace);
+            });
         });
 
-        it('on datastore get error, should return its error', () => {
+        it('on datastore get error, should reject error', () => {
             ds.get.restore();
+            const error = { code: 500, message: 'Something went really bad' };
+            sinon.stub(ds, 'get').rejects(error);
 
-            let error = {code:500, message:'Something went really bad'};
-            sinon.stub(ds, 'get', (key, cb) => {
-                return cb(error);
-            });
-
-            ModelInstance.get(123, (err, entity) => {
-                expect(err).equal(error);
-                expect(entity).not.exist;
-            });
+            return ModelInstance.get(123)
+                .catch((err) => {
+                    expect(err).equal(error);
+                });
         });
 
         it('on no entity found, should return a 404 error', () => {
             ds.get.restore();
 
-            sinon.stub(ds, 'get', (key, cb) => {
-                return cb(null);
-            });
+            sinon.stub(ds, 'get').resolves([]);
 
-            ModelInstance.get(123, (err, entity) => {
+            return ModelInstance.get(123).catch((err) => {
                 expect(err.code).equal(404);
             });
         });
 
-        it('should get in a transaction', function() {
-            ModelInstance.get(123, null, null, transaction, function(err, entity) {
-                expect(transaction.get.called).be.true;
-                expect(ds.get.called).be.false;
-                expect(entity.className).equal('Entity');
-            });
-        });
+        it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((data) => {
+            entity = data[0];
+            expect(transaction.get.called).equal(true);
+            expect(ds.get.called).equal(false);
+            expect(entity.className).equal('Entity');
+        }));
 
-        it('should throw error if transaction not an instance of glcoud Transaction', function() {
-            var fn = function() {
-                ModelInstance.get(123, null, null, {}, (err, entity) => {
-                    expect(transaction.get.called).be.true;
-                });
-            };
+        it('should throw error if transaction not an instance of glcoud Transaction',
+            () => ModelInstance.get(123, null, null, {}).catch((err) => {
+                expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+            }));
 
-            expect(fn).to.throw(Error);
-        });
-
-        it('should return error from Transaction.get()', function() {
+        it('should return error from Transaction.get()', () => {
             transaction.get.restore();
-            var error = {code:500, message: 'Houston we really need you'};
-            sinon.stub(transaction, 'get', function(key, cb) {
-                cb(error);
-            });
+            const error = { code: 500, message: 'Houston we really need you' };
+            sinon.stub(transaction, 'get').rejects(error);
 
-            ModelInstance.get(123, null, null, transaction, (err, entity) => {
+            return ModelInstance.get(123, null, null, transaction).catch((err) => {
                 expect(err).equal(error);
-                expect(entity).not.exist;
             });
+        });
+
+        it('should still work with a callback', () => {
+            return ModelInstance.get(123, onResult);
+
+            function onResult(err, result) {
+                expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+                expect(result instanceof Entity).equal(true);
+            }
         });
     });
 
     describe('update()', () => {
-        beforeEach(function() {
-            sinon.stub(ds, 'transaction', function(cb, done) {
-                // return cb(transaction, function() {
-                //     done();
-                // });
-                return transaction;
-            });
-        });
+        it('should run in a transaction', () => ModelInstance.update(123).then(() => {
+            expect(ds.transaction.called).equal(true);
+            expect(transaction.run.called).equal(true);
+            expect(transaction.commit.called).equal(true);
+        }));
 
-        afterEach(() => {
-            ds.transaction.restore();
-        });
+        it('should return an entity instance', () => ModelInstance.update(123).then((data) => {
+            const entity = data[0];
+            expect(entity.className).equal('Entity');
+        }));
 
-        it('should run in a transaction', function(){
-            ModelInstance.update(123, () => {});
-
-            expect(ds.transaction.called).be.true;
-            expect(transaction.run.called).be.true;
-            expect(transaction.commit.called).be.true;
-        });
-
-        it('should run an entity instance', function(){
-            ModelInstance.update(123, (err, entity) => {
-                expect(entity.className).equal('Entity');
-            });
-        });
-
-        it('should first get the entity by Key', () => {
-            ModelInstance.update(123, () => {});
-
+        it('should first get the entity by Key', () => ModelInstance.update(123).then(() => {
             expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
             expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
-        });
+        }));
 
-        it('not converting string id with mix of number and alpha chars', () => {
-            ModelInstance.update('123:456', () => {});
+        it('should not convert a string id with mix of number and alpha chars',
+            () => ModelInstance.update('123:456').then(() => {
+                expect(transaction.get.getCall(0).args[0].name).equal('123:456');
+            }));
 
-            expect(transaction.get.getCall(0).args[0].name).equal('123:456');
-        });
-
-        it('should rollback if error while getting entity', function(done) {
-            transaction.get.restore();
-            let error = {code:500, message:'Houston we got a problem'};
-            sinon.stub(transaction, 'get', (key, cb) => {
-                return cb(error);
+        it('should return transaction info', () => {
+            const info = { success: true };
+            transaction.commit.restore();
+            sinon.stub(transaction, 'commit').resolves([info]);
+            return ModelInstance.update('123:456').then((result) => {
+                expect(result[1]).equal(info);
             });
+        });
 
-            ModelInstance.update(123, (err) => {
-                expect(err).equal(error);
-                expect(transaction.commit.called).be.false;
-                done();
+        it('should rollback if error while getting entity', () => {
+            transaction.get.restore();
+            const error = { code: 500, message: 'Houston we got a problem' };
+            sinon.stub(transaction, 'get').rejects(error);
+
+            return ModelInstance.update(123).catch((err) => {
+                expect(err).deep.equal(error);
+                expect(transaction.rollback.called).equal(true);
+                expect(transaction.commit.called).equal(false);
             });
         });
 
         it('should return 404 if entity not found', () => {
             transaction.get.restore();
-            sinon.stub(transaction, 'get', (key, cb) => {
-                return cb(null);
-            });
+            sinon.stub(transaction, 'get').resolves([]);
 
-            ModelInstance.update('keyname', (err, entity) => {
+            return ModelInstance.update('keyname').catch((err) => {
                 expect(err.code).equal(404);
-                expect(entity).not.exist;
             });
         });
 
-        it('should return error if any while saving', (done) => {
+        it('should return error if any while saving', () => {
             transaction.run.restore();
-            let error = {code:500, message: 'Houston wee need you.'};
-            sinon.stub(transaction, 'run', function(cb) {
-                return cb(error);
-            });
+            const error = { code: 500, message: 'Houston wee need you.' };
+            sinon.stub(transaction, 'run').rejects(error);
 
-            ModelInstance.update(123, (err) => {
+            return ModelInstance.update(123).catch((err) => {
                 expect(err).equal(error);
-                done();
             });
-
-            clock.tick(40);
         });
 
         it('accept an ancestor path', () => {
-            let ancestors = ['Parent', 'keyname'];
+            const ancestors = ['Parent', 'keyname'];
 
-            ModelInstance.update(123, {}, ancestors, (err, entity) => {
+            return ModelInstance.update(123, {}, ancestors).then(() => {
                 expect(transaction.get.getCall(0).args[0].path[0]).equal('Parent');
                 expect(transaction.get.getCall(0).args[0].path[1]).equal('keyname');
             });
         });
 
         it('should allow a namespace', () => {
-            let namespace = 'com.mydomain-dev';
+            const namespace = 'com.mydomain-dev';
 
-            ModelInstance.update(123, {}, null, namespace, (err, result) => {
+            return ModelInstance.update(123, {}, null, namespace).then(() => {
                 expect(transaction.get.getCall(0).args[0].namespace).equal(namespace);
             });
         });
 
-        it('should save and replace data', (done) => {
-            let data = {
-                name : 'Mick'
+        it('should save and replace data', () => {
+            const data = {
+                name: 'Mick',
             };
-            ModelInstance.update(123, data, null, null, null, {replace:true}, (err, entity) => {
-                expect(entity.entityData.name).equal('Mick');
-                expect(entity.entityData.lastname).not.exist;
-                expect(entity.entityData.email).not.exist;
-            });
-
-            clock.tick(60);
-            done();
+            return ModelInstance.update(123, data, null, null, null, { replace: true })
+                                .then((result) => {
+                                    const entity = result[0];
+                                    expect(entity.entityData.name).equal('Mick');
+                                    expect(entity.entityData.lastname).equal(null);
+                                    expect(entity.entityData.email).equal(null);
+                                });
         });
 
-        it('should merge the new data with the entity data', (done) => {
-            let data = {
-                name : 'Sebas',
-                lastname : 'Snow'
+        it('should merge the new data with the entity data', () => {
+            const data = {
+                name: 'Sebas',
+                lastname: 'Snow',
             };
-            ModelInstance.update(123, data, ['Parent', 'keyNameParent'], (err, entity) => {
-                expect(entity.entityData.name).equal('Sebas');
-                expect(entity.entityData.lastname).equal('Snow');
-                expect(entity.entityData.email).equal('john@snow.com');
+            return ModelInstance.update(123, data, ['Parent', 'keyNameParent'])
+                .then((result) => {
+                    const entity = result[0];
+                    expect(entity.entityData.name).equal('Sebas');
+                    expect(entity.entityData.lastname).equal('Snow');
+                    expect(entity.entityData.email).equal('john@snow.com');
+                });
+        });
+
+        it('should call save() on the transaction', () => {
+            ModelInstance.update(123, {}).then(() => {
+                expect(transaction.save.called).equal(true);
             });
-
-            clock.tick(60);
-            done();
         });
 
-        it('should call save() on the transaction', (done) => {
-            ModelInstance.update(123, {}, (err, entity) => {});
+        it('should return error and rollback transaction if not passing validation',
+            () => ModelInstance.update(123, { unknown: 1 }).catch((err) => {
+                assert.isDefined(err);
+                expect(transaction.rollback.called).equal(true);
+            }));
 
-            clock.tick(40);
+        it('should return error if not passing validation',
+            () => ModelInstance.update(123, { unknown: 1 }, null, null, null, { replace: true })
+                    .catch((err) => {
+                        assert.isDefined(err);
+                    }));
 
-            expect(transaction.save.called).be.true;
+        it('should run inside an EXISTING transaction', () => ModelInstance.update(123, {}, null, null, transaction)
+                .then((result) => {
+                    const entity = result[0];
+                    expect(ds.transaction.called).equal(false);
+                    expect(transaction.get.called).equal(true);
+                    expect(transaction.save.called).equal(true);
+                    expect(entity.className).equal('Entity');
+                }));
 
-            done();
-        });
+        it('should throw error if transaction passed is not instance of gcloud Transaction',
+            () => ModelInstance.update(123, {}, null, null, {})
+                                .catch((err) => {
+                                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                                }));
 
-        it('should return error and rollback transaction if not passing validation', function(done) {
-            ModelInstance.update(123, {unknown:1}, (err, entity) => {
-                expect(err).exist;
-                expect(entity).not.exist;
-                expect(transaction.rollback.called).be.true;
-                done();
-            });
+        it('should set save options "op" to "update" ', () => ModelInstance.update(123, {}).then((result) => {
+            const info = result[1];
+            expect(info.op).equal('update');
+        }));
 
-            clock.tick(20);
-        });
-
-        it('should return error if not passing validation', function(done) {
-            ModelInstance.update(123, {unknown:1}, null, null, null, {replace:true}, (err, entity) => {
-                expect(err).exist;
-                expect(entity).not.exist;
-                done();
-            });
-
-            clock.tick(20);
-        });
-
-        it('should run inside an EXISTING transaction', () => {
-            ModelInstance.update(123, {}, null, null, transaction, (err, entity) => {
-                expect(ds.transaction.called).be.false;
-                expect(transaction.get.called).be.true;
-                expect(transaction.save.called).be.true;
-                expect(entity.className).equal('Entity');
-            });
-
-            clock.tick(40);
-        });
-
-        it('should throw error if transaction passed is not instance of gcloud Transaction', () => {
-            var fn = function() {
-                ModelInstance.update(123, {}, null, null, {}, (err, entity) => {});
-            };
-
-            expect(fn).to.throw(Error);
-        });
-
-        it('should set save options "op" to "update" ', (done) => {
-            ModelInstance.update(123, {}, (err, entity, info) => {
-                expect(info.op).equal('update');
-                done();
-            });
-
-            clock.tick(40);
-        });
+        it('should still work passing a callback', () => ModelInstance.update(123, (err, entity) => {
+            expect(entity.className).equal('Entity');
+        }));
     });
 
     describe('delete()', () => {
         beforeEach(() => {
-            sinon.stub(ds, 'delete', (key, cb) => {
-                cb(null, {indexUpdates:3});
-            });
-            sinon.stub(transaction, 'delete', (key) => {
-                return true;
-            });
+            sinon.stub(ds, 'delete').resolves([{ indexUpdates: 3 }]);
+            sinon.stub(transaction, 'delete', () => true);
         });
 
         afterEach(() => {
@@ -618,1305 +508,1338 @@ describe('Model', function() {
             transaction.delete.restore();
         });
 
-        it('should call ds.delete with correct Key (int id)', (done) => {
-            ModelInstance.delete(123, (err, response) => {
-                expect(ds.delete.called).be.true;
-                expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
-                expect(response.success).be.true;
-                done();
-            });
-        });
+        it('should call ds.delete with correct Key (int id)', () => ModelInstance.delete(123).then((response) => {
+            expect(ds.delete.called).equal(true);
+            expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
+            expect(response[0]).equal(true);
+        }));
 
-        it('should call ds.delete with correct Key (string id)', (done) => {
-            ModelInstance.delete('keyName', (err, response) => {
-                expect(ds.delete.called).be.true;
-                expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
-                expect(response.success).be.true;
-                done();
-            });
-        });
+        it('should call ds.delete with correct Key (string id)',
+            () => ModelInstance.delete('keyName')
+                                .then((response) => {
+                                    expect(ds.delete.called).equal(true);
+                                    expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
+                                    expect(response[0]).equal(true);
+                                }));
 
-        it('not converting string id with mix of number and alpha chars', (done) => {
-            ModelInstance.delete('123:456', () => {
-                expect(ds.delete.getCall(0).args[0].name).equal('123:456');
-                done();
-            });
-        });
+        it('not converting string id with mix of number and alpha chars',
+            () => ModelInstance.delete('123:456')
+                                .then(() => {
+                                    expect(ds.delete.getCall(0).args[0].name).equal('123:456');
+                                }));
 
-        it('should allow array of ids', (done) => {
-            ModelInstance.delete([22, 69], (err, response) => {
-                expect(is.array(ds.delete.getCall(0).args[0])).be.true;
-                done();
-            });
-        });
+        it('should allow array of ids', () => ModelInstance.delete([22, 69]).then(() => {
+            expect(is.array(ds.delete.getCall(0).args[0])).equal(true);
+        }));
 
-        it('should allow ancestors', (done) => {
-            ModelInstance.delete(123, ['Parent', 123], () => {
-                let key = ds.delete.getCall(0).args[0];
+        it('should allow ancestors', () => ModelInstance.delete(123, ['Parent', 123]).then(() => {
+            const key = ds.delete.getCall(0).args[0];
 
-                expect(key.parent.kind).equal('Parent');
-                expect(key.parent.id).equal(123);
-                done();
-            });
-        });
+            expect(key.parent.kind).equal('Parent');
+            expect(key.parent.id).equal(123);
+        }));
 
-        it('should allow a namespace', (done) => {
-            let namespace = 'com.mydomain-dev';
+        it('should allow a namespace', () => {
+            const namespace = 'com.mydomain-dev';
 
-            ModelInstance.delete('keyName', null, namespace, (err, response) => {
-                let key = ds.delete.getCall(0).args[0];
+            return ModelInstance.delete('keyName', null, namespace).then(() => {
+                const key = ds.delete.getCall(0).args[0];
 
                 expect(key.namespace).equal(namespace);
-                done();
             });
         });
 
-        it('should delete entity in a transaction', function(done) {
-            ModelInstance.delete(123, null, null, transaction, function(err, result) {
-                expect(transaction.delete.called).be.true;
-                expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
-                done();
-            });
-            clock.tick(20);
-        });
+        it('should delete entity in a transaction',
+            () => ModelInstance.delete(123, null, null, transaction)
+                                .then(() => {
+                                    expect(transaction.delete.called).equal(true);
+                                    expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
+                                }));
 
-        it('should throw error if transaction passed is not instance of gcloud Transaction', () => {
-            var fn = function() {
-                ModelInstance.delete(123, null, null, {}, function(err, result) {});
-            };
-
-            clock.tick(20);
-
-            expect(fn).to.throw(Error);
-        });
-
-        it ('should set "success" to false if no entity deleted', () => {
+        it('should deal with empty responses', () => {
             ds.delete.restore();
-            sinon.stub(ds, 'delete', (key, cb) => {
-                cb(null, {indexUpdates:0});
-            });
-
-            ModelInstance.delete(123, (err, response) => {
-                expect(response.success).be.false;
+            sinon.stub(ds, 'delete').resolves();
+            return ModelInstance.delete(1).then((result) => {
+                assert.isDefined(result[1].key);
             });
         });
 
-        it ('should not set success neither apiRes', () => {
-            ds.delete.restore();
-            sinon.stub(ds, 'delete', (key, cb) => {
-                cb(null, {});
-            });
+        it('should delete entity in a transaction in sync', () => {
+            ModelInstance.delete(123, null, null, transaction);
+            expect(transaction.delete.called).equal(true);
+            expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
+        });
 
-            ModelInstance.delete(123, (err, response) => {
-                expect(response.success).not.exist;
-                expect(response.apiRes).not.exist;
+        it('should throw error if transaction passed is not instance of gcloud Transaction',
+            () => ModelInstance.delete(123, null, null, {})
+                                .catch((err) => {
+                                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                                }));
+
+        it('should set "success" to false if no entity deleted', () => {
+            ds.delete.restore();
+            sinon.stub(ds, 'delete').resolves([{ indexUpdates: 0 }]);
+
+            return ModelInstance.delete(123).then((response) => {
+                expect(response[0]).equal(false);
             });
         });
 
-        it ('should deal with err response', () => {
+        it('should not set success neither apiRes', () => {
             ds.delete.restore();
-            let error = {code:500, message:'We got a problem Houston'};
-            sinon.stub(ds, 'delete', (key, cb) => {
-                return cb(error);
-            });
+            sinon.stub(ds, 'delete').resolves([{}]);
 
-            ModelInstance.delete(123, (err, success) => {
-                expect(err).deep.equal(error);
-                expect(success).not.exist;
+            return ModelInstance.delete(123).then((response) => {
+                assert.isUndefined(response[0]);
+            });
+        });
+
+        it('should deal with err response', () => {
+            ds.delete.restore();
+            const error = { code: 500, message: 'We got a problem Houston' };
+            sinon.stub(ds, 'delete').rejects(error);
+
+            return ModelInstance.delete(123).catch((err) => {
+                expect(err).equal(error);
             });
         });
 
         it('should call pre hooks', () => {
-            let spyPre = sinon.spy();
-            schema.pre('delete', (next) => {
-                spyPre();
-                next();
-            });
+            const spy = {
+                beforeSave: () => Promise.resolve(),
+            };
+            sinon.spy(spy, 'beforeSave');
+            schema.pre('delete', spy.beforeSave);
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(123, (err, success) => {});
+            return ModelInstance.delete(123).then(() => {
+                expect(spy.beforeSave.calledBefore(ds.delete)).equal(true);
+            });
+        });
 
-            expect(spyPre.calledBefore(ds.delete)).be.true;
+        it('pre hook should override id passed', () => {
+            const spy = {
+                beforeSave: () => Promise.resolve({ __override: [666] }),
+            };
+            sinon.spy(spy, 'beforeSave');
+            schema.pre('delete', spy.beforeSave);
+            ModelInstance = Model.compile('Blog', schema, gstore);
+
+            return ModelInstance.delete(123).then(() => {
+                expect(ds.delete.getCall(0).args[0].id).equal(666);
+            });
         });
 
         it('should set "pre" hook scope to entity being deleted', () => {
-            schema.pre('delete', function(next) {
+            schema.pre('delete', function preDelete() {
                 expect(this.className).equal('Entity');
-                next();
+                return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(123, (err, success) => {});
+            return ModelInstance.delete(123);
         });
 
-        it('should NOT set "pre" hook scope if deleting array of ids', () => {
-            schema.pre('delete', function(next) {
-                expect(this).not.exist;
-                next();
+        it('should NOT set "pre" hook scope if deleting an array of ids', () => {
+            schema.pre('delete', function preDelete() {
+                expect(this).equal(null);
+                return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete([123, 456], (err, success) => {});
+            return ModelInstance.delete([123, 456], () => {});
         });
 
-        it('should call post hooks', (done) => {
-            let spyPost   = sinon.spy();
-            schema.post('delete', () => {
-                spyPost();
-            });
+        it('should call post hooks', () => {
+            const spy = {
+                afterDelete: () => Promise.resolve(),
+            };
+            sinon.spy(spy, 'afterDelete');
+            schema.post('delete', spy.afterDelete);
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(123, (err, result) => {
-                expect(spyPost.called).be.true;
-                done();
+            return ModelInstance.delete(123).then(() => {
+                expect(spy.afterDelete.called).equal(true);
             });
         });
 
-        it('should pass key deleted to post hooks', (done) => {
-            schema.post('delete', function(keys) {
-                expect(keys.constructor.name).equal('Key');
-                expect(keys.id).equal(123);
-                done();
+        it('should pass key deleted to post hooks', () => {
+            schema.post('delete', (result) => {
+                expect(result[1].key.constructor.name).equal('Key');
+                expect(result[1].key.id).equal(123);
+                return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(123, (err, result) => {});
+            return ModelInstance.delete(123).then(() => {});
         });
 
-        it('should pass array of keys deleted to post hooks', (done) => {
-            var ids = [123,456];
-            schema.post('delete', function(keys) {
-                expect(keys.length).equal(ids.length);
-                expect(keys[1].id).equal(456);
-                done();
+        it('should pass array of keys deleted to post hooks', () => {
+            const ids = [123, 456];
+            schema.post('delete', (response) => {
+                expect(response[1].key.length).equal(ids.length);
+                expect(response[1].key[1].id).equal(456);
+                return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(ids, (err, result) => {});
+            return ModelInstance.delete(ids).then(() => { });
         });
 
-        it('transaction.execPostHooks() should call post hooks', (done) => {
-            let spyPost   = sinon.spy();
-            schema = new Schema({name:{type:'string'}});
-            schema.post('delete', spyPost);
+        it('transaction.execPostHooks() should call post hooks', () => {
+            const spy = {
+                afterDelete: () => Promise.resolve(),
+            };
+            sinon.spy(spy, 'afterDelete');
+            schema = new Schema({ name: { type: 'string' } });
+            schema.post('delete', spy.afterDelete);
 
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            ModelInstance.delete(123, null, null, transaction, (err, result) => {
-                transaction.execPostHooks();
-                expect(spyPost.called).be.true;
-                done();
+            return ModelInstance.delete(123, null, null, transaction).then(() => {
+                transaction.execPostHooks().then(() => {
+                    expect(spy.afterDelete.called).equal(true);
+                    expect(spy.afterDelete.calledOnce).equal(true);
+                });
+            });
+        });
+
+        it('should still work passing a callback', () => {
+            ModelInstance.delete('keyName', (err, success) => {
+                expect(ds.delete.called).equal(true);
+                expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
+                expect(success).equal(true);
             });
         });
     });
 
-    describe('hooksTransaction()', function() {
-        it('should add hooks to a transaction', () => {
-            ModelInstance.hooksTransaction(transaction);
-
-            expect(transaction.hooks).exist;
-            expect(transaction.hooks.post.length).equal(0);
-            expect(transaction.addHook).exist;
-            expect(transaction.execPostHooks).exist;
+    describe('hooksTransaction()', () => {
+        beforeEach(() => {
+            delete transaction.hooks;
         });
 
-        it ('should not override hooks on transition', function() {
-            var hooks = {post:[]};
-            transaction.hooks = hooks;
+        it('should add hooks to a transaction', () => {
+            ModelInstance.hooksTransaction(transaction, [() => { }, () => { }]);
 
+            assert.isDefined(transaction.hooks.post);
+            expect(transaction.hooks.post.length).equal(2);
+            assert.isDefined(transaction.execPostHooks);
+        });
 
-            ModelInstance.hooksTransaction(transaction);
+        it('should not override previous hooks on transaction', () => {
+            const fn = () => { };
+            transaction.hooks = {
+                post: [fn],
+            };
 
-            expect(transaction.hooks).equal(hooks);
-        })
+            ModelInstance.hooksTransaction(transaction, [() => { }]);
 
-        it('--> execPostHooks() should call each post hook on transaction', () => {
-            let spy  = sinon.spy();
-            ModelInstance.hooksTransaction(transaction);
-            transaction.hooks.post = [spy, spy];
+            expect(transaction.hooks.post[0]).equal(fn);
+        });
 
-            transaction.execPostHooks();
+        it('--> execPostHooks() should chain each Promised hook from transaction', () => {
+            const postHook1 = sinon.stub().resolves(1);
+            const postHook2 = sinon.stub().resolves(2);
+            ModelInstance.hooksTransaction(transaction, [postHook1, postHook2]);
 
-            expect(spy.callCount).equal(2);
+            return transaction.execPostHooks().then((result) => {
+                expect(postHook1.called).equal(true);
+                expect(postHook2.called).equal(true);
+                expect(result).equal(2);
+            });
+        });
+
+        it('--> execPostHooks() should resolve if no hooks', () => {
+            ModelInstance.hooksTransaction(transaction, []);
+            delete transaction.hooks.post;
+
+            return transaction.execPostHooks().then(() => {
+                expect(true).equal(true);
+            });
         });
     });
 
     describe('gcloud-node queries', () => {
-        it ('should be able to create gcloud-node Query object', () => {
-            let query  = ModelInstance.query();
+        let query;
+
+        beforeEach(() => {
+            const responseQueries = [mockEntities, {
+                moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+                endCursor: 'abcdef',
+            }];
+
+            query = ModelInstance.query();
+            sinon.stub(query, '__originalRun').resolves(responseQueries);
+        });
+
+        it('should create gcloud-node Query object', () => {
+            query = ModelInstance.query();
 
             expect(query.constructor.name).equal('Query');
         });
 
-        it ('should be able to execute all gcloud-node queries', () => {
-            let fn = () => {
-                let query  = ModelInstance.query()
+        it('should be able to execute all gcloud-node queries', () => {
+            const fn = () => {
+                query = ModelInstance.query()
                     .filter('name', '=', 'John')
-                    .filter('age', '>=', 4)
-                    .order('lastname', {
-                        descending: true
-                    });
+                    .groupBy(['name'])
+                    .select(['name'])
+                    .order('lastname', { descending: true })
+                    .limit(1)
+                    .offset(1)
+                    .start('X');
                 return query;
             };
 
             expect(fn).to.not.throw(Error);
         });
 
-        it ('should throw error if calling unregistered query method', () => {
-            let fn = () => {
-                let query  = ModelInstance.query()
-                            .unkown('test', false);
+        it('should throw error if calling unregistered query method', () => {
+            const fn = () => {
+                query = ModelInstance.query()
+                    .unkown('test', false);
                 return query;
             };
 
             expect(fn).to.throw(Error);
         });
 
-        it('should run query', (done) => {
-            let query = ModelInstance.query()
-                        .filter('name', '=', 'John');
+        it('should run query', () => query.run().then((data) => {
+            const response = data[0];
+                // We add manually the id in the mocks to be able to deep compare
+            mockEntities[0].id = 1234;
+            mockEntities[1].id = 'keyname';
 
-            query.run((err, response) => {
-                // We add manually the id in the mocks to deep compare
-                mockEntities[0].id = 1234;
-                mockEntities[1].id = 'keyname';
+                // we delete from the mock the property
+                // 'password' it has been defined with read: false
+            delete mockEntities[0].password;
 
-                // we delete from the mock to be able to deep compare
-                /// as property 'password' is set as read: false
-                delete mockEntities[0].password;
+            expect(query.__originalRun.called).equal(true);
+            expect(response.entities.length).equal(2);
+            assert.isUndefined(response.entities[0].password);
+            expect(response.entities).deep.equal(mockEntities);
+            expect(response.nextPageCursor).equal('abcdef');
 
-                expect(ds.runQuery.getCall(0).args[0]).equal(query);
-                expect(response.entities.length).equal(2);
-                expect(response.entities[0].password).not.to.exist;
-                expect(response.entities).deep.equal(mockEntities);
-                expect(response.nextPageCursor).equal('abcdef');
+            delete mockEntities[0].id;
+            delete mockEntities[1].id;
+        }));
 
-                done();
+        it('should add id to entities', () => query.run()
+                .then((data) => {
+                    const response = data[0];
+                    expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                    expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+                }));
+
+        it('should accept "readAll" option', () => query.run(({ readAll: true }))
+                .then((data) => {
+                    const response = data[0];
+                    assert.isDefined(response.entities[0].password);
+                }));
+
+        it('should not add endCursor to response', () => {
+            query.__originalRun.restore();
+            sinon.stub(query, '__originalRun').resolves([[], { moreResults: ds.NO_MORE_RESULTS }]);
+
+            return query.run().then((data) => {
+                const response = data[0];
+                assert.isUndefined(response.nextPageCursor);
             });
         });
 
-        it('should add id to entities', (done) => {
-            let query = ModelInstance.query()
-                        .run((err, response) => {
-                            expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
-                            expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-                            done();
-                        });
-        });
+        it('should catch error thrown in query run()', () => {
+            const error = { code: 400, message: 'Something went wrong doctor' };
+            query.__originalRun.restore();
+            sinon.stub(query, '__originalRun').rejects(error);
 
-        it('should accept "readAll" option', (done) => {
-            let query = ModelInstance.query()
-                        .run(({readAll:true}), (err, response) => {
-                            expect(response.entities[0].password).to.exist;
-                            done();
-                        });
-        });
-
-        it('should not add endCursor to response', function(done){
-            ds.runQuery.restore();
-            sinon.stub(ds, 'runQuery', function(query, cb) {
-                return cb(null, [], {moreResults : ds.NO_MORE_RESULTS});
+            return query.run().catch((err) => {
+                expect(err).equal(error);
             });
-            let query = ModelInstance.query()
-                        .filter('name', '=', 'John');
-
-            query.run((err, response) => {
-                expect(response.nextPageCursor).not.exist;
-                done();
-            });
-        });
-
-        it('should not return entities', (done) => {
-            ds.runQuery.restore();
-            sinon.stub(ds, 'runQuery', (query, cb) => {
-                cb({code:400, message: 'Something went wrong doctor'});
-            });
-            let query = ModelInstance.query();
-            var result;
-
-            query.run((err, entities) => {
-                if (!err) {
-                    result = entities;
-                }
-                done();
-            });
-
-            expect(result).to.not.exist;
         });
 
         it('should allow a namespace for query', () => {
-            let namespace = 'com.mydomain-dev';
-            let query     = ModelInstance.query(namespace);
+            const namespace = 'com.mydomain-dev';
+            query = ModelInstance.query(namespace);
 
             expect(query.namespace).equal(namespace);
         });
 
-        it('should create query on existing transaction', function(done) {
-            let query = ModelInstance.query(null, transaction);
-            query.filter('name', '=', 'John');
-
-            query.run((err, response) => {
-                expect(response.entities.length).equal(2);
-                expect(response.nextPageCursor).equal('abcdef');
-                expect(query.scope.constructor.name).equal('Transaction');
-                done();
-            });
+        it('should create query on existing transaction', () => {
+            query = ModelInstance.query(null, transaction);
+            expect(query.scope.constructor.name).equal('Transaction');
         });
 
-        it('should not set transaction if not an instance of gcloud Transaction', function() {
-            var fn = function() {
-                let query = ModelInstance.query(null, {});
+        it('should not set transaction if not an instance of gcloud Transaction', () => {
+            const fn = () => {
+                query = ModelInstance.query(null, {});
             };
 
             expect(fn).to.throw(Error);
         });
+
+        it('should still work with a callback', () => {
+            query = ModelInstance.query()
+                .filter('name', 'John');
+
+            query.run((err, response) => {
+                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+                expect(response.entities.length).equal(2);
+                expect(response.nextPageCursor).equal('abcdef');
+            });
+        });
     });
 
     describe('shortcut queries', () => {
-        describe('list', () =>  {
-            it('should work with no settings defined', function() {
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', function(query, cb) {
-                    setTimeout(function() {
-                        return cb(null, mockEntities, {
-                            moreResults : ds.MORE_RESULTS_AFTER_LIMIT,
-                            endCursor: 'abcdef'
-                        });
-                    }, 20);
-                });
+        let queryMock;
+        beforeEach(() => {
+            queryMock = new Query(ds, { entities: mockEntities });
+            sinon.stub(ds, 'createQuery', () => queryMock);
+            sinon.spy(queryHelpers, 'buildFromOptions');
+            sinon.spy(queryMock, 'run');
+            sinon.spy(queryMock, 'filter');
+            sinon.spy(queryMock, 'hasAncestor');
+            sinon.spy(queryMock, 'order');
+            sinon.spy(queryMock, 'limit');
+        });
 
-                ModelInstance.list((err, response) => {
-                    expect(response.entities.length).equal(2);
-                    expect(response.nextPageCursor).equal('abcdef');
-                    expect(response.entities[0].password).not.to.exist;
-                });
+        afterEach(() => {
+            ds.createQuery.restore();
+            queryHelpers.buildFromOptions.restore();
+            queryMock.run.restore();
+            queryMock.filter.restore();
+            queryMock.hasAncestor.restore();
+            queryMock.order.restore();
+            queryMock.limit.restore();
+        });
 
-                clock.tick(20);
+        describe('list', () => {
+            it('should work with no settings defined', () => ModelInstance.list().then((data) => {
+                const response = data[0];
+                expect(response.entities.length).equal(2);
+                expect(response.nextPageCursor).equal('abcdef');
+                assert.isUndefined(response.entities[0].password);
+            }));
+
+            it('should add id to entities', () => ModelInstance.list().then((data) => {
+                const response = data[0];
+                expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+            }));
+
+            it('should not add endCursor to response', () => {
+                ds.createQuery.restore();
+                sinon.stub(ds, 'createQuery',
+                    () => new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS }));
+
+                return ModelInstance.list().then((data) => {
+                    const response = data[0];
+                    assert.isUndefined(response.nextPageCursor);
+                });
             });
 
-            it('should add id to entities', (done) => {
-                ModelInstance.list((err, response) => {
-                    expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
-                    expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-                    done();
-                });
-            });
-
-            it('should not add endCursor to response', function(){
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', function(query, cb) {
-                    setTimeout(function() {
-                        return cb(null, mockEntities, {moreResults : ds.NO_MORE_RESULTS});
-                    }, 20);
-                });
-
-                ModelInstance.list((err, response) => {
-                    expect(response.nextPageCursor).not.exist;
-                });
-
-                clock.tick(20);
-            });
-
-            it('should read settings defined', () => {
-                let querySettings = {
-                    limit:10
+            it('should read settings passed', () => {
+                const querySettings = {
+                    limit: 10,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
-                sinon.spy(queryHelpers, 'buildFromOptions');
 
-                ModelInstance.list(() => {});
-
-                expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
-                expect(ds.runQuery.getCall(0).args[0].limitVal).equal(10);
-
-                queryHelpers.buildFromOptions.restore();
+                return ModelInstance.list().then(() => {
+                    expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
+                    expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
+                });
             });
 
-            it('should override setting with options', (done) => {
-                let querySettings = {
-                    limit:10,
-                    readAll: true
+            it('should override global setting with options', () => {
+                const querySettings = {
+                    limit: 10,
+                    readAll: true,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
-                sinon.spy(queryHelpers, 'buildFromOptions');
 
-                ModelInstance.list({limit:15}, (err, response) => {
+                return ModelInstance.list({ limit: 15 }).then((data) => {
+                    const response = data[0];
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
-                    expect(ds.runQuery.getCall(0).args[0].limitVal).equal(15);
-                    expect(response.entities[0].password).to.exist;
-
-                    queryHelpers.buildFromOptions.restore();
-                    done();
+                    expect(queryMock.limit.getCall(0).args[0]).equal(15);
+                    assert.isDefined(response.entities[0].password);
                 });
-
             });
 
             it('should deal with err response', () => {
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', (query, cb) => {
-                    return cb({code:500, message:'Server error'});
-                });
+                queryMock.run.restore();
+                const error = { code: 500, message: 'Server error' };
+                sinon.stub(queryMock, 'run').rejects(error);
 
-                let result;
-                ModelInstance.list((err, entities) => {
-                    if (!err) {
-                        result = entities;
-                    }
+                return ModelInstance.list().catch((err) => {
+                    expect(err).equal(err);
                 });
-
-                expect(result).not.exist;
             });
 
             it('should accept a namespace ', () => {
-                let namespace = 'com.mydomain-dev';
+                const namespace = 'com.mydomain-dev';
 
-                ModelInstance.list({namespace:namespace}, () => {});
-
-                let query = ds.runQuery.getCall(0).args[0];
-                expect(query.namespace).equal(namespace);
+                return ModelInstance.list({ namespace }).then(() => {
+                    expect(queryHelpers.buildFromOptions.getCall(0).args[1]).deep.equal({ namespace });
+                });
             });
+
+            it('should still work with a callback', () => ModelInstance.list((err, response) => {
+                expect(response.entities.length).equal(2);
+                expect(response.nextPageCursor).equal('abcdef');
+                assert.isUndefined(response.entities[0].password);
+            }));
         });
 
         describe('deleteAll()', () => {
             beforeEach(() => {
-                sinon.spy(ModelInstance, 'delete');
-
-                sinon.stub(ds, 'delete', function() {
-                    let args = Array.prototype.slice.call(arguments);
-                    let cb   = args.pop();
-                    return cb(null, {});
-                });
-
-                sinon.spy(async, 'eachSeries');
+                sinon.stub(ds, 'delete').resolves([{ indexUpdates: 3 }]);
             });
 
             afterEach(() => {
-                ModelInstance.delete.restore();
                 ds.delete.restore();
-                async.eachSeries.restore();
             });
 
-            it('should get all entities through Query', (done) => {
-                ModelInstance.deleteAll(() => {done();});
-                let arg = ds.runQuery.getCall(0).args[0];
+            it('should get all entities through Query', () => ModelInstance.deleteAll().then(() => {
+                expect(queryMock.run.called).equal(true);
+                expect(ds.createQuery.getCall(0).args.length).equal(1);
+            }));
 
-                expect(ds.runQuery.called).true;
-                expect(arg.constructor.name).equal('Query');
-                expect(arg.kinds[0]).equal('Blog');
-                expect(arg.namespace).equal('com.mydomain');
-            });
+            it('should catch error if could not fetch entities', () => {
+                const error = { code: 500, message: 'Something went wrong' };
+                queryMock.run.restore();
+                sinon.stub(queryMock, 'run').rejects(error);
 
-            it('should return error if could not fetch entities', (done) => {
-                let error = {code:500, message:'Something went wrong'};
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', function() {
-                    let args = Array.prototype.slice.call(arguments);
-                    let cb = args.pop();
-                    return cb(error);
-                });
-
-                ModelInstance.deleteAll((err) => {
-                    expect(err).deep.equal(error);
-                    done();
+                return ModelInstance.deleteAll().catch((err) => {
+                    expect(err).equal(error);
                 });
             });
 
-            it('if pre OR post hooks, should call delete on all entities found (in series)', function(done) {
+            it('if pre hooks, should call "delete" on all entities found (in series)', () => {
                 schema = new Schema({});
-                schema.pre('delete', function(next){next();});
-                schema.post('delete', function() {});
+                const spies = {
+                    pre: () => Promise.resolve(),
+                };
+                sinon.spy(spies, 'pre');
+
+                schema.pre('delete', spies.pre);
+
                 ModelInstance = gstore.model('NewBlog', schema);
                 sinon.spy(ModelInstance, 'delete');
 
-                ModelInstance.deleteAll(function(){
-                    expect(async.eachSeries.called).be.true;
-                    expect(ModelInstance.delete.callCount).equal(2);
-                    expect(ModelInstance.delete.getCall(0).args.length).equal(6);
+                return ModelInstance.deleteAll().then(() => {
+                    expect(spies.pre.callCount).equal(mockEntities.length);
+                    expect(ModelInstance.delete.callCount).equal(mockEntities.length);
+                    expect(ModelInstance.delete.getCall(0).args.length).equal(5);
                     expect(ModelInstance.delete.getCall(0).args[4].constructor.name).equal('Key');
-                    done();
                 });
             });
 
-            it('if NO hooks, should call delete passing an array of keys', function(done) {
-                ModelInstance.deleteAll(function() {
+            it('if post hooks, should call "delete" on all entities found (in series)', () => {
+                schema = new Schema({});
+                const spies = {
+                    post: () => Promise.resolve(),
+                };
+                sinon.spy(spies, 'post');
+                schema.post('delete', spies.post);
+
+                ModelInstance = gstore.model('NewBlog', schema);
+                sinon.spy(ModelInstance, 'delete');
+
+                return ModelInstance.deleteAll().then(() => {
+                    expect(spies.post.callCount).equal(mockEntities.length);
+                    expect(ModelInstance.delete.callCount).equal(2);
+                });
+            });
+
+            it('if NO hooks, should call delete passing an array of keys', () => {
+                sinon.spy(ModelInstance, 'delete');
+
+                return ModelInstance.deleteAll().then(() => {
                     expect(ModelInstance.delete.callCount).equal(1);
 
-                    let args = ModelInstance.delete.getCall(0).args;
-                    expect(args.length).equal(6);
-                    expect(is.array(args[4])).be.true;
+                    const args = ModelInstance.delete.getCall(0).args;
+                    expect(args.length).equal(5);
+                    expect(is.array(args[4])).equal(true);
                     expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
 
-                    done();
+                    ModelInstance.delete.restore();
                 });
             });
 
-            it('should call with ancestors', (done) => {
-                let ancestors = ['Parent', 'keyname'];
-                ModelInstance.deleteAll(ancestors, () => {done();});
+            it('should call with ancestors', () => {
+                const ancestors = ['Parent', 'keyname'];
 
-                let arg = ds.runQuery.getCall(0).args[0];
-                expect(arg.filters[0].op).equal('HAS_ANCESTOR');
-                expect(arg.filters[0].val.path).deep.equal(ancestors);
-            });
-
-            it('should call with namespace', (done) => {
-                let namespace = 'com.new-domain.dev';
-                ModelInstance.deleteAll(null, namespace, () => {done();});
-
-                let arg = ds.runQuery.getCall(0).args[0];
-                expect(arg.namespace).equal(namespace);
-            });
-
-            it ('should return success:true if all ok', (done) => {
-                ModelInstance.deleteAll((err, msg) => {
-                    expect(err).not.exist;
-                    expect(msg.success).be.true;
-                    done();
+                return ModelInstance.deleteAll(ancestors).then(() => {
+                    expect(queryMock.hasAncestor.calledOnce).equal(true);
+                    expect(queryMock.ancestors.path).deep.equal(ancestors);
                 });
             });
 
-            it ('should return error if any while deleting', (done) => {
-                let error = {code:500, message:'Could not delete'};
-                ModelInstance.delete.restore();
-                sinon.stub(ModelInstance, 'delete', function() {
-                    let args = Array.prototype.slice.call(arguments);
-                    let cb = args.pop();
-                    cb(error);
-                });
+            it('should call with namespace', () => {
+                const namespace = 'com.new-domain.dev';
 
-                ModelInstance.deleteAll((err, msg) => {
+                return ModelInstance.deleteAll(null, namespace).then(() => {
+                    expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
+                });
+            });
+
+            it('should return success:true if all ok', () => ModelInstance.deleteAll().then((data) => {
+                const msg = data[0];
+                expect(msg.success).equal(true);
+            }));
+
+            it('should return error if any while deleting', () => {
+                const error = { code: 500, message: 'Could not delete' };
+                sinon.stub(ModelInstance, 'delete').rejects(error);
+
+                return ModelInstance.deleteAll().catch((err) => {
                     expect(err).equal(error);
-                    expect(msg).not.exist;
-                    done();
                 });
             });
         });
 
-        describe('findAround()', function() {
+        describe('findAround()', () => {
+            it('should get 3 entities after a given date',
+                () => ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
+                                    .then((result) => {
+                                        const entities = result[0];
+                                        expect(queryMock.filter.getCall(0).args)
+                                            .deep.equal(['createdOn', '>', '2016-1-1']);
+                                        expect(queryMock.order.getCall(0).args)
+                                            .deep.equal(['createdOn', { descending: true }]);
+                                        expect(queryMock.limit.getCall(0).args[0]).equal(3);
 
-            it('should get 3 entities after a given date', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err, entities) => {
-                    let query = ds.runQuery.getCall(0).args[0];
+                                        // Make sure to not show properties where read is set to false
+                                        assert.isUndefined(entities[0].password);
+                                    }));
 
-                    expect(query.filters[0].name).equal('createdOn');
-                    expect(query.filters[0].op).equal('>');
-                    expect(query.filters[0].val).equal('2016-1-1');
-                    expect(query.limitVal).equal(3);
+            it('should get 3 entities before a given date', () =>
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 12 }).then(() => {
+                    expect(queryMock.filter.getCall(0).args)
+                                            .deep.equal(['createdOn', '<', '2016-1-1']);
+                    expect(queryMock.limit.getCall(0).args[0]).equal(12);
+                }));
 
-                    // Make sure to not show properties where read is set to false
-                    expect(entities[0].password).not.to.exist;
-                });
-            });
+            it('should throw error if not all arguments are passed', () =>
+                ModelInstance.findAround('createdOn', '2016-1-1')
+                                .catch((err) => {
+                                    expect(err.code).equal(400);
+                                    expect(err.message).equal('Argument missing');
+                                }));
 
-            it ('should get 3 entities before a given date', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:12}, () => {});
-                let query = ds.runQuery.getCall(0).args[0];
-
-                expect(query.filters[0].op).equal('<');
-                expect(query.limitVal).equal(12);
-            });
-
-            it('should validate that all arguments are passed', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', (err) => {
-                    expect(err.code).equal(400);
-                    expect(err.message).equal('Argument missing');
-                });
-            });
-
-            it('should validate that options passed is an object', function(done) {
+            it('should validate that options passed is an object', () =>
                 ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
                     expect(err.code).equal(400);
-                    done();
-                });
-            });
+                }));
 
-            it('should validate that options has a "after" or "before" property', function(done) {
+            it('should validate that options has a "after" or "before" property', () =>
                 ModelInstance.findAround('createdOn', '2016-1-1', {}, (err) => {
                     expect(err.code).equal(400);
-                    done();
-                });
-            });
+                }));
 
-            it('should validate that options has not both "after" & "before" properties', function() {
-                ModelInstance.findAround('createdOn', '2016-1-1', {after:3, before:3}, (err) => {
+            it('should validate that options has not both "after" & "before" properties', () =>
+                ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }, (err) => {
                     expect(err.code).equal(400);
-                });
-            });
+                }));
 
-            it('should add id to entities', (done) => {
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:3}, (err, entities) => {
+            it('should add id to entities', () =>
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((result) => {
+                    const entities = result[0];
                     expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
                     expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
-                    done();
+                }));
+
+            it('should read all properties', () =>
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true }).then((result) => {
+                    const entities = result[0];
+                    assert.isDefined(entities[0].password);
+                }));
+
+            it('should accept a namespace', () => {
+                const namespace = 'com.new-domain.dev';
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }, namespace).then(() => {
+                    expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
                 });
-            });
-
-            it('should read all properties', (done) => {
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:3, readAll:true}, (err, entities) => {
-                    expect(entities[0].password).exist;
-                    done();
-                });
-            });
-
-            it('should accept a namespace', function() {
-                let namespace = 'com.new-domain.dev';
-                ModelInstance.findAround('createdOn', '2016-1-1', {before:3}, namespace, () => {});
-
-                let query = ds.runQuery.getCall(0).args[0];
-                expect(query.namespace).equal(namespace);
             });
 
             it('should deal with err response', () => {
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', (query, cb) => {
-                    return cb({code:500, message:'Server error'});
-                });
+                queryMock.run.restore();
+                const error = { code: 500, message: 'Server error' };
+                sinon.stub(queryMock, 'run').rejects(error);
 
-                ModelInstance.findAround('createdOn', '2016-1-1', {after:3}, (err) => {
-                    expect(err.code).equal(500);
+                return ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).catch((err) => {
+                    expect(err).equal(error);
                 });
             });
+
+            it('should still work passing a callback',
+                () => ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }, (err, entities) => {
+                    expect(queryMock.filter.getCall(0).args)
+                        .deep.equal(['createdOn', '>', '2016-1-1']);
+                    expect(queryMock.order.getCall(0).args)
+                        .deep.equal(['createdOn', { descending: true }]);
+                    expect(queryMock.limit.getCall(0).args[0]).equal(3);
+
+                    // Make sure to not show properties where read is set to false
+                    assert.isUndefined(entities[0].password);
+                }));
         });
 
         describe('findOne()', () => {
             it('should call pre and post hooks', () => {
-                var spy = {
-                    fnPre : function(next) {
-                        //console.log('Spy Pre Method Schema');
-                        next();
-                    },
-                    fnPost: function(next) {
-                        //console.log('Spy Post Method Schema');
-                        next();
-                    }
+                const spies = {
+                    pre: () => Promise.resolve(),
+                    post: () => Promise.resolve(),
                 };
-                var findOnePre  = sinon.spy(spy, 'fnPre');
-                var findOnePost = sinon.spy(spy, 'fnPost');
-                schema.pre('findOne', findOnePre);
-                schema.post('findOne', findOnePost);
+                sinon.spy(spies, 'pre');
+                sinon.spy(spies, 'post');
+                schema.pre('findOne', spies.pre);
+                schema.post('findOne', spies.post);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                ModelInstance.findOne({}, () => {});
-
-                expect(findOnePre.calledOnce).be.true;
-                expect(findOnePost.calledOnce).to.be.true;
-            });
-
-            it('should run correct gcloud Query', function(done) {
-                ModelInstance.findOne({name:'John', email:'john@snow.com'}, () => {
-                    let query = ds.runQuery.getCall(0).args[0];
-
-                    expect(query.filters[0].name).equal('name');
-                    expect(query.filters[0].op).equal('=');
-                    expect(query.filters[0].val).equal('John');
-
-                    expect(query.filters[1].name).equal('email');
-                    expect(query.filters[1].op).equal('=');
-                    expect(query.filters[1].val).equal('john@snow.com');
-                    done();
+                ModelInstance.findOne({}).then(() => {
+                    expect(spies.pre.calledOnce).equal(true);
+                    expect(spies.post.calledOnce).equal(true);
+                    expect(spies.pre.calledBefore(queryMock.run)).equal(true);
+                    expect(spies.post.calledAfter(queryMock.run)).equal(true);
                 });
             });
 
-            it('should return a Model instance', function(done) {
-                ModelInstance.findOne({name:'John'}, (err, entity) => {
+            it('should run correct gcloud Query', () =>
+                ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
+                    expect(queryMock.filter.getCall(0).args)
+                        .deep.equal(['name', 'John']);
+
+                    expect(queryMock.filter.getCall(1).args)
+                        .deep.equal(['email', 'john@snow.com']);
+                }));
+
+            it('should return a Model instance', () =>
+                ModelInstance.findOne({ name: 'John' }).then((result) => {
+                    const entity = result[0];
                     expect(entity.entityKind).equal('Blog');
-                    expect(entity instanceof Model).be.true;
-                    done();
-                });
-            });
+                    expect(entity instanceof Model).equal(true);
+                }));
 
-            it('should validate that params passed are object', function() {
-                ModelInstance.findOne('some string', (err, entity) => {
+            it('should validate that params passed are object', () =>
+                ModelInstance.findOne('some string').catch((err) => {
                     expect(err.code).equal(400);
+                }));
+
+            it('should accept ancestors', () => {
+                const ancestors = ['Parent', 'keyname'];
+
+                return ModelInstance.findOne({ name: 'John' }, ancestors, () => {
+                    expect(queryMock.hasAncestor.getCall(0).args[0].path)
+                        .deep.equal(ancestors);
                 });
             });
 
-            it('should accept ancestors', function(done) {
-                let ancestors = ['Parent', 'keyname'];
+            it('should accept a namespace', () => {
+                const namespace = 'com.new-domain.dev';
 
-                ModelInstance.findOne({name:'John'}, ancestors, () => {
-                    let query = ds.runQuery.getCall(0).args[0];
-
-                    expect(query.filters[1].name).equal('__key__');
-                    expect(query.filters[1].op).equal('HAS_ANCESTOR');
-                    expect(query.filters[1].val.path).deep.equal(ancestors);
-                    done();
+                return ModelInstance.findOne({ name: 'John' }, null, namespace, () => {
+                    expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
                 });
             });
 
-            it('should accept a namespace', function(done) {
-                let namespace = 'com.new-domain.dev';
+            it('should deal with err response', () => {
+                queryMock.run.restore();
+                const error = { code: 500, message: 'Server error' };
+                sinon.stub(queryMock, 'run').rejects(error);
 
-                ModelInstance.findOne({name:'John'}, null, namespace, () => {
-                    let query = ds.runQuery.getCall(0).args[0];
-
-                    expect(query.namespace).equal(namespace);
-                    done();
+                return ModelInstance.findOne({ name: 'John' }).catch((err) => {
+                    expect(err).equal(error);
                 });
             });
 
-            it('should deal with err response', (done) => {
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', (query, cb) => {
-                    return cb({code:500, message:'Server error'});
-                });
+            it('if entity not found should return 404', () => {
+                queryMock.run.restore();
+                sinon.stub(queryMock, 'run').resolves();
 
-                ModelInstance.findOne({name:'John'}, (err, entities) => {
-                    expect(err.code).equal(500);
-                    done();
-                });
-            });
-
-            it('if entity not found should return 404', (done) => {
-                ds.runQuery.restore();
-                sinon.stub(ds, 'runQuery', (query, cb) => {
-                    return cb(null);
-                });
-
-                ModelInstance.findOne({name:'John'}, (err, entities) => {
+                return ModelInstance.findOne({ name: 'John' }).catch((err) => {
                     expect(err.code).equal(404);
-                    done();
                 });
             });
-        })
 
-        describe('excludeFromIndexes', function() {
-            it('should add properties to schema as optional', function() {
-                let arr = ['newProp', 'url'];
+            it('should still work with a callback', () =>
+                ModelInstance.findOne({ name: 'John' }, (err, entity) => {
+                    expect(entity.entityKind).equal('Blog');
+                    expect(entity instanceof Model).equal(true);
+                }));
+        });
+
+        describe('excludeFromIndexes', () => {
+            it('should add properties to schema as optional', () => {
+                const arr = ['newProp', 'url'];
                 ModelInstance.excludeFromIndexes(arr);
 
-                let model = new ModelInstance({});
+                const model = new ModelInstance({});
 
                 expect(model.excludeFromIndexes).deep.equal(['lastname', 'age'].concat(arr));
-                expect(schema.path('newProp').optional).be.true;
+                expect(schema.path('newProp').optional).equal(true);
             });
 
-            it('should only modifiy excludeFromIndexes on properties that already exist', function() {
-                let prop = 'lastname';
+            it('should only modifiy excludeFromIndexes on properties that already exist', () => {
+                const prop = 'lastname';
                 ModelInstance.excludeFromIndexes(prop);
 
-                let model = new ModelInstance({});
+                const model = new ModelInstance({});
 
                 expect(model.excludeFromIndexes).deep.equal(['lastname', 'age']);
-                expect(schema.path('lastname').optional).not.exist;
-                expect(schema.path('lastname').excludeFromIndexes).be.true;
+                assert.isUndefined(schema.path('lastname').optional);
+                expect(schema.path('lastname').excludeFromIndexes).equal(true);
             });
         });
     });
 
     describe('save()', () => {
         let model;
-        let data = {name:'John', lastname:'Snow'};
+        const data = { name: 'John', lastname: 'Snow' };
 
         beforeEach(() => {
             model = new ModelInstance(data);
         });
 
         it('---> should validate() before', () => {
-            let validateSpy = sinon.spy(model, 'validate');
+            const validateSpy = sinon.spy(model, 'validate');
 
-            model.save(() => {});
-
-            expect(validateSpy.called).be.true;
+            return model.save().then(() => {
+                expect(validateSpy.called).equal(true);
+            });
         });
 
         it('---> should NOT validate() data before', () => {
-            schema        = new Schema({}, {validateBeforeSave: false});
+            schema = new Schema({}, { validateBeforeSave: false });
             ModelInstance = Model.compile('Blog', schema, gstore);
-            model         = new ModelInstance({name: 'John'});
-            let validateSpy = sinon.spy(model, 'validate');
+            model = new ModelInstance({ name: 'John' });
+            const validateSpy = sinon.spy(model, 'validate');
 
-            model.save(() => {});
-
-            expect(validateSpy.called).be.false;
+            return model.save().then(() => {
+                expect(validateSpy.called).equal(false);
+            });
         });
 
         it('should NOT save to Datastore if it didn\'t pass property validation', () => {
-            model = new ModelInstance({unknown:'John'});
+            model = new ModelInstance({ unknown: 'John' });
 
-            model.save(() => {});
-
-            expect(ds.save.called).be.false;
+            return model.save().catch((err) => {
+                assert.isDefined(err);
+                expect(ds.save.called).equal(false);
+            });
         });
 
         it('should NOT save to Datastore if it didn\'t pass value validation', () => {
-            model = new ModelInstance({website:'mydomain'});
+            model = new ModelInstance({ website: 'mydomain' });
 
-            model.save(() => {});
-
-            expect(ds.save.called).be.false;
+            return model.save().catch((err) => {
+                assert.isDefined(err);
+                expect(ds.save.called).equal(false);
+            });
         });
 
-        it('should convert to Datastore format before saving to Datastore', function(done) {
-            let spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
+        it('should convert to Datastore format before saving to Datastore', () => {
+            const spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
-            model.save((err, entity) => {});
-            clock.tick(20);
+            model.save().then(() => {
+                expect(model.gstore.ds.save.calledOnce).equal(true);
+                expect(spySerializerToDatastore.called).equal(true);
+                expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
+                expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
+                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].key);
+                expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
+                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data);
+                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data[0].excludeFromIndexes);
 
-            expect(model.gstore.ds.save.calledOnce).be.true;
-            expect(spySerializerToDatastore.called).be.true;
-            expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
-            expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
-            expect(model.gstore.ds.save.getCall(0).args[0].key).exist;
-            expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
-            expect(model.gstore.ds.save.getCall(0).args[0].data).exist;
-            expect(model.gstore.ds.save.getCall(0).args[0].data[0].excludeFromIndexes).exist;
-
-            done();
-            spySerializerToDatastore.restore();
+                spySerializerToDatastore.restore();
+            });
         });
 
-        it('if Datastore error, return the error and don\'t call emit', () => {
+        it('on Datastore error, return the error', () => {
             ds.save.restore();
 
-            let error = {
-                code:500,
-                message:'Server Error'
+            const error = {
+                code: 500,
+                message: 'Server Error',
             };
-            sinon.stub(ds, 'save', (entity, cb) => {
-                return cb(error);
-            });
+            sinon.stub(ds, 'save').rejects(error);
 
-            let model = new ModelInstance({});
+            model = new ModelInstance({});
 
-            model.save((err, entity) => {
+            return model.save().catch((err) => {
                 expect(err).equal(error);
             });
         });
 
-        it('should save entity in a transaction', function() {
-            model.save(transaction, {}, function(err, entity, info) {
-                expect(transaction.save.called).be.true;
-                expect(entity.entityData).exist;
-                expect(info.op).equal('save');
-            });
+        it('should save entity in a transaction and return transaction',
+            () => model.save(transaction, {})
+                        .then((result) => {
+                            const entity = result[0];
+                            const info = result[1];
+                            const transPassed = result[2];
+                            expect(transaction.save.called).equal(true);
+                            assert.isDefined(entity.entityData);
+                            expect(transPassed).equal(transaction);
+                            expect(info.op).equal('save');
+                        }));
 
-            clock.tick(20);
+        it('should save entity in a transaction in sync', () => {
+            const schema2 = new Schema({}, { validateBeforeSave: false });
+            const ModelInstance2 = gstore.model('NewType', schema2, gstore);
+            model = new ModelInstance2({});
+            model.save(transaction);
+            expect(true).equal(true);
         });
 
-        it('should save entity in a transaction WITHOUT passing callback', function() {
+        it('should save entity in a transaction synchronous when validateBeforeSave desactivated', () => {
+            schema = new Schema({
+                name: { type: 'string' },
+            }, {
+                validateBeforeSave: false, // Only synchronous if no "pre" validation middleware
+            });
+
+            const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
+            model = new ModelInstanceTemp({});
+
+            model.save(transaction);
+            expect(transaction.save.called).equal(true);
+        });
+
+        it('should save entity in a transaction synchronous when disabling hook', () => {
+            schema = new Schema({
+                name: { type: 'string' },
+            });
+
+            const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
+            model = new ModelInstanceTemp({});
+            model.preHooksEnabled = false;
             model.save(transaction);
 
-            clock.tick(20);
+            const model2 = new ModelInstanceTemp({});
+            const transaction2 = new Transaction();
+            sinon.spy(transaction2, 'save');
+            model2.save(transaction2);
 
-            expect(transaction.save.called).be.true;
+            expect(transaction.save.called).equal(true);
+            expect(transaction2.save.called).equal(false);
         });
 
-        it('should throw error if transaction not instance of Transaction', function() {
-            var fn = function() {
-                model.save({id:0}, {}, function() {});
-            };
-
-            clock.tick(20);
-
-            expect(fn).to.throw(Error);
-        });
+        it('should throw error if transaction not instance of Transaction',
+            () => model.save({ id: 0 }, {})
+                        .catch((err) => {
+                            assert.isDefined(err);
+                            expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                        }));
 
         it('should call pre hooks', () => {
-            let mockDs = {save:function() {}, key:function(){}};
-            let spyPre  = sinon.spy();
-            let spySave = sinon.spy(mockDs, 'save');
+            const spyPre = sinon.stub().resolves();
 
-            schema = new Schema({name:{type:'string'}});
-            schema.pre('save', (next) => {
-                spyPre();
-                next();
-            });
+            schema = new Schema({ name: { type: 'string' } });
+            schema.pre('save', () => spyPre());
             ModelInstance = Model.compile('Blog', schema, gstore);
-            let model = new ModelInstance({name:'John'});
+            model = new ModelInstance({ name: 'John' });
 
-            model.save(() => {});
-            clock.tick(20);
-
-            expect(spyPre.calledBefore(spySave)).be.true;
-        });
-
-        it('should emit "save" after', (done) => {
-            let model       = new ModelInstance({});
-            let emitStub    = sinon.stub(model, 'emit');
-            let callbackSpy = sinon.spy();
-
-            model.save(callbackSpy);
-            clock.tick(20);
-
-            expect(emitStub.calledWithExactly('save')).be.true;
-            expect(emitStub.calledBefore(callbackSpy)).be.true;
-            done();
-
-            emitStub.restore();
+            return model.save().then(() => {
+                expect(spyPre.calledBefore(ds.save)).equal(true);
+            });
         });
 
         it('should call post hooks', () => {
-            let spyPost  = sinon.spy();
-
-            schema = new Schema({name:{type:'string'}});
-            schema.post('save', () => {
-                spyPost();
-            });
-
+            const spyPost = sinon.stub().resolves(123);
+            schema = new Schema({ name: { type: 'string' } });
+            schema.post('save', () => spyPost());
             ModelInstance = Model.compile('Blog', schema, gstore);
-            let model = new ModelInstance({name:'John'});
+            model = new ModelInstance({ name: 'John' });
 
-            model.save(() => {});
-            clock.tick(20);
+            return model.save().then((result) => {
+                expect(spyPost.called).equal(true);
+                expect(result).equal(123);
+            });
+        });
 
-            expect(spyPost.called).be.true;
+        it('error in post hooks should be added to response', () => {
+            const error = { code: 500 };
+            const spyPost = sinon.stub().rejects(error);
+            schema = new Schema({ name: { type: 'string' } });
+            schema.post('save', () => spyPost());
+            ModelInstance = Model.compile('Blog', schema, gstore);
+            model = new ModelInstance({ name: 'John' });
+
+            return model.save().then((savedData) => {
+                assert.isDefined(savedData.result);
+                assert.isDefined(savedData.errorsPostHook);
+                expect(savedData.errorsPostHook[0]).equal(error);
+            });
         });
 
         it('transaction.execPostHooks() should call post hooks', () => {
-            let spyPost   = sinon.spy();
-            schema        = new Schema({name:{type:'string'}});
+            const spyPost = sinon.stub().resolves(123);
+            schema = new Schema({ name: { type: 'string' } });
             schema.post('save', spyPost);
 
             ModelInstance = Model.compile('Blog', schema, gstore);
-            let model = new ModelInstance({name:'John'});
+            model = new ModelInstance({ name: 'John' });
 
-            model.save(transaction, () => {
-                transaction.execPostHooks();
-            });
-            clock.tick(20);
+            return model.save(transaction)
+                .then(() => transaction.execPostHooks())
+                .then(() => {
+                    expect(spyPost.called).equal(true);
+                    expect(spyPost.callCount).equal(1);
+                });
+        });
 
-            expect(spyPost.called).be.true;
+        it('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
+            const spyPost = sinon.stub().resolves(123);
+            schema = new Schema({ name: { type: 'string' } });
+            schema.post('save', spyPost);
+
+            ModelInstance = Model.compile('Blog', schema, gstore);
+            model = new ModelInstance({ name: 'John' });
+
+            return model.save(transaction)
+                .then(() => {
+                    expect(spyPost.called).equal(false);
+                });
         });
 
         it('should update modifiedOn to new Date if property in Schema', () => {
-            schema = new Schema({modifiedOn: {type: 'datetime'}});
-            var model  = gstore.model('BlogPost', schema);
+            schema = new Schema({ modifiedOn: { type: 'datetime' } });
+            ModelInstance = gstore.model('BlogPost', schema);
+            const entity = new ModelInstance({});
 
-            var entity = new model({});
-            entity.save((err, entity) => {});
-            clock.tick(20);
-
-            expect(entity.entityData.modifiedOn).to.exist;
-            expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+            return entity.save().then(() => {
+                assert.isDefined(entity.entityData.modifiedOn);
+                expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+            });
         });
     });
 
     describe('validate()', () => {
         it('properties passed ok', () => {
-            let model = new ModelInstance({name:'John', lastname:'Snow'});
+            const model = new ModelInstance({ name: 'John', lastname: 'Snow' });
 
-            let valid = model.validate();
-            expect(valid.success).be.true;
+            const valid = model.validate();
+            expect(valid.success).equal(true);
         });
 
         it('properties passed ko', () => {
-            let model = new ModelInstance({unknown:123});
+            const model = new ModelInstance({ unknown: 123 });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
 
         it('should remove virtuals', () => {
-            let model = new ModelInstance({fullname:'John Snow'});
+            const model = new ModelInstance({ fullname: 'John Snow' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.true;
-            expect(model.entityData.fullname).not.exist;
+            expect(valid.success).equal(true);
+            assert.isUndefined(model.entityData.fullname);
         });
 
         it('accept unkwown properties', () => {
             schema = new Schema({
-                name:     {type: 'string'},
+                name: { type: 'string' },
             }, {
-                explicitOnly : false
+                explicitOnly: false,
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
-            let model = new ModelInstance({unknown:123});
+            const model = new ModelInstance({ unknown: 123 });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.true;
+            expect(valid.success).equal(true);
         });
 
         it('required property', () => {
             schema = new Schema({
-                name: {type: 'string'},
-                email: {type: 'string', required:true}
+                name: { type: 'string' },
+                email: { type: 'string', required: true },
             });
 
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            let model = new ModelInstance({name:'John Snow'});
-            let model2 = new ModelInstance({name:'John Snow', email:''});
-            let model3 = new ModelInstance({name:'John Snow', email:'   '});
-            let model4 = new ModelInstance({name:'John Snow', email: null});
+            const model = new ModelInstance({ name: 'John Snow' });
+            const model2 = new ModelInstance({ name: 'John Snow', email: '' });
+            const model3 = new ModelInstance({ name: 'John Snow', email: '   ' });
+            const model4 = new ModelInstance({ name: 'John Snow', email: null });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-            let valid4 = model4.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
+            const valid4 = model4.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-            expect(valid4.success).be.false;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
+            expect(valid3.success).equal(false);
+            expect(valid4.success).equal(false);
         });
 
         it('don\'t validate empty value', () => {
-            const model = new ModelInstance({email:undefined});
-            const model2 = new ModelInstance({email:null});
-            const model3 = new ModelInstance({email:''});
+            const model = new ModelInstance({ email: undefined });
+            const model2 = new ModelInstance({ email: null });
+            const model3 = new ModelInstance({ email: '' });
 
             const valid = model.validate();
             const valid2 = model2.validate();
             const valid3 = model3.validate();
 
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
+            expect(valid.success).equal(true);
+            expect(valid2.success).equal(true);
+            expect(valid3.success).equal(true);
         });
 
-        it ('no type validation', () => {
-            let model = new ModelInstance({street:123});
-            let model2 = new ModelInstance({street:'123'});
-            let model3 = new ModelInstance({street:true});
+        it('no type validation', () => {
+            const model = new ModelInstance({ street: 123 });
+            const model2 = new ModelInstance({ street: '123' });
+            const model3 = new ModelInstance({ street: true });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
 
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
+            expect(valid.success).equal(true);
+            expect(valid2.success).equal(true);
+            expect(valid3.success).equal(true);
         });
 
-        it ('--> string', () => {
-            let model = new ModelInstance({name:123});
+        it('--> string', () => {
+            const model = new ModelInstance({ name: 123 });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
 
-        it ('--> number', () => {
-            let model = new ModelInstance({age:'string'});
+        it('--> number', () => {
+            const model = new ModelInstance({ age: 'string' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
 
         it('--> int', () => {
-            let model = new ModelInstance({age:ds.int('str')});
-            let valid = model.validate();
+            const model = new ModelInstance({ age: ds.int('str') });
+            const valid = model.validate();
 
-            let model2 = new ModelInstance({age:ds.int('7')});
-            let valid2 = model2.validate();
+            const model2 = new ModelInstance({ age: ds.int('7') });
+            const valid2 = model2.validate();
 
-            let model3 = new ModelInstance({age:ds.int(7)});
-            let valid3 = model3.validate();
+            const model3 = new ModelInstance({ age: ds.int(7) });
+            const valid3 = model3.validate();
 
-            let model4 = new ModelInstance({age:'string'});
-            let valid4 = model4.validate();
+            const model4 = new ModelInstance({ age: 'string' });
+            const valid4 = model4.validate();
 
-            let model5 = new ModelInstance({age:'7'});
-            let valid5 = model5.validate();
+            const model5 = new ModelInstance({ age: '7' });
+            const valid5 = model5.validate();
 
-            let model6 = new ModelInstance({age:7});
-            let valid6 = model6.validate();
+            const model6 = new ModelInstance({ age: 7 });
+            const valid6 = model6.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.true;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(true);
+            expect(valid3.success).equal(true);
+            expect(valid4.success).equal(false);
+            expect(valid5.success).equal(false);
+            expect(valid6.success).equal(true);
         });
 
         it('--> double', () => {
-            let model = new ModelInstance({price:ds.double('str')});
-            let valid = model.validate();
+            const model = new ModelInstance({ price: ds.double('str') });
+            const valid = model.validate();
 
-            let model2 = new ModelInstance({price:ds.double('1.2')});
-            let valid2 = model2.validate();
+            const model2 = new ModelInstance({ price: ds.double('1.2') });
+            const valid2 = model2.validate();
 
-            let model3 = new ModelInstance({price:ds.double(7.0)});
-            let valid3 = model3.validate();
+            const model3 = new ModelInstance({ price: ds.double(7.0) });
+            const valid3 = model3.validate();
 
-            let model4 = new ModelInstance({price:'string'});
-            let valid4 = model4.validate();
+            const model4 = new ModelInstance({ price: 'string' });
+            const valid4 = model4.validate();
 
-            let model5 = new ModelInstance({price:'7'});
-            let valid5 = model5.validate();
+            const model5 = new ModelInstance({ price: '7' });
+            const valid5 = model5.validate();
 
-            let model6 = new ModelInstance({price:7});
-            let valid6 = model6.validate();
+            const model6 = new ModelInstance({ price: 7 });
+            const valid6 = model6.validate();
 
-            let model7 = new ModelInstance({price:7.59});
-            let valid7 = model7.validate();
+            const model7 = new ModelInstance({ price: 7.59 });
+            const valid7 = model7.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
-            expect(valid3.success).be.true;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.true;
-            expect(valid7.success).be.true;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(true);
+            expect(valid3.success).equal(true);
+            expect(valid4.success).equal(false);
+            expect(valid5.success).equal(false);
+            expect(valid6.success).equal(true);
+            expect(valid7.success).equal(true);
         });
 
         it('--> buffer', () => {
-            let model = new ModelInstance({icon:'string'});
-            let valid = model.validate();
+            const model = new ModelInstance({ icon: 'string' });
+            const valid = model.validate();
 
-            let model2 = new ModelInstance({icon:new Buffer('\uD83C\uDF69')});
-            let valid2 = model2.validate();
+            const model2 = new ModelInstance({ icon: new Buffer('\uD83C\uDF69') });
+            const valid2 = model2.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(true);
         });
 
-        it ('--> boolean', () => {
-            let model = new ModelInstance({modified:'string'});
+        it('--> boolean', () => {
+            const model = new ModelInstance({ modified: 'string' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
 
         it('--> object', () => {
-            let model = new ModelInstance({prefs:{check:true}});
+            const model = new ModelInstance({ prefs: { check: true } });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.true;
+            expect(valid.success).equal(true);
         });
 
         it('--> geoPoint', () => {
-            let model = new ModelInstance({location:'string'});
-            let valid = model.validate();
+            const model = new ModelInstance({ location: 'string' });
+            const valid = model.validate();
 
-            let model2 = new ModelInstance({location:ds.geoPoint({
-                                latitude: 40.6894,
-                                longitude: -74.0447
-                            })});
-            let valid2 = model2.validate();
+            const model2 = new ModelInstance({
+                location: ds.geoPoint({
+                    latitude: 40.6894,
+                    longitude: -74.0447,
+                }),
+            });
+            const valid2 = model2.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.true;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(true);
         });
 
         it('--> array ok', () => {
-            let model = new ModelInstance({tags:[]});
+            const model = new ModelInstance({ tags: [] });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.true;
+            expect(valid.success).equal(true);
         });
 
         it('--> array ko', () => {
-            let model = new ModelInstance({tags:{}});
-            let model2 = new ModelInstance({tags:'string'});
-            let model3 = new ModelInstance({tags:123});
+            const model = new ModelInstance({ tags: {} });
+            const model2 = new ModelInstance({ tags: 'string' });
+            const model3 = new ModelInstance({ tags: 123 });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
+            expect(valid3.success).equal(false);
         });
 
         it('--> date ok', () => {
-            let model = new ModelInstance({birthday:'2015-01-01'});
-            let model2 = new ModelInstance({birthday:new Date()});
+            const model = new ModelInstance({ birthday: '2015-01-01' });
+            const model2 = new ModelInstance({ birthday: new Date() });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
 
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
+            expect(valid.success).equal(true);
+            expect(valid2.success).equal(true);
         });
 
-        it ('--> date ko', () => {
-            let model = new ModelInstance({birthday:'01-2015-01'});
-            let model2 = new ModelInstance({birthday:'01-01-2015'});
-            let model3 = new ModelInstance({birthday:'2015/01/01'});
-            let model4 = new ModelInstance({birthday:'01/01/2015'});
-            let model5 = new ModelInstance({birthday:12345}); // No number allowed
-            let model6 = new ModelInstance({birthday:'string'});
+        it('--> date ko', () => {
+            const model = new ModelInstance({ birthday: '01-2015-01' });
+            const model2 = new ModelInstance({ birthday: '01-01-2015' });
+            const model3 = new ModelInstance({ birthday: '2015/01/01' });
+            const model4 = new ModelInstance({ birthday: '01/01/2015' });
+            const model5 = new ModelInstance({ birthday: 12345 }); // No number allowed
+            const model6 = new ModelInstance({ birthday: 'string' });
 
-            let valid  = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-            let valid4 = model4.validate();
-            let valid5 = model5.validate();
-            let valid6 = model6.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
+            const valid4 = model4.validate();
+            const valid5 = model5.validate();
+            const valid6 = model6.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-            expect(valid4.success).be.false;
-            expect(valid5.success).be.false;
-            expect(valid6.success).be.false;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
+            expect(valid3.success).equal(false);
+            expect(valid4.success).equal(false);
+            expect(valid5.success).equal(false);
+            expect(valid6.success).equal(false);
         });
 
-        it ('--> is URL ok', () => {
-            let model  = new ModelInstance({website:'http://google.com'});
-            let model2 = new ModelInstance({website:'google.com'});
+        it('--> is URL ok', () => {
+            const model = new ModelInstance({ website: 'http://google.com' });
+            const model2 = new ModelInstance({ website: 'google.com' });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
 
-            expect(valid.success).be.true;
-            expect(valid2.success).be.true;
+            expect(valid.success).equal(true);
+            expect(valid2.success).equal(true);
         });
 
-        it ('--> is URL ko', () => {
-            let model = new ModelInstance({website:'domain.k'});
+        it('--> is URL ko', () => {
+            const model = new ModelInstance({ website: 'domain.k' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
 
-        it ('--> is EMAIL ok', () => {
-            let model  = new ModelInstance({email:'john@snow.com'});
+        it('--> is EMAIL ok', () => {
+            const model = new ModelInstance({ email: 'john@snow.com' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.true;
+            expect(valid.success).equal(true);
         });
 
-        it ('--> is EMAIL ko', () => {
-            let model   = new ModelInstance({email:'john@snow'});
-            let model2  = new ModelInstance({email:'john@snow.'});
-            let model3  = new ModelInstance({email:'john@snow.k'});
-            let model4  = new ModelInstance({email:'johnsnow.com'});
+        it('--> is EMAIL ko', () => {
+            const model = new ModelInstance({ email: 'john@snow' });
+            const model2 = new ModelInstance({ email: 'john@snow.' });
+            const model3 = new ModelInstance({ email: 'john@snow.k' });
+            const model4 = new ModelInstance({ email: 'johnsnow.com' });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
-            let valid3 = model3.validate();
-            let valid4 = model4.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
+            const valid4 = model4.validate();
 
-            expect(valid.success).be.false;
-            expect(valid2.success).be.false;
-            expect(valid3.success).be.false;
-            expect(valid4.success).be.false;
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
+            expect(valid3.success).equal(false);
+            expect(valid4.success).equal(false);
         });
 
         it('--> is HexColor', () => {
-            let model  = new ModelInstance({color:'#fff'});
-            let model2  = new ModelInstance({color:'white'});
+            const model = new ModelInstance({ color: '#fff' });
+            const model2 = new ModelInstance({ color: 'white' });
 
-            let valid = model.validate();
-            let valid2 = model2.validate();
+            const valid = model.validate();
+            const valid2 = model2.validate();
 
-            expect(valid.success).be.true;
-            expect(valid2.success).be.false;
+            expect(valid.success).equal(true);
+            expect(valid2.success).equal(false);
         });
 
-        it ('and only accept value in default values', () => {
-            let model = new ModelInstance({type:'other'});
+        it('and only accept value in default values', () => {
+            const model = new ModelInstance({ type: 'other' });
 
-            let valid = model.validate();
+            const valid = model.validate();
 
-            expect(valid.success).be.false;
+            expect(valid.success).equal(false);
         });
     });
 });
