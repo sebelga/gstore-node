@@ -70,10 +70,10 @@ describe('Model', function() {
 
         mockEntity[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-        var mockEntity2 = {name: 'John', lastname : 'Snow', password:'xxx'};
+        const mockEntity2 = {name: 'John', lastname : 'Snow', password:'xxx'};
         mockEntity2[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-        var mockEntit3 = {name: 'Mick', lastname : 'Jagger'};
+        const mockEntit3 = {name: 'Mick', lastname : 'Jagger'};
         mockEntit3[ds.KEY] = ds.key(['BlogPost', 'keyname']);
 
         mockEntities = [mockEntity2, mockEntit3];
@@ -880,7 +880,9 @@ describe('Model', function() {
                 // We add manually the id in the mocks to deep compare
                 mockEntities[0].id = 1234;
                 mockEntities[1].id = 'keyname';
-                // we delete from the mock to deep compare
+
+                // we delete from the mock to be able to deep compare
+                /// as property 'password' is set as read: false
                 delete mockEntities[0].password;
 
                 expect(ds.runQuery.getCall(0).args[0]).equal(query);
@@ -888,6 +890,12 @@ describe('Model', function() {
                 expect(response.entities[0].password).not.to.exist;
                 expect(response.entities).deep.equal(mockEntities);
                 expect(response.nextPageCursor).equal('abcdef');
+
+                // let entities = response.entities;
+                // entities = entities.map((entity) => {
+                //     delete entity.id;
+                //     return ModelInstance.__model(entity, null, null, null, entity[ds.KEY]);
+                // });
                 done();
             });
         });
