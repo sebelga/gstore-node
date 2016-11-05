@@ -1,93 +1,86 @@
 'use strict';
 
 const chai = require('chai');
-const expect = chai.expect;
 
 const gstore = require('../../lib');
-
 const Schema = require('../../lib').Schema;
 const datastoreSerializer = require('../../lib/serializer').Datastore;
 
+const expect = chai.expect;
+const assert = chai.assert;
+
 describe('Datastore serializer', () => {
+    let ModelInstance;
 
-    var ModelInstance;
-
-    beforeEach(function() {
-        gstore.models       = {};
+    beforeEach(() => {
+        gstore.models = {};
         gstore.modelSchemas = {};
 
-        var schema = new Schema({
-            name: {type: 'string'},
-            email : {type:'string', read:false}
+        const schema = new Schema({
+            name: { type: 'string' },
+            email: { type: 'string', read: false },
         });
         ModelInstance = gstore.model('Blog', schema, {});
     });
 
-    describe('should convert data FROM Datastore format', function() {
+    describe('should convert data FROM Datastore format', () => {
         let datastoreMock;
-        let legacyDatastoreMock;
-        let entity;
 
         const key = {
             namespace: undefined,
             id: 1234,
-            kind: "BlogPost",
-            path: ["BlogPost", 1234]
+            kind: 'BlogPost',
+            path: ['BlogPost', 1234],
         };
 
         let data;
 
-        beforeEach(function() {
+        beforeEach(() => {
             data = {
-                name: "John",
-                lastname : 'Snow',
-                email : 'john@snow.com'
+                name: 'John',
+                lastname: 'Snow',
+                email: 'john@snow.com',
             };
 
             datastoreMock = data;
             datastoreMock[ModelInstance.gstore.ds.KEY] = key;
+        });
 
-            legacyDatastoreMock = {
-                key: key,
-                data: data
-            };
-        })
+        it('and add Symbol("KEY") id to entity', () => {
+            const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock);
 
-        it ('and add Symbol("KEY") id to entity', () => {
-            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock);
-
-            //expect(serialized).equal = datastoreMock;
+            // expect(serialized).equal = datastoreMock;
             expect(serialized.id).equal(key.id);
-            expect(serialized.email).not.exist;
+            assert.isUndefined(serialized.email);
         });
 
         it('accepting "readAll" param', () => {
-            var serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, true);
+            const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, true);
 
-            expect(serialized.email).exist;
+            assert.isDefined(serialized.email);
         });
     });
 
 
-    describe ('should convert data TO Datastore format', () => {
-        it ('without passing non-indexed properties', () => {
-            var expected = {
-                name:'name',
-                value:'John',
-                excludeFromIndexes:false
+    describe('should convert data TO Datastore format', () => {
+        it('without passing non-indexed properties', () => {
+            const expected = {
+                name: 'name',
+                value: 'John',
+                excludeFromIndexes: false,
             };
-            var serialized = datastoreSerializer.toDatastore({name:'John'});
+            const serialized = datastoreSerializer.toDatastore({ name: 'John' });
             expect(serialized[0]).to.deep.equal(expected);
         });
 
-        it ('and not into account undefined variables', () => {
-            var serialized = datastoreSerializer.toDatastore({name:'John', lastname:undefined});
-            expect(serialized[0].lastname).to.not.exist;
+        it('and not into account undefined variables', () => {
+            const serialized = datastoreSerializer.toDatastore({ name: 'John', lastname: undefined });
+            assert.isUndefined(serialized[0].lastname);
         });
 
-        it ('and set excludeFromIndexes properties', () => {
-            var serialized = datastoreSerializer.toDatastore({name:'John'}, ['name']);
-            expect(serialized[0].excludeFromIndexes).to.be.true;
+        it('and set excludeFromIndexes properties', () => {
+            const serialized = datastoreSerializer.toDatastore({ name: 'John' }, ['name']);
+            expect(serialized[0].excludeFromIndexes).equal(true);
         });
     });
 });

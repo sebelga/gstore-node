@@ -4,6 +4,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)  
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built on top of the **[google-cloud-node](https://github.com/GoogleCloudPlatform/google-cloud-node)** library.
 
+:new: gstore supports **Promises**! (> v0.8.0)
+
 Its main features are:
 
 - explicit **Schema declaration** for entities
@@ -94,13 +96,13 @@ sometimes lead to a lot of duplicate code to **validate** the properties passed 
  ```
 
 ### Getting started
-For info on how to configure gcloud [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/0.5.0/datastore).
+For info on how to configure the gcloud datastore [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/0.5.0/datastore).
 
 ```js
-var ds = require('@google-cloud/datastore')();
-
+var datastore = require('@google-cloud/datastore')();
 var gstore = require('gstore-node');
-gstore.connect(ds);
+
+gstore.connect(datastore);
 ```
 
 #### Aliases
@@ -163,6 +165,17 @@ var entitySchema = new Schema({
     ...
 });
 ```
+
+You can also define an **Array of valid values** for a properties.  
+If you then try to save an entity with a different value it won't validate and won't be saved in the Datastore.
+
+```js
+var entitySchema = new Schema({
+    color  : {values: ['#ffffff', '#ff6000', '#000000'},
+    ...
+});
+```
+
 ### Other properties options
 #### optional
 By default if a property value is not defined it will be set to null or to its default value (if any). If you don't want this behaviour you can set it as *optional* and if no value is passed, this property will not be saved in the Datastore.
@@ -170,7 +183,7 @@ By default if a property value is not defined it will be set to null or to its d
 #### default
 You can set a default value for the properties.
 
-If you need to set the default value for a *datetime* property to the current time of the request there is a **special** constant for that. `gstore.defaultValues.NOW` 
+If you need to set the default value for a **datetime** property to the **current time of the request** there is a special default value for that. `gstore.defaultValues.NOW` 
 
 ```
 var schema = new Schema({
@@ -246,6 +259,7 @@ var entitySchema = new Schema({
 ```
 
 ### Schema options
+<a name="validateBeforeSave"></a>
 #### validateBeforeSave (default true)
 To disable any validation before save/update, set it to false
 
@@ -379,9 +393,9 @@ This method accepts the following parameters:
 - namespace (optional)
 - transaction (optional)
 - options (optional)
-- callback
+- callback (optional, if not passed a **Promise** is returned)
 
-Returns: an entity **instance**.
+Returns ---> an entity **instance**.
 
 ```js
 var blogPostSchema = new gstore.Schema({...});
@@ -439,6 +453,15 @@ transaction.run(function(err) {
 });
 ```
 
+If no callback is passed, it will return a Promise
+
+```js
+BlogPost.get(123).then((data) => {
+	const entity = data[0];
+	console.log(entity.plain());
+});
+```
+
 **options** parameter  
 The options object parameter has a **preserveOrder** property (default to false). Useful when an array of IDs is passed and you want to preserve the order of those ids in the results. 
 
@@ -466,9 +489,9 @@ The update() method has the following parameters
 - namespace (optional)
 - transaction (optional)
 - options (optional)
-- callback
+- callback (optional, if not passed a **Promise** is returned)
 
-Returns: an entity **instance**.
+Returns ---> an entity **instance**.
 
 ```js
 // ...
@@ -528,9 +551,17 @@ BlogPost.update(123, data, null, null, null, {replace:true}, function(err, entit
 });
 ```
 
+If no callback is passed, it will return a Promise
+
+```js
+BlogPost.update(123, data).then((data) => {
+    const entity = data[0];
+    console.log(entity.plain());
+});
+```
 
 #### Delete()
-You can delete an entity by calling `Model.delete(...args)`.
+You can delete an entity by calling `Model.delete(...args)`.  
 This method accepts the following parameters
 
 - id : the id to delete. Can also be an **array** of ids
@@ -538,21 +569,23 @@ This method accepts the following parameters
 - namespace (optional)
 - transaction (optional)
 - key (optional) Can also be an **array** of keys
-- callback
+- callback (optional, if not passed a **Promise** is returned)
 
 
-The callback has a "success" properties that is set to true if an entity has been deleted or false if not.
+The response of the callback has a "success" properties that is set to true if an entity has been deleted or false if not.
 
 ```js
 var BlogPost = gstore.model('BlogPost');
 
-BlogPost.delete(123, function(err, success, apiResponse) {
+BlogPost.delete(123, function(err, response) {
     if (err) {
         // deal with err
     }
-    if (!success) {
+    if (!response.success) {
         console.log('No entity deleted. The id provided didn\'t return any entity');
     }
+    
+    // The response has a *key* property with the entity keys that have been deleted (single or Array)
 });
 
 // With an array of ids
@@ -567,9 +600,10 @@ BlogPost.delete(null, null, null, null, key, function(err, success, apiResponse)
 
 // Transaction
 // -----------
-// The same method can be executed from inside a transaction
-// Important: you need to execute done() from the callback as gstore needs to execute
-// the "pre" hooks before deleting the entity
+/* The same method can be executed inside a transaction
+ * Important!: if you have "pre" middelware set fot delete, then you must *resolve*
+ * the Promise before commiting the transaction
+*/
 
 var transaction = gstore.transaction();
 
@@ -578,14 +612,25 @@ transaction.run(function(err) {
         // handle error
         return;
     }
-
-    BlogPost.delete(123, null, null, transaction);
-
-    transaction.commit(function(err) {
+		
+	// example 1 (in sync when there are no "pre" middleware)
+	BlogPost.delete(123, null, null, transaction); 
+	
+	transaction.commit(function(err) {
         if (err) {
             // handle error
         }
-    });
+	});
+	
+   // example 2 (with "pre" middleware to execute first) 
+   BlogPost.delete(123, null, null, transaction)
+   				.then(() => {
+    				 transaction.commit(function(err) {
+				        if (err) {
+				            // handle error
+				        }
+				    });
+    			});
 });
 
 ```
@@ -756,7 +801,12 @@ blogPostEntity.entityData.title = 'My third blog post'; // blogPostEntity.title 
 
 #### Save()
 
-After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(transaction /*optional*/, callback)`
+After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(...args)`  
+This method accepts the following parameters
+
+- transaction (optional). Will execute the save operation inside this transaction
+- callback (optional, if not passed a **Promise** is returned)
+
 
 ```js
 var gstore = require('gstore-node');
@@ -785,25 +835,57 @@ blogPostEntity.save(function(err) {
 /*
 * From inside a transaction
 */
-
+var user = new User({name:'john'});
 var transaction = gstore.transaction();
 
-transaction.run(function(err) {
-    if (err) {
-        // handle error
-        return;
-    }
-
-    var user = new User({name:'john'}); // user could also come from a get()
-    user.save(transaction);
-
-    transaction.commit(function(err) {
-        if (err) {
-            // handle error
-        }
+transaction.run().then(() => {
+	
+	// See note below to avoid nesting Promises
+   return user.save(transaction).then(() => {
+    	return transaction.commit().then((data) => {
+    		const apiResponse = data[0];
+    		...
+    	});
     });
-});
+}).catch((err) => {
+	// handle error
+   ...
+ });
 
+```
+
+Note on **saving inside a Transaction**  
+By default, the entity data is validated before being saved in the Datastore (you can desactivate this behavious by setting [validateBeforeSave](#validateBeforeSave) to false in the Schema definition). The validation middleware is async, which means that to be able to save inside a transaction and at the same time validate before, you need to resolve the *save* method before being able to commit the transaction.  
+A solution to avoid this is to **manually validate** before saving and then desactivate the "pre" middelwares by setting **preHooksEnabled** to false on the entity.  
+**Important**: This solution will bypass any other middleware that you might have defined on "save" in your Schema.
+
+```js
+var user = new User({name:'john'});
+var transaction = gstore.transaction();
+
+transaction.run().then() => {
+	User.get(123, null, null, transaction).then((data) => {
+		const user = data[0];
+		user.email = 'abc@def.com';
+		const valid = user.validate();
+		
+		if (!valid) {
+		    // exit the transaction;
+		}
+		
+		// disable pre middleware(s)
+		user.preHooksEnabled = false;
+		
+		// save inside transaction
+		user.save(transaction);
+
+		// ... more transaction operations
+		
+		transaction.commit().then(() => {
+		    ...
+		});
+	});
+});
 ```
 
 
@@ -853,18 +935,27 @@ commentSchema.pre('save', function(next){
 
 ##### datastoreEntity()
 
-In case you need at any moment to fetch the entity data from the Datastore, this method will do just that right on the entity instance.
+In case you need at any moment to fetch the entity **data** from Goolge Datastore, this method will do just that right on the entity instance.
 
 ```js
 var user = new User({name:'John'});
 
 user.save(function(err) {
-	// userEntity is an *gstore* entity instance of a User Model
+	// the scope *this* is a gstore entity instance of a User Model
 
 	this.datastoreEntity(function(err, entity){
 		console.log(entity.get('name')); // 'John'
 	});
 });
+
+// or with a Promise...
+user.save().then(function() {
+	this.datastoreEntity().then((data){
+		const entity = data[0];
+		console.log(entity.name); // 'John'
+	});
+});
+
 ```
 
 ##### validate()
@@ -922,13 +1013,28 @@ var query = User.query()
             .start(nextPageCursor);
 ```
 
-**namespace**
+**namespace**  
 Model.query() takes an optional namespace parameter if needed.
 
 ```js
 var query = User.query('com.domain-dev')
                 .filter('name', '=', 'John');
 ...
+```
+
+If no callback is passed, a **Promise** is returned
+
+```js
+var query = User.query()
+            .filter('name', '=', 'John');
+
+query.run().then((result) => {
+    const response = result[0];
+
+    // response contains both the entities and a nextPageCursor for pagination
+    var entities       = response.entities;
+    var nextPageCursor = response.nextPageCursor; // not present if no more results
+});
 ```
 
 ### list()
@@ -1046,6 +1152,16 @@ var newSettings = {
 BlogPost.list(newSettings, ...);
 ```
 
+If no callback is passed, a **Promise** is returned
+
+```js
+BlogPost.list(/*settings*/).then((data) => {
+	const entities = data[0];
+    console.log(entities);
+});
+```
+
+
 ### findOne()
 ```js
 User.findOne({prop1:value, prop2:value2}, ancestors /*optional*/, namespace /*optional*/, callback);
@@ -1064,6 +1180,17 @@ User.findOne({email:'john@snow.com'}, function(err, entity) {
     console.log(entity.get('name'));
 });
 
+```
+
+If no callback is passed, a **Promise** is returned
+
+```js
+User.findOne({email:'john@snow.com'}).then((data) => {
+	const entity = data[0];
+
+    console.log(entity.plain());
+    console.log(entity.get('name')); // or directly entity.name;
+});
 ```
 
 ### findAround()
@@ -1085,6 +1212,15 @@ User.findAround('lastname', 'Jagger', {before:10}, function(err, entities){
 
 ```
 
+If no callback is passed, a **Promise** is returned
+
+```js
+BlogPost.findAround('publishedOn', '2016-03-01', {after:20}).then((data) => {
+	const entities = data[0];
+   ...
+});
+```
+
 ### deleteAll()
 ```js
 BlogPost.deleteAll(ancestors /*optional*/, namespace /*optional*/, callback)
@@ -1099,20 +1235,31 @@ BlogPost.deleteAll(function(err, result){
 });
 
 // With ancestors path and namespace
-BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...})
+BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev', function(err) {...});
 ```
 
+If no callback is passed, a **Promise** is returned
 
+```js
+BlogPost.deleteAll(['Grandpa', 1234, 'Dad', 'keyname'], 'com.new-domain.dev').then(() => {
+	...
+});
+```
 
 ## Middleware (Hooks)
-Middleware or 'Hooks' are functions that are executed right before or right after a specific action on an entity.
-For now, hooks are available for the following methods
+Middleware or 'Hooks' are functions that are executed right before or right after a specific action on an entity.  
+Hooks are available for the following methods
 
-- save (are also executed on Model.**update()**)
-- delete
+- Entity.save() (also executed on Model.**update()**)
+- Model.delete()
+- Model.findOne()
+- On your custom methods
+
+:exclamation: Breaking change since v0.8.0. Your hooks must return a Promise **and** you must use the new "Promise" version of the methods (=> not passing a callback). 
 
 ### Pre hooks
-Each pre hook has a "**next**" parameter that you have to call at the end of your function in order to run the next "pre" hook or execute to.
+The middleware that you declare receives the original parameter(s) passed to the method. You can modify them in your **resolve** passing an object with an **__override** property containing the new parameter(s) for the target method (be careful though... with great power comes great responsibility!).  See example below.  
+If you **reject** the Promise in a "pre" middleware, the target function is not executed.
 
 A common use case would be to hash a user's password before saving it into the Datastore.
 
@@ -1129,101 +1276,164 @@ var userSchema = new Schema({
 
 userSchema.pre('save', hashPassword);
 
-function hashPassword(next) {
+function hashPassword() {
+	// scope *this* is the entity instance
     var _this    = this;
-    var password = this.get('password');
+    var password = this.get('password'); // or this.password (virtual property)
 
     if (!password) {
-        return next();
+        // nothing to hash... exit
+        return Promise.resolve();
     }
-
-    bcrypt.genSalt(5, function (err, salt) {
-        if (err) return next(err);
-
-        bcrypt.hash(password, salt, null, function (err, hash) {
-            if (err) return next(err);
-             _this.set('password', hash);
-
-            // don't forget to call next()
-            next();
-        });
+    
+    return new Promise((resolve, reject) => {
+		bcrypt.genSalt(5, function (err, salt) {
+			if (err) {
+				return reject(err);
+			};
+			bcrypt.hash(password, salt, null, function (err, hash) {
+				if (err) {
+					return reject(err);
+				};
+			 	_this.set('password', hash); // or _this.password = hash;
+				return resolve();
+			});
+		});
     });
 }
 
 ...
 
 // Then when you create a new user and save it (or when updating it)
-// its password will automatically be hashed
+// the password will automatically be hashed
+
 var User = gstore.model('User');
 var user = new User({username:'john', password:'mypassword'});
+
 user.save(function(err, entity) {
     console.log(entity.get('password'));
-    // $2a$05$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
+    // $7a$01$Gd/7OGVnMyTDnaGC3QfEwuQ1qmjifli3MvjcP7UGFHAe2AuGzne5.
 });
 ```
 
 **Note**
-The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids is passed when calling Model.delete().
+The pre('delete') hook has its scope set on the entity to be deleted. **Except** when an *Array* of ids to delete is passed.
 
 ```js
-blogSchema.pre('delete', function(next) {
+blogSchema.pre('delete', function() {
 	console.log(this.entityKey); // the datastore entity key to be deleted
 
 	// By default this.entityData is not present because
 	// the entity is *not* fetched from the Datastore.
-	// You can call this.datastoreEntity() here (see the Entity section)
+	// You could call this.datastoreEntity() here (see the Entity section)
 	// to fetch the data from the Datastore and do any other logic
-	// before calling next()
+	// before resolving your middlewware
+	
+	// Access arguments passed
+	const args = Array.prototype.slice(arguments);
+	console.log(args[0]); // 1234 (from call below)
+	
+	// Here you would override the id to delete! At your own risk...
+	// The Array passed in __override are the parameter(s) for the target function
+	return Promise.resolve({ __override: [1235] });
 });
+
+BlogPost.delete(1234).then(() => {...});
+```
+
+You can also pass an **Array** of middleware to execute
+
+```js
+function middleware1() {
+	// Return a Promise
+	return Promise.resolve();
+}
+
+function middleware2() {
+	return Promise.resolve();
+}
+
+userSchema.pre('save', [middleware1, middleware2]);
+
+var user = new User({username:'john', password:'mypassword'});
+user.save().then((result) => { ... });
 ```
 
 ### Post hooks
-Post are defined the same way as pre hooks. The only difference is that there is no "next" function to call.
+Post are defined the same way as pre hooks. The main difference is that if you reject the Promise because of an error, the original method still resolves but the response is now an object with 2 properties. The **result** and **errorsPostHook** containing possible post hooks error(s).
 
 ```js
 var schema = new Schema({username:{...}});
 schema.post('save', function(){
     var email = this.get('email');
     // do anything needed, maybe send an email of confirmation?
+    
+    // If there is any error you'll reject your middleware
+    return Promise.reject({ code:500, message: 'Houston something went really wrong.' });
 });
+
+// ....
+
+var user = new User({ name: 'John' });
+
+user.save().then((data) => {
+	// You should only do this check if you have post hooks that can fail
+	const entity = data.errorsPostHook ? data[0].result : data[0];
+	
+	if (data.errorsPostHook) {
+		console.log(data.errorsPostHook[0].message); // 'Houston something went really wrong.'
+	}
+});
+
 ```
 
 **Note**
-The post('delete') hook does not have its scope mapped to the entity as it is not retrieved. But the hook has a first argument with the key(s) that have been deleted.
+The post('delete') hook does not have its scope mapped to the entity as it is not fetched from the datastore. Althought the *data* argument of the hook contain the key(s) of the entitie(s) deleted.
 
 ```js
-schema.post('delete', function(keys){
-	// keys can be one Key or an array of entity Keys that have been deleted.
+schema.post('delete', function(data){
+	// data[1] can be one Key or an array of entity Keys that have been deleted.
+	return Promise.resolve();
 });
 ```
 
+You can also pass an **Array** of middleware to execute
+
+```js
+function middleware1() {
+	return Promise.resolve();
+}
+
+function middleware2() {
+	return Promise.resolve();
+}
+
+userSchema.post('save', [middleware1, middleware2]);
+
+var user = new User({username:'john', password:'mypassword'});
+user.save().then((result) => { ... });
+```
 
 ### Transactions and Hooks
 
-When you save or delete an entity from inside a transaction, gstore adds an extra **execPostHooks()** method to the transaction.
+When you save or delete an entity from inside a transaction, gstore adds an **execPostHooks()** method to the transaction instance.  
 If the transaction succeeds and you have any post('save') or post('delete') hooks on any of the entities modified during the transaction you need to call this method to execute them.
 
 ```js
-
 var transaction = gstore.transaction();
 
-transaction.run(function(err) {
-    if (err) {
-        // handle error
-        return;
-    }
-
-    var user = new User({name:'john'}); // user could also come from a get()
+transaction.run().then(() => {
+    var user = new User({name:'john'});
+    user.preHooksEnabled = false; // disable "pre" hooks (see entity section)
     user.save(transaction);
 
     BlogPost.delete(123, null, null, transaction);
 
-    transaction.commit(function(err) {
-        if (err) {
-            // handle error
-            return;
-        }
-        transaction.execPostHooks();
+    transaction.commit().then((data) => {
+        transaction.execPostHooks().then(() => {
+            const apiResponse = data[0];
+        	  // all done!
+        });
     });
 });
 
@@ -1236,7 +1446,7 @@ Custom methods can be attached to entities instances.
 ```js
 var blogPostSchema = new Schema({title:{}});
 
-// Custom method to query all "child" Text entities
+// Custom method to retrieve all children Text entities
 blogPostSchema.methods.texts = function(cb) {
 	var query = this.model('Text')
 						.query()
@@ -1252,20 +1462,22 @@ blogPostSchema.methods.texts = function(cb) {
 
 ...
 
-// You can then call it on all instances of BlogPost
-var blogPost = new BlogPost({title:'My Title'});
-blgoPost.texts(function(err, texts) {
-    console.log(texts); // texts entities;
+// You can then call it on an entity instance of BlogPost
+BlogPost.get(123).then((data) => {
+	const blogEntity = data[0];
+	blogEntity.texts(function(err, texts) {
+	    console.log(texts); // texts entities;
+	});
 });
 ```
 
-Note that entities instances can also access other models through `entity.model('MyModel')`. *Denormalization* can then easily be done with a custom method:
+Note how entities instances can access other models through `entity.model('OtherModel')`. *Denormalization* can then easily be done with a custom method:
 
 ```js
-...
-// custom getImage() method on the User Schema
+// Add custom "getImage()" method on the User Schema
 userSchema.methods.getImage = function(cb) {
     // Any type of query can be done here
+    // note this.get('imageIdx') could also be accessed by virtual property: this.imageIdx
     return this.model('Image').get(this.get('imageIdx'), cb);
 };
 ...
@@ -1274,6 +1486,17 @@ var user = new User({name:'John', imageIdx:1234});
 user.getImage(function(err, imageEntity) {
     user.set('profilePict', imageEntity.get('url'));
     user.save(function(err){...});
+});
+
+// Or with Promises
+userSchema.methods.getImage = function() {
+    return this.model('Image').get(this.imageIdx);
+};
+...
+var user = new User({name:'John', imageIdx:1234});
+user.getImage().then((data) => {
+	const imageEntity = data[0];
+    ...
 });
 ```
 

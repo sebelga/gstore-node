@@ -1,27 +1,27 @@
-/*jshint -W030 */
 
-const chai       = require('chai');
-const expect     = chai.expect;
-const sinon      = require('sinon');
+'use strict';
+
+const chai = require('chai');
+const sinon = require('sinon');
 const gstore = require('../lib');
-const Model      = require('../lib/model');
-const pkg        = require('../package.json');
+const pkg = require('../package.json');
+
+const expect = chai.expect;
+const assert = chai.assert;
 
 const ds = require('@google-cloud/datastore')({
-    namespace : 'com.mydomain',
-    apiEndpoint: 'http://localhost:8080'
+    namespace: 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080',
 });
 
-describe('Datastools', function() {
-    "use strict";
-
+describe('gstore-node', () => {
     let schema;
 
     it('should initialized its properties', () => {
-        expect(gstore.models).to.exist;
-        expect(gstore.modelSchemas).to.exist;
-        expect(gstore.options).to.exist;
-        expect(gstore.Schema).to.exist;
+        assert.isDefined(gstore.models);
+        assert.isDefined(gstore.modelSchemas);
+        assert.isDefined(gstore.options);
+        assert.isDefined(gstore.Schema);
     });
 
     it('should save ds instance', () => {
@@ -29,8 +29,8 @@ describe('Datastools', function() {
         expect(gstore.ds).to.equal(ds);
     });
 
-    it('should throw an error if ds passed on connect is not a Datastore instance', function() {
-        let fn = () => {
+    it('should throw an error if ds passed on connect is not a Datastore instance', () => {
+        const fn = () => {
             gstore.connect({});
         };
 
@@ -40,94 +40,90 @@ describe('Datastools', function() {
     describe('should create models', () => {
         beforeEach(() => {
             schema = new gstore.Schema({
-                title : {type:'string'}
+                title: { type: 'string' },
             });
 
-            gstore.models       = {};
+            gstore.models = {};
             gstore.modelSchemas = {};
-            gstore.options      = {};
+            gstore.options = {};
         });
 
         it('and add it with its schema to the cache', () => {
-            var Model = gstore.model('Blog', schema);
+            const Model = gstore.model('Blog', schema);
 
-            expect(Model).to.exist;
-            expect(gstore.models.Blog).to.exist;
-            expect(gstore.modelSchemas.Blog).to.exist;
+            assert.isDefined(Model);
+            assert.isDefined(gstore.models.Blog);
+            assert.isDefined(gstore.modelSchemas.Blog);
         });
 
         it('and convert schema object to Schema class instance', () => {
             schema = {};
 
-            var Model = gstore.model('Blog', schema);
+            const Model = gstore.model('Blog', schema);
 
             expect(Model.schema.constructor.name).to.equal('Schema');
         });
 
         it('and attach schema to compiled Model', () => {
-            let Blog       = gstore.model('Blog', schema);
-            let schemaUser = new gstore.Schema({name: {type: 'string'}});
-            let User       = gstore.model('User', schemaUser);
+            const Blog = gstore.model('Blog', schema);
+            const schemaUser = new gstore.Schema({ name: { type: 'string' } });
+            const User = gstore.model('User', schemaUser);
 
             expect(Blog.schema).not.equal(User.schema);
         });
 
         it('and not add them to cache if told so', () => {
-            let options = {cache:false};
+            const options = { cache: false };
 
             gstore.model('Image', schema, options);
 
-            expect(gstore.models.Image).be.undefined;
+            assert.isUndefined(gstore.models.Image);
         });
 
-        it ('reading them from cache', () => {
-            let mockModel          = {schema: schema};
+        it('reading them from cache', () => {
+            const mockModel = { schema };
             gstore.models.Blog = mockModel;
 
-            let model = gstore.model('Blog', schema);
+            const model = gstore.model('Blog', schema);
 
             expect(model).equal(mockModel);
         });
 
-        it ('allowing to pass an existing Schema', () => {
+        it('allowing to pass an existing Schema', () => {
             gstore.modelSchemas.Blog = schema;
 
-            let model = gstore.model('Blog', schema);
+            const model = gstore.model('Blog', schema);
 
             expect(model.schema).to.equal(schema);
         });
 
-        it ('and throw error if trying to override schema', () => {
-            let newSchema = new gstore.Schema({});
-            let mockModel = {schema: schema};
+        it('and throw error if trying to override schema', () => {
+            const newSchema = new gstore.Schema({});
+            const mockModel = { schema };
             gstore.models.Blog = mockModel;
 
-            let fn = () => {
-                return gstore.model('Blog', newSchema);
-            };
+            const fn = () => gstore.model('Blog', newSchema);
 
             expect(fn).to.throw(Error);
         });
 
-        it ('and throw error if no Schema is passed', () => {
-            let fn = () => {
-                return gstore.model('Blog');
-            };
+        it('and throw error if no Schema is passed', () => {
+            const fn = () => gstore.model('Blog');
 
             expect(fn).to.throw(Error);
         });
     });
 
     it('should return the models names', () => {
-        gstore.models = {Blog:{}, Image:{}};
+        gstore.models = { Blog: {}, Image: {} };
 
-        let names = gstore.modelNames();
+        const names = gstore.modelNames();
 
         expect(names).eql(['Blog', 'Image']);
     });
 
     it('should return the package version', () => {
-        let version = pkg.version;
+        const version = pkg.version;
 
         expect(gstore.version).equal(version);
     });
@@ -142,9 +138,9 @@ describe('Datastools', function() {
         gstore.connect(ds);
         sinon.spy(ds, 'transaction');
 
-        var transaction = gstore.transaction();
+        const transaction = gstore.transaction();
 
-        expect(ds.transaction.called).be.true;
+        expect(ds.transaction.called).equal(true);
         expect(transaction.constructor.name).equal('Transaction');
     });
 });

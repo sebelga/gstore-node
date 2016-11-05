@@ -1,28 +1,27 @@
+'use strict';
 
-const chai   = require('chai');
-const expect = chai.expect;
-const sinon  = require('sinon');
+const chai = require('chai');
 const defaultValues = require('../../lib/helpers/defaultValues');
 
-describe('Query Helpers', () => {
-    "use strict";
+const expect = chai.expect;
 
+describe('Query Helpers', () => {
     describe('defaultValues constants handler()', () => {
         it('should return the current time', () => {
-            let value = defaultValues.NOW;
-            let result = defaultValues.__handler__(value);
+            const value = defaultValues.NOW;
+            const result = defaultValues.__handler__(value);
 
             /**
              * we might have a slightly difference, that's ok :)
              */
-            let dif = Math.abs(result.getTime() - new Date().getTime());
+            const dif = Math.abs(result.getTime() - new Date().getTime());
 
-            expect(dif).to.be.below(10);
+            expect(dif).to.be.below(100);
         });
 
         it('should return null if value passed not in map', () => {
-            let value = 'DOES_NOT_EXIST';
-            let result = defaultValues.__handler__(value);
+            const value = 'DOES_NOT_EXIST';
+            const result = defaultValues.__handler__(value);
 
             expect(result).equal(null);
         });

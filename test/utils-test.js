@@ -1,35 +1,24 @@
-var chai   = require('chai');
-var expect = chai.expect;
-var utils  = require('../lib/utils');
+'use strict';
+
+const chai = require('chai');
+const utils = require('../lib/utils');
+
+const expect = chai.expect;
 
 describe('Utils', () => {
-    "use strict";
+    describe('promisify()', () => {
+        it('should not promisify methods already promisified', () => {
+            class Test {
+                save() {
+                    return Promise.resolve(this);
+                }
+            }
 
-    describe('should create shallow copy of default options', () => {
-        it ('passing existing options', () => {
-            var options = {sendMail:true};
-            var defaultOptions = {modified:false};
+            Test.prototype.save.__promisified = true;
+            const ref = Test.prototype.save;
+            Test.save = utils.promisify(Test.prototype.save);
 
-            options = utils.options(defaultOptions, options);
-
-            expect(options.modified).to.exist;
-        });
-
-        it ('not overriding an existing key', () => {
-            var options = {modified:true};
-            var defaultOptions = {modified:false};
-
-            options = utils.options(defaultOptions, options);
-
-            expect(options.modified).to.be.true;
-        });
-
-        it ('and create object if nothing is passed', () => {
-            var defaultOptions = {modified:false};
-
-            var options = utils.options(defaultOptions);
-
-            expect(options.modified).to.exist;
+            expect(Test.save).equal(ref);
         });
     });
 });

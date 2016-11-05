@@ -1,71 +1,68 @@
 'use strict';
 
-const is = require('is');
-let googleDatastore;
+const ds = require('@google-cloud/datastore');
 
 class Datastore {
-    
+
     constructor(options) {
-        googleDatastore = require('@google-cloud/datastore')(options);
+        this.googleDatastore = ds(options);
     }
 
     key(options) {
-        return googleDatastore.key(options);
+        return this.googleDatastore.key(options);
     }
 
-    save(entity, cb) {
-        return cb(null);
+    save() {
+        return Promise.resolve(this);
     }
 
-    get(entityKey, cb) {
-        return cb(null);
+    get() {
+        return Promise.resolve(this);
     }
 
-    delete(key, cb) {
-        return cb(null);
+    delete() {
+        return Promise.resolve(this);
     }
 
     createQuery() {
-        return googleDatastore.createQuery.apply(googleDatastore, arguments);
+        return this.googleDatastore.createQuery.apply(this.googleDatastore, arguments);
     }
 
-    runQuery(namespace, query, cb) {
-        return cb(null, [], {moreResults : 'MORE_RESULT'});
+    runQuery() {
+        return Promise.resolve([[], { moreResults: 'MORE_RESULT', __ref: this }]);
     }
 
     transaction() {
-        return {};
+        return { __ref: this };
     }
 
     int() {
-        return googleDatastore.int.apply(googleDatastore, arguments);
+        return this.googleDatastore.int.apply(this.googleDatastore, arguments);
     }
 
     double() {
-        return googleDatastore.double.apply(googleDatastore, arguments);
+        return this.googleDatastore.double.apply(this.googleDatastore, arguments);
     }
 
     geoPoint() {
-        return googleDatastore.geoPoint.apply(googleDatastore, arguments);
+        return this.googleDatastore.geoPoint.apply(this.googleDatastore, arguments);
     }
 
     get MORE_RESULTS_AFTER_LIMIT() {
-        return googleDatastore.MORE_RESULTS_AFTER_LIMIT;
+        return this.googleDatastore.MORE_RESULTS_AFTER_LIMIT;
     }
 
     get MORE_RESULTS_AFTER_CURSOR() {
-        return googleDatastore.MORE_RESULTS_AFTER_CURSOR;
+        return this.googleDatastore.MORE_RESULTS_AFTER_CURSOR;
     }
 
     get NO_MORE_RESULTS() {
-        return googleDatastore.NO_MORE_RESULTS;
+        return this.googleDatastore.NO_MORE_RESULTS;
     }
 
     get KEY() {
-        return googleDatastore.KEY;
+        return this.googleDatastore.KEY;
     }
 }
 
-module.exports = function(options) {
-    return new Datastore(options);
-}
+module.exports = options => new Datastore(options);
