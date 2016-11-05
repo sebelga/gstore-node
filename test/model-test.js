@@ -891,11 +891,6 @@ describe('Model', function() {
                 expect(response.entities).deep.equal(mockEntities);
                 expect(response.nextPageCursor).equal('abcdef');
 
-                // let entities = response.entities;
-                // entities = entities.map((entity) => {
-                //     delete entity.id;
-                //     return ModelInstance.__model(entity, null, null, null, entity[ds.KEY]);
-                // });
                 done();
             });
         });
@@ -1660,6 +1655,20 @@ describe('Model', function() {
             expect(valid2.success).be.false;
             expect(valid3.success).be.false;
             expect(valid4.success).be.false;
+        });
+
+        it('don\'t validate empty value', () => {
+            const model = new ModelInstance({email:undefined});
+            const model2 = new ModelInstance({email:null});
+            const model3 = new ModelInstance({email:''});
+
+            const valid = model.validate();
+            const valid2 = model2.validate();
+            const valid3 = model3.validate();
+
+            expect(valid.success).be.true;
+            expect(valid2.success).be.true;
+            expect(valid3.success).be.true;
         });
 
         it ('no type validation', () => {
