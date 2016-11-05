@@ -696,7 +696,6 @@ By default, if you don't pass an id when you create an instance, the entity id w
 ...
 // String id
 var blogPost = new BlogPost(data, 'stringId');
-// warning: a '1234' id will be converted to integer 1234
 
 // Integer ir
 var blogPost = new BlogPost(data, 1234);
