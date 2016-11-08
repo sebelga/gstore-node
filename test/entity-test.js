@@ -415,6 +415,20 @@ describe('Entity', () => {
             });
         });
 
+        it ('should return 404 not found if no entity returned', () => {
+            sinon.stub(ds, 'get', function(key, cb) {
+                cb(null);
+            });
+
+            var model = new ModelInstance({});
+
+            model.datastoreEntity((err, entity) => {
+                expect(err.code).equal(404);
+                expect(err.message).equal('Entity not found');
+                ds.get.restore();
+            });
+        });
+
         it ('should deal with error while fetching the entity', function() {
             let error = {code:500, message:'Something went bad'};
             sinon.stub(ds, 'get', function(key, cb) {
