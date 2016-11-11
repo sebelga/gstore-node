@@ -103,20 +103,6 @@ describe('Entity', () => {
             expect(entity.entityData.email).equal(undefined);
         });
 
-        it('should add entity properties for fields defined in the schema', () => {
-            let model = gstore.model('BlogPost', schema);
-
-            let entity = new model({
-                name: 'Jane',
-                lastname: 'Does',
-                password: 'jane@does.com'
-            });
-
-            expect(entity.name).to.exist;
-            expect(entity.lastname).to.exist;
-            expect(entity.password).to.exist;
-        });
-
         it('should call handler for default values in gstore.defaultValues constants', () => {
             clock.restore();
             sinon.spy(gstore.defaultValues, '__handler__');
