@@ -344,6 +344,38 @@ describe('Entity', () => {
 
             expect(user.entityData.name).equal('Peter');
         });
+
+        it('should get data on entity properties from the entity data', () => {
+            let model = gstore.model('BlogPost', schema);
+
+            let entity = new model({
+                name: 'Jane',
+                lastname: 'Does',
+                password: 'JanesPassword'
+            });
+
+            expect(entity.name).to.equal('Jane');
+            expect(entity.lastname).to.equal('Does');
+            expect(entity.password).to.equal('JanesPassword');
+        });
+
+        it('should reflect changes to entity properties in the entity data', () => {
+            let model = gstore.model('BlogPost', schema);
+
+            let entity = new model({
+                name: 'Jane',
+                lastname: 'Does',
+                password: 'JanesPassword'
+            });
+
+            entity.name = 'John';
+            entity.lastname = 'Doe';
+            entity.password = 'JoesPassword';
+
+            expect(entity.entityData.name).to.equal('John');
+            expect(entity.entityData.lastname).to.equal('Doe');
+            expect(entity.entityData.password).to.equal('JoesPassword');
+        });
     });
 
     describe('plain()', function() {
