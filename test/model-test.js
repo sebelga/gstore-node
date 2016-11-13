@@ -877,6 +877,25 @@ describe('Model', () => {
             expect(fn).to.throw(Error);
         });
 
+        it("should result in model objects for a model query", function(done) {
+            let query = ModelInstance.modelQuery()
+                .filter('name', '=', 'John');
+
+            const responseQueries = [mockEntities, {
+                moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+                endCursor: 'abcdef',
+            }];
+
+            sinon.stub(query, '__originalRun').resolves(responseQueries);
+
+            query.run((err, response) => {
+                expect(response.entities[0] instanceof Entity).be.true;
+                expect(response.entities[1] instanceof Entity).be.true;
+
+                done();
+            });
+        });
+
         it('should still work with a callback', () => {
             query = ModelInstance.query()
                 .filter('name', 'John');
