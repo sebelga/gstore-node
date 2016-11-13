@@ -970,6 +970,19 @@ describe('Model', function() {
 
             expect(fn).to.throw(Error);
         });
+
+        it("should result in model objects for a model query", function(done) {
+            let query = ModelInstance.modelQuery()
+                .filter('name', '=', 'John');
+
+            query.run((err, response) => {
+                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+                expect(response.entities[0] instanceof Entity).be.true;
+                expect(response.entities[1] instanceof Entity).be.true;
+
+                done();
+            });
+        });
     });
 
     describe('shortcut queries', () => {
