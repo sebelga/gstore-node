@@ -11,3 +11,9 @@ branches:
   only:
   - master
   - /^release\/.*$/
+
+script:
+  - npm test
+
+after_success:
+  - npm run coveralls

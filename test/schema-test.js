@@ -1,143 +1,131 @@
-/*jshint -W030 */
-var chai       = require('chai');
-var expect     = chai.expect;
+'use strict';
 
-var Schema = require('../lib').Schema;
+const chai = require('chai');
+const Schema = require('../lib').Schema;
+
+const expect = chai.expect;
+const assert = chai.assert;
 
 describe('Schema', () => {
-    "use strict";
-
     describe('contructor', () => {
         it('should initialized properties', () => {
-            let schema = new Schema({});
+            const schema = new Schema({});
 
-            expect(schema.methods).to.exist;
-            expect(schema.shortcutQueries).to.exist;
-            expect(schema.paths).to.exist;
-            expect(schema.callQueue).to.exist;
-            expect(schema.s).to.exist;
-            expect(schema.s.hooks.constructor.name).to.equal('Kareem');
-            expect(schema.options).to.exist;
-            expect(schema.options.queries).deep.equal({
-                readAll : false
-            });
+            assert.isDefined(schema.methods);
+            assert.isDefined(schema.shortcutQueries);
+            assert.isDefined(schema.paths);
+            assert.isDefined(schema.callQueue);
+            assert.isDefined(schema.options);
+            expect(schema.options.queries).deep.equal({ readAll: false });
         });
 
-        it ('should merge options passed', () => {
-            let schema = new Schema({}, {
-                newOption:'myValue',
-                queries:{
-                    simplifyResult:false
-                }
+        it('should merge options passed', () => {
+            const schema = new Schema({}, {
+                newOption: 'myValue',
+                queries: { simplifyResult: false },
             });
 
             expect(schema.options.newOption).equal('myValue');
-            expect(schema.options.queries.simplifyResult).be.false;
+            expect(schema.options.queries.simplifyResult).equal(false);
         });
 
-        it ('should create its paths from obj passed', () => {
-            let schema = new Schema({
-                property1:{type:'string'},
-                property2:{type:'number'}
+        it('should create its paths from obj passed', () => {
+            const schema = new Schema({
+                property1: { type: 'string' },
+                property2: { type: 'number' },
             });
 
-            expect(schema.paths.property1).to.exist;
-            expect(schema.paths.property2).to.exist;
+            assert.isDefined(schema.paths.property1);
+            assert.isDefined(schema.paths.property2);
         });
 
-        // it('if no type passed, default to string', () => {
-        //     let schema = new Schema({name:{}});
-        //
-        //     expect(schema.paths.name.type).equal('string');
-        // });
-
-        it ('should not allowed reserved properties on schema', function() {
-            let fn = () => {
-                let schema = new Schema({ds:123});
+        it('should not allowed reserved properties on schema', () => {
+            const fn = () => {
+                const schema = new Schema({ ds: 123 });
+                return schema;
             };
 
             expect(fn).to.throw(Error);
         });
 
         it('should register default middelwares', () => {
-            let schema = new Schema({});
+            const schema = new Schema({});
 
-            expect(schema.callQueue.length).equal(1);
-            expect(schema.callQueue[0][0]).equal('pre');
-            expect(schema.callQueue[0][1][0]).equal('save');
+            assert.isDefined(schema.callQueue.entity.save);
+            expect(schema.callQueue.entity.save.pres.length).equal(1);
         });
     });
 
     describe('add method', () => {
         let schema;
 
-        beforeEach(function() {
+        beforeEach(() => {
             schema = new Schema({});
             schema.methods = {};
         });
 
-        it ('should add it to its methods table', () => {
-            let fn = () => {};
+        it('should add it to its methods table', () => {
+            const fn = () => { };
             schema.method('doSomething', fn);
 
-            expect(schema.methods.doSomething).to.exist;
+            assert.isDefined(schema.methods.doSomething);
             expect(schema.methods.doSomething).to.equal(fn);
         });
 
-        it ('should not do anything if value passed is not a function', () => {
+        it('should not do anything if value passed is not a function', () => {
             schema.method('doSomething', 123);
 
-            expect(schema.methods.doSomething).to.not.exist;
+            assert.isUndefined(schema.methods.doSomething);
         });
 
-        it ('should allow to pass a table of functions and validate type', () => {
-            let fn = () => {};
+        it('should allow to pass a table of functions and validate type', () => {
+            const fn = () => { };
             schema.method({
-                doSomething:fn,
-                doAnotherThing:123
+                doSomething: fn,
+                doAnotherThing: 123,
             });
 
-            expect(schema.methods.doSomething).exist;
+            assert.isDefined(schema.methods.doSomething);
             expect(schema.methods.doSomething).to.equal(fn);
-            expect(schema.methods.doAnotherThing).not.exist;
+            assert.isUndefined(schema.methods.doAnotherThing);
         });
 
-        it ('should only allow function and object to be passed', () => {
-            schema.method(10, () => {});
+        it('should only allow function and object to be passed', () => {
+            schema.method(10, () => { });
 
             expect(Object.keys(schema.methods).length).equal(0);
         });
     });
 
     describe('modify / access paths table', () => {
-        it ('should read', function() {
-            let data   = {keyname: {type: 'string'}};
-            let schema = new Schema(data);
+        it('should read', () => {
+            const data = { keyname: { type: 'string' } };
+            const schema = new Schema(data);
 
-            let pathValue = schema.path('keyname');
+            const pathValue = schema.path('keyname');
 
             expect(pathValue).to.equal(data.keyname);
         });
 
-        it ('should not return anything if does not exist', () => {
-            let schema = new Schema({});
+        it('should not return anything if does not exist', () => {
+            const schema = new Schema({});
 
-            let pathValue = schema.path('keyname');
+            const pathValue = schema.path('keyname');
 
-            expect(pathValue).to.not.exist;
+            assert.isUndefined(pathValue);
         });
 
-        it ('should set', function() {
-            let schema = new Schema({});
-            schema.path('keyname', {type:'string'});
+        it('should set', () => {
+            const schema = new Schema({});
+            schema.path('keyname', { type: 'string' });
 
-            expect(schema.paths.keyname).to.exist;
+            assert.isDefined(schema.paths.keyname);
         });
 
-        it ('should not allow to set reserved key', function() {
-            let schema = new Schema({});
+        it('should not allow to set reserved key', () => {
+            const schema = new Schema({});
 
-            let fn = () => {
+            const fn = () => {
                 schema.path('ds', {});
             };
 
@@ -147,52 +135,32 @@ describe('Schema', () => {
 
     describe('callQueue', () => {
         it('should add pre hooks to callQueue', () => {
-            let schema = new Schema({});
-            schema.callQueue = [];
+            const preMiddleware = () => { };
+            const schema = new Schema({});
+            schema.callQueue = { model: {}, entity: {} };
 
-            schema.pre('save', (next) => {
-                next();
-            });
+            schema.pre('save', preMiddleware);
 
-            expect(schema.callQueue.length).equal(1);
+            assert.isDefined(schema.callQueue.entity.save);
+            expect(schema.callQueue.entity.save.pres[0]).equal(preMiddleware);
         });
 
         it('should add post hooks to callQueue', () => {
-            let schema = new Schema({});
-            schema.callQueue = [];
+            const postMiddleware = () => { };
+            const schema = new Schema({});
+            schema.callQueue = { model: {}, entity: {} };
 
-            schema.post('save', (next) => {
-                next();
-            });
+            schema.post('save', postMiddleware);
 
-            expect(schema.callQueue.length).equal(1);
-        });
-    });
-
-    describe('query hooks', () => {
-        it('should add pre findOne query hook to Kareem', () => {
-            let schema = new Schema({});
-
-            schema.pre('findOne', (next) => {
-                next();
-            });
-
-            expect(schema.s.hooks._pres.findOne).to.exist;
-        });
-
-        it('should add post findOne query hook to Kareem', () => {
-            let schema = new Schema({});
-
-            schema.post('findOne', () => {});
-
-            expect(schema.s.hooks._posts.findOne).to.exist;
+            assert.isDefined(schema.callQueue.entity.save);
+            expect(schema.callQueue.entity.save.post[0]).equal(postMiddleware);
         });
     });
 
     describe('virtual()', () => {
         it('should create new VirtualType', () => {
-            var schema = new Schema({});
-            var fn     = () => {};
+            const schema = new Schema({});
+            const fn = () => {};
             schema.virtual('fullname', fn);
 
             expect(schema.virtuals.fullname.constructor.name).equal('VirtualType');
@@ -200,12 +168,12 @@ describe('Schema', () => {
     });
 
     it('add shortCut queries settings', () => {
-        let schema = new Schema({});
-        let listQuerySettings = {limit:10, filters:[]};
+        const schema = new Schema({});
+        const listQuerySettings = { limit: 10, filters: [] };
 
         schema.queries('list', listQuerySettings);
 
-        expect(schema.shortcutQueries.list).to.exist;
+        assert.isDefined(schema.shortcutQueries.list);
         expect(schema.shortcutQueries.list).to.equal(listQuerySettings);
     });
 });

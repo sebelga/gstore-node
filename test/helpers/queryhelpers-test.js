@@ -1,12 +1,13 @@
-const chai   = require('chai');
-const expect = chai.expect;
-const sinon  = require('sinon');
-const ds     = require('@google-cloud/datastore')();
+'use strict';
 
+const chai = require('chai');
+const sinon = require('sinon');
+const ds = require('@google-cloud/datastore')();
 const queryHelpers = require('../../lib/helper').QueryHelpers;
 
+const expect = chai.expect;
+
 describe('Query Helpers', () => {
-    "use strict";
     let query;
 
     describe('should build a Query from options', () => {
@@ -14,20 +15,20 @@ describe('Query Helpers', () => {
             query = ds.createQuery();
         });
 
-        it ('and throw error if no query passed', () => {
-            let fn = () => {queryHelpers.buildFromOptions();};
+        it('and throw error if no query passed', () => {
+            const fn = () => { queryHelpers.buildFromOptions(); };
 
             expect(fn).to.throw(Error);
         });
 
-        it ('and throw error if query is not a gcloud Query', () => {
-            let fn = () => {queryHelpers.buildFromOptions({});};
+        it('and throw error if query is not a gcloud Query', () => {
+            const fn = () => { queryHelpers.buildFromOptions({}); };
 
             expect(fn).to.throw(Error);
         });
 
-        it ('and not modify query if no options passed', () => {
-            let originalQuery = {};
+        it('and not modify query if no options passed', () => {
+            const originalQuery = {};
             Object.keys(query).forEach((k) => {
                 originalQuery[k] = query[k];
             });
@@ -40,12 +41,12 @@ describe('Query Helpers', () => {
             expect(query.selectVal).deep.equal(originalQuery.selectVal);
         });
 
-        it ('and update query', () => {
-            let options = {
-                limit : 10,
-                order : {property:'name', descending:true},
-                filters : [],
-                select : 'name'
+        it('and update query', () => {
+            const options = {
+                limit: 10,
+                order: { property: 'name', descending: true },
+                filters: [],
+                select: 'name',
             };
 
             query = queryHelpers.buildFromOptions(query, options);
@@ -57,9 +58,9 @@ describe('Query Helpers', () => {
             expect(query.selectVal).deep.equal(['name']);
         });
 
-        it ('and allow order on serveral properties', () => {
-            let options = {
-                order : [{property:'name', descending:true}, {property:'age'}]
+        it('and allow order on serveral properties', () => {
+            const options = {
+                order: [{ property: 'name', descending: true }, { property: 'age' }],
             };
 
             query = queryHelpers.buildFromOptions(query, options);
@@ -67,9 +68,9 @@ describe('Query Helpers', () => {
             expect(query.orders.length).equal(2);
         });
 
-        it ('and allow select to be an Array', () => {
-            let options = {
-                select : ['name', 'lastname', 'email']
+        it('and allow select to be an Array', () => {
+            const options = {
+                select: ['name', 'lastname', 'email'],
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
@@ -78,8 +79,8 @@ describe('Query Helpers', () => {
         });
 
         it('and update hasAncestor in query', () => {
-            let options = {
-                ancestors: ['Parent', 1234]
+            const options = {
+                ancestors: ['Parent', 1234],
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
@@ -89,21 +90,21 @@ describe('Query Helpers', () => {
             expect(query.filters[0].val.id).equal(1234);
         });
 
-        it ('and throw Error if no Datastore instance passed when passing ancestors', () => {
-            let options = {
-                ancestors: ['Parent', 123]
+        it('and throw Error if no Datastore instance passed when passing ancestors', () => {
+            const options = {
+                ancestors: ['Parent', 123],
             };
 
-            let fn = () => {
+            const fn = () => {
                 query = queryHelpers.buildFromOptions(query, options);
             };
 
             expect(fn).to.throw(Error);
         });
 
-        it ('and define one filter', () => {
-            let options = {
-                filters: ['name', '=', 'John']
+        it('and define one filter', () => {
+            const options = {
+                filters: ['name', '=', 'John'],
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
@@ -114,9 +115,9 @@ describe('Query Helpers', () => {
             expect(query.filters[0].val).equal('John');
         });
 
-        it ('and define several filters', () => {
-            let options = {
-                filters: [['name', '=', 'John'], ['lastname', 'Snow'], ['age', '<', 30]]
+        it('and define several filters', () => {
+            const options = {
+                filters: [['name', '=', 'John'], ['lastname', 'Snow'], ['age', '<', 30]],
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
@@ -129,22 +130,22 @@ describe('Query Helpers', () => {
         });
 
         it('and execute a function in a filter value, without modifying the filters Array', () => {
-            let spy = sinon.spy();
-            let options = {
-                filters: [['modifiedOn', '<', spy]]
+            const spy = sinon.spy();
+            const options = {
+                filters: [['modifiedOn', '<', spy]],
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);
 
-            expect(spy.calledOnce).be.true;
+            expect(spy.calledOnce).equal(true);
             expect(options.filters[0][2]).to.equal(spy);
         });
 
-        it ('and throw error if wrong format for filters', () => {
-            let options = {
-                filters: 'name'
+        it('and throw error if wrong format for filters', () => {
+            const options = {
+                filters: 'name',
             };
-            let fn = () => {
+            const fn = () => {
                 query = queryHelpers.buildFromOptions(query, options, ds);
             };
 
@@ -152,8 +153,8 @@ describe('Query Helpers', () => {
         });
 
         it('and add start cursor', () => {
-            let options = {
-                start: 'abcdef'
+            const options = {
+                start: 'abcdef',
             };
 
             query = queryHelpers.buildFromOptions(query, options, ds);

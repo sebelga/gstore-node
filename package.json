@@ -1,9 +1,11 @@
 {
   "name": "gstore-node",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "gstore-node is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
+    "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
+    "pretest": "npm run lint",
     "test": "mocha test --recursive",
     "coverage": "istanbul cover _mocha -- -R spec --recursive",
     "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec --recursive && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
@@ -22,28 +24,45 @@
     "url": "https://github.com/sebelga/gstore-node.git"
   },
   "author": "Sébastien Loix",
+  "contributors": [
+    {
+      "name": "Sébastien Loix",
+      "email": "sabee77@gmail.com",
+      "url": "https://github.com/sebelga"
+    },
+    {
+      "name": "Micah Allen",
+      "url": "https://github.com/micaww"
+    },
+    {
+      "name": "jfbenckhuijsen",
+      "url": "https://github.com/jfbenckhuijsen"
+    }
+  ],
   "license": "ISC",
   "dependencies": {
     "@google-cloud/datastore": "^0.5.0",
     "arrify": "^1.0.1",
-    "async": "^2.0.0-rc.5",
     "extend": "^3.0.0",
-    "hooks-fixed": "^1.1.0",
     "is": "^3.1.0",
-    "kareem": "^1.1.0",
-    "moment": "^2.13.0",
-    "regexp-clone": "0.0.1",
-    "validator": "^5.2.0"
+    "moment": "^2.16.0",
+    "promised-hooks": "^1.1.0",
+    "validator": "^6.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",
     "babel-preset-es2015": "^6.9.0",
     "chai": "^3.5.0",
     "coveralls": "^2.11.9",
+    "eslint": "^3.10.0",
+    "eslint-config-airbnb-base": "^10.0.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-mocha": "^4.7.0",
     "istanbul": "^0.4.3",
-    "mocha": "^2.4.5",
+    "mocha": "^3.1.2",
     "mocha-lcov-reporter": "^1.2.0",
     "nconf": "^0.8.4",
-    "sinon": "^1.17.4"
+    "sinon": "^1.17.4",
+    "sinon-as-promised": "^4.0.2"
   }
 }
