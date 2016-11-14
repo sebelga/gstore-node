@@ -4,7 +4,7 @@
   "description": "gstore-node is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint ./lib && eslint ./test",
+    "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
     "pretest": "npm run lint",
     "test": "mocha test --recursive",
     "coverage": "istanbul cover _mocha -- -R spec --recursive",
@@ -55,7 +55,7 @@
     "chai": "^3.5.0",
     "coveralls": "^2.11.9",
     "eslint": "^3.10.0",
-    "eslint-config-airbnb": "^13.0.0",
+    "eslint-config-airbnb-base": "^10.0.1",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-mocha": "^4.7.0",
     "istanbul": "^0.4.3",

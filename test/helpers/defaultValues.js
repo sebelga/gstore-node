@@ -16,7 +16,7 @@ describe('Query Helpers', () => {
              */
             const dif = Math.abs(result.getTime() - new Date().getTime());
 
-            expect(dif).to.be.below(10);
+            expect(dif).to.be.below(100);
         });
 
         it('should return null if value passed not in map', () => {
