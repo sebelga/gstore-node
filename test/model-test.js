@@ -881,20 +881,6 @@ describe('Model', () => {
             let query = ModelInstance.modelQuery()
                 .filter('name', '=', 'John');
 
-            query.run((err, response) => {
-                expect(ds.runQuery.getCall(0).args[0]).equal(query);
-                expect(response.entities[0] instanceof Entity).be.true;
-                expect(response.entities[1] instanceof Entity).be.true;
-
-                done();
-            });
-        });
-    });
-
-        it("should result in model objects for a model query", function(done) {
-            let query = ModelInstance.modelQuery()
-                .filter('name', '=', 'John');
-
             const responseQueries = [mockEntities, {
                 moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
                 endCursor: 'abcdef',
