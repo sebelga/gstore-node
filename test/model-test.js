@@ -877,8 +877,8 @@ describe('Model', () => {
             expect(fn).to.throw(Error);
         });
 
-        it("should result in model objects for a model query", function(done) {
-            let query = ModelInstance.modelQuery()
+        it('should result in model objects for a model query', (done) => {
+            const modelQuery = ModelInstance.modelQuery()
                 .filter('name', '=', 'John');
 
             const responseQueries = [mockEntities, {
@@ -886,11 +886,11 @@ describe('Model', () => {
                 endCursor: 'abcdef',
             }];
 
-            sinon.stub(query, '__originalRun').resolves(responseQueries);
+            sinon.stub(modelQuery, '__originalRun').resolves(responseQueries);
 
-            query.run((err, response) => {
-                expect(response.entities[0] instanceof Entity).be.true;
-                expect(response.entities[1] instanceof Entity).be.true;
+            modelQuery.run((err, response) => {
+                expect(response.entities[0] instanceof Entity).equal(true);
+                expect(response.entities[1] instanceof Entity).equal(true);
 
                 done();
             });
