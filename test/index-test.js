@@ -3,8 +3,6 @@
 
 const chai = require('chai');
 const sinon = require('sinon');
-const gstore = require('../lib');
-const pkg = require('../package.json');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -14,8 +12,24 @@ const ds = require('@google-cloud/datastore')({
     apiEndpoint: 'http://localhost:8080',
 });
 
+const gstore = require('../lib');
+const Schema = require('../lib').Schema;
+const pkg = require('../package.json');
+
 describe('gstore-node', () => {
     let schema;
+    let ModelInstance;
+
+    beforeEach(() => {
+        gstore.models = {};
+        gstore.modelSchemas = {};
+
+        schema = new Schema({
+            name: { type: 'string' },
+            email: { type: 'string', read: false },
+        });
+        ModelInstance = gstore.model('Blog', schema, {});
+    });
 
     it('should initialized its properties', () => {
         assert.isDefined(gstore.models);
@@ -142,5 +156,61 @@ describe('gstore-node', () => {
 
         expect(ds.transaction.called).equal(true);
         expect(transaction.constructor.name).equal('Transaction');
+    });
+
+    describe('save() alias', () => {
+        beforeEach(() => {
+            sinon.stub(ds, 'save').resolves();
+            gstore.connect(ds);
+        });
+
+        afterEach(() => {
+            ds.save.restore();
+        });
+
+        it('should call datastore save passing the arguments', () => {
+            const args = [[1, 2, 3]];
+
+            return gstore.save(...args).then(() => {
+                expect(ds.save.called).equal(true);
+                expect(ds.save.getCall(0).args).deep.equal(args);
+            });
+        });
+
+        it('should convert entity instances to datastore Format', () => {
+            const model1 = new ModelInstance({ name: 'John' });
+            const model2 = new ModelInstance({ name: 'Mick' });
+
+            return gstore.save([model1, model2]).then(() => {
+                const args = ds.save.getCall(0).args;
+                const firstEntity = args[0][0];
+                assert.isUndefined(firstEntity.className);
+                expect(Object.keys(firstEntity)).deep.equal(['key', 'data']);
+            });
+        });
+
+        it('should also work with a callback', () => {
+            ds.save.restore();
+
+            sinon.stub(ds, 'save', (...args) => {
+                const cb = args.pop();
+                return cb();
+            });
+
+            const model = new ModelInstance({ name: 'John' });
+
+            return gstore.save(model, () => {
+                const args = ds.save.getCall(0).args;
+                const firstEntity = args[0];
+                assert.isUndefined(firstEntity.className);
+                expect(Object.keys(firstEntity)).deep.equal(['key', 'data']);
+            });
+        });
+
+        it('should forward if no arguments', () => {
+            return gstore.save().then(() => {
+                expect(ds.save.getCall(0).args.length).equal(0);
+            });
+        });
     });
 });
