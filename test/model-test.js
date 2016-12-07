@@ -947,13 +947,15 @@ describe('Model', () => {
             it('should read settings passed', () => {
                 const querySettings = {
                     limit: 10,
+                    format: gstore.Queries.formats.ENTITY,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                return ModelInstance.list().then(() => {
+                return ModelInstance.list().then((result) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
                     expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
+                    expect(result[0].entities[0].className).equal('Entity');
                 });
             });
 
@@ -1158,10 +1160,12 @@ describe('Model', () => {
                 }));
 
             it('should read all properties', () =>
-                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true }).then((result) => {
-                    const entities = result[0];
-                    assert.isDefined(entities[0].password);
-                }));
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' })
+                            .then((result) => {
+                                const entities = result[0];
+                                assert.isDefined(entities[0].password);
+                                expect(entities[0].className).equal('Entity');
+                            }));
 
             it('should accept a namespace', () => {
                 const namespace = 'com.new-domain.dev';

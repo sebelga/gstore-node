@@ -386,7 +386,7 @@ describe('Entity', () => {
             const output = model.plain();
 
             expect(datastoreSerializer.fromDatastore.getCall(0).args[0]).deep.equal(entityData);
-            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(false);
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: false });
             assert.isUndefined(output.password);
         });
 
@@ -395,7 +395,7 @@ describe('Entity', () => {
 
             const output = model.plain({ readAll: true });
 
-            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).equal(true);
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: true });
             assert.isDefined(output.password);
         });
 

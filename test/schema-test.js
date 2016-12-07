@@ -16,7 +16,7 @@ describe('Schema', () => {
             assert.isDefined(schema.paths);
             assert.isDefined(schema.callQueue);
             assert.isDefined(schema.options);
-            expect(schema.options.queries).deep.equal({ readAll: false });
+            expect(schema.options.queries).deep.equal({ readAll: false, format: 'JSON' });
         });
 
         it('should merge options passed', () => {
