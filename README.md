@@ -37,13 +37,15 @@ This library is in active development, please report any issue you might find.
     - [excludeFromIndexes](#excludefromindexes)
     - [read](#read)
     - [write](#write)
+    - [required](#required)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [explicitOnly (default true)](#explicitonly-default-true)
-    - [queries](#queries)
+    - [queries config](#queries-config)
   - [Schema methods](#schema-methods)
     - [path()](#path)
     - [virtual()](#virtual)
+  - [Custom Methods](#custom-methods)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -79,7 +81,6 @@ This library is in active development, please report any issue you might find.
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
-- [Custom Methods](#custom-methods)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -374,6 +375,71 @@ console.log(user.get('lastname')); // 'Snow';
 user.save(function() {...});
 
 ```
+
+### Custom Methods
+Custom methods can be attached to entities instances through their Schemas.  
+
+`schema.methods.methodName = function(){}`
+
+```js
+var blogPostSchema = new Schema({title:{}});
+
+// Custom method to retrieve all children Text entities
+blogPostSchema.methods.texts = function(cb) {
+	var query = this.model('Text')
+						.query()
+						.hasAncestor(this.entityKey);
+
+	query.run(function(err, result){
+		if (err) {
+			return cb(err);
+		}
+		cb(null, result.entities);
+	});
+};
+
+...
+
+// You can then call it on an entity instance of BlogPost
+BlogPost.get(123).then((data) => {
+	const blogEntity = data[0];
+	blogEntity.texts(function(err, texts) {
+	    console.log(texts); // texts entities;
+	});
+});
+```
+
+Note how entities instances can access other models through `entity.model('OtherModel')`. *Denormalization* can then easily be done with a custom method:
+
+```js
+// Add custom "getImage()" method on the User Schema
+userSchema.methods.getImage = function(cb) {
+    // Any type of query can be done here
+    // note this.get('imageIdx') could also be accessed by virtual property: this.imageIdx
+    return this.model('Image').get(this.get('imageIdx'), cb);
+};
+...
+// In your controller
+var user = new User({name:'John', imageIdx:1234});
+
+// Call custom Method 'getImage'
+user.getImage(function(err, imageEntity) {
+    user.profilePict = imageEntity.get('url');
+    user.save().then(() { ... });
+});
+
+// Or with Promises
+userSchema.methods.getImage = function() {
+    return this.model('Image').get(this.imageIdx);
+};
+...
+var user = new User({name:'John', imageIdx:1234});
+user.getImage().then((data) => {
+	const imageEntity = data[0];
+    ...
+});
+```
+
 
 
 ## Model
@@ -1494,66 +1560,32 @@ transaction.run().then(() => {
 
 ```
 
-## Custom Methods
-Custom methods can be attached to entities instances.
-`schema.methods.methodName = function(){}`
+----------
+
+## Global Methods
+### save()
+
+gstore has a global method "save" that is an alias of the original Datastore save() method, with the exception that you can pass it an Entity **instance** or an **\<Array\>** of entities instances and it will first convert them to the correct Datastore format before saving.  
+
+**Note**: The entities can be of **any Kind**. You can concat several arrays of queries from different Models and then save them all at once with this method.
 
 ```js
-var blogPostSchema = new Schema({title:{}});
+const query = BlogModel.query().limit(20);
+query.run({ format: gstore.Queries.formats.ENTITY })
+	  .then((result) => {
+	  	const entities = result[0].entities;
+	  	
+	  	// entities are gstore instances, you can manipulate them
+	  	// and then save them by calling:
 
-// Custom method to retrieve all children Text entities
-blogPostSchema.methods.texts = function(cb) {
-	var query = this.model('Text')
-						.query()
-						.hasAncestor(this.entityKey);
+	  	gstore.save(entities).then(() => {
+	  		...
+	  	});
+	  })
 
-	query.run(function(err, result){
-		if (err) {
-			return cb(err);
-		}
-		cb(null, result.entities);
-	});
-};
-
-...
-
-// You can then call it on an entity instance of BlogPost
-BlogPost.get(123).then((data) => {
-	const blogEntity = data[0];
-	blogEntity.texts(function(err, texts) {
-	    console.log(texts); // texts entities;
-	});
-});
 ```
 
-Note how entities instances can access other models through `entity.model('OtherModel')`. *Denormalization* can then easily be done with a custom method:
 
-```js
-// Add custom "getImage()" method on the User Schema
-userSchema.methods.getImage = function(cb) {
-    // Any type of query can be done here
-    // note this.get('imageIdx') could also be accessed by virtual property: this.imageIdx
-    return this.model('Image').get(this.get('imageIdx'), cb);
-};
-...
-// In your controller
-var user = new User({name:'John', imageIdx:1234});
-user.getImage(function(err, imageEntity) {
-    user.set('profilePict', imageEntity.get('url'));
-    user.save(function(err){...});
-});
-
-// Or with Promises
-userSchema.methods.getImage = function() {
-    return this.model('Image').get(this.imageIdx);
-};
-...
-var user = new User({name:'John', imageIdx:1234});
-user.getImage().then((data) => {
-	const imageEntity = data[0];
-    ...
-});
-```
 
 ## Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
