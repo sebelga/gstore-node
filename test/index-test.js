@@ -168,14 +168,12 @@ describe('gstore-node', () => {
             ds.save.restore();
         });
 
-        it('should call datastore save passing the arguments', () => {
-            const args = [[1, 2, 3]];
-
-            return gstore.save(...args).then(() => {
+        it('should call datastore save passing the arguments', () => (
+            gstore.save([1, 2, 3]).then(() => {
                 expect(ds.save.called).equal(true);
-                expect(ds.save.getCall(0).args).deep.equal(args);
-            });
-        });
+                expect(ds.save.getCall(0).args).deep.equal([[1, 2, 3]]);
+            })
+        ));
 
         it('should convert entity instances to datastore Format', () => {
             const model1 = new ModelInstance({ name: 'John' });
@@ -192,10 +190,7 @@ describe('gstore-node', () => {
         it('should also work with a callback', () => {
             ds.save.restore();
 
-            sinon.stub(ds, 'save', (...args) => {
-                const cb = args.pop();
-                return cb();
-            });
+            sinon.stub(ds, 'save', (entity, cb) => cb());
 
             const model = new ModelInstance({ name: 'John' });
 
@@ -207,10 +202,10 @@ describe('gstore-node', () => {
             });
         });
 
-        it('should forward if no arguments', () => {
-            return gstore.save().then(() => {
+        it('should forward if no arguments', () => (
+            gstore.save().then(() => {
                 expect(ds.save.getCall(0).args.length).equal(0);
-            });
-        });
+            })
+        ));
     });
 });

@@ -71,7 +71,6 @@ describe('Datastore serializer', () => {
                                     .call(ModelInstance, datastoreMock, { format: gstore.Queries.formats.ENTITY });
 
             expect(serialized.className).equal('Entity');
-            expect(serialized.constructor.name).equal('ModelInstance');
         });
     });
 
