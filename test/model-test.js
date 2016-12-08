@@ -157,6 +157,13 @@ describe('Model', () => {
 
             expect(fn).throw(Error);
         });
+
+        it('should add __meta object', () => {
+            ModelInstance = gstore.model('MyEntity', schema);
+
+            assert.isDefined(ModelInstance.schema.__meta);
+            expect(ModelInstance.schema.__meta.geoPointsProps).deep.equal(['location']);
+        });
     });
 
     describe('sanitize()', () => {
@@ -940,13 +947,15 @@ describe('Model', () => {
             it('should read settings passed', () => {
                 const querySettings = {
                     limit: 10,
+                    format: gstore.Queries.formats.ENTITY,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                return ModelInstance.list().then(() => {
+                return ModelInstance.list().then((result) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
                     expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
+                    expect(result[0].entities[0].className).equal('Entity');
                 });
             });
 
@@ -1151,10 +1160,12 @@ describe('Model', () => {
                 }));
 
             it('should read all properties', () =>
-                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true }).then((result) => {
-                    const entities = result[0];
-                    assert.isDefined(entities[0].password);
-                }));
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' })
+                            .then((result) => {
+                                const entities = result[0];
+                                assert.isDefined(entities[0].password);
+                                expect(entities[0].className).equal('Entity');
+                            }));
 
             it('should accept a namespace', () => {
                 const namespace = 'com.new-domain.dev';
@@ -1513,6 +1524,21 @@ describe('Model', () => {
                 expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
             });
         });
+
+        it('should convert plain geo object (latitude, longitude) to datastore GeoPoint', () => {
+            schema = new Schema({ location: { type: 'geoPoint' } });
+            ModelInstance = gstore.model('Car', schema);
+            const entity = new ModelInstance({
+                location: {
+                    latitude: 37.305885314941406,
+                    longitude: -89.51815032958984,
+                },
+            });
+
+            return entity.save().then(() => {
+                expect(entity.entityData.location.constructor.name).to.equal('GeoPoint');
+            });
+        });
     });
 
     describe('validate()', () => {
@@ -1711,6 +1737,7 @@ describe('Model', () => {
             const model = new ModelInstance({ location: 'string' });
             const valid = model.validate();
 
+            // datastore geoPoint
             const model2 = new ModelInstance({
                 location: ds.geoPoint({
                     latitude: 40.6894,
@@ -1719,8 +1746,31 @@ describe('Model', () => {
             });
             const valid2 = model2.validate();
 
+            // valid geo object
+            const model3 = new ModelInstance({
+                location: {
+                    latitude: 40.6894,
+                    longitude: -74.0447,
+                },
+            });
+            const valid3 = model3.validate();
+
+            // other tests
+            const model4 = new ModelInstance({ location: true });
+            const valid4 = model4.validate();
+
+            const model5 = new ModelInstance({ location: { longitude: 999, latitude: 'abc' } });
+            const valid5 = model5.validate();
+
+            const model6 = new ModelInstance({ location: { longitude: 40.6895 } });
+            const valid6 = model6.validate();
+
             expect(valid.success).equal(false);
             expect(valid2.success).equal(true);
+            expect(valid3.success).equal(true);
+            expect(valid4.success).equal(false);
+            expect(valid5.success).equal(false);
+            expect(valid6.success).equal(false);
         });
 
         it('--> array ok', () => {

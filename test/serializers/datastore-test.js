@@ -1,6 +1,9 @@
 'use strict';
 
 const chai = require('chai');
+const ds = require('../mocks/datastore')({
+    namespace: 'com.mydomain',
+});
 
 const gstore = require('../../lib');
 const Schema = require('../../lib').Schema;
@@ -26,12 +29,14 @@ describe('Datastore serializer', () => {
     describe('should convert data FROM Datastore format', () => {
         let datastoreMock;
 
-        const key = {
-            namespace: undefined,
-            id: 1234,
-            kind: 'BlogPost',
-            path: ['BlogPost', 1234],
-        };
+        // const key = {
+        //     namespace: undefined,
+        //     id: 1234,
+        //     kind: 'BlogPost',
+        //     path: ['BlogPost', 1234],
+        // };
+
+        const key = ds.key(['BlogPost', 1234]);
 
         let data;
 
@@ -55,9 +60,17 @@ describe('Datastore serializer', () => {
         });
 
         it('accepting "readAll" param', () => {
-            const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, true);
+            const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, { readAll: true });
 
             assert.isDefined(serialized.email);
+        });
+
+        it('should convert to entity instances', () => {
+            const serialized = datastoreSerializer
+                                    .fromDatastore
+                                    .call(ModelInstance, datastoreMock, { format: gstore.Queries.formats.ENTITY });
+
+            expect(serialized.className).equal('Entity');
         });
     });
 

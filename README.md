@@ -37,13 +37,15 @@ This library is in active development, please report any issue you might find.
     - [excludeFromIndexes](#excludefromindexes)
     - [read](#read)
     - [write](#write)
+    - [required](#required)
   - [Schema options](#schema-options)
     - [validateBeforeSave (default true)](#validatebeforesave-default-true)
     - [explicitOnly (default true)](#explicitonly-default-true)
-    - [queries](#queries)
+    - [queries config](#queries-config)
   - [Schema methods](#schema-methods)
     - [path()](#path)
     - [virtual()](#virtual)
+  - [Custom Methods](#custom-methods)
 - [Model](#model)
   - [Creation](#creation-1)
   - [Methods](#methods)
@@ -79,7 +81,6 @@ This library is in active development, please report any issue you might find.
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
-- [Custom Methods](#custom-methods)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -136,7 +137,7 @@ Valid types are
 - 'datetime' (valids are: javascript Date() or a string with the following format: 'YYYY-MM-DD' | 'YYYY-MM-DD 00:00:00' | 'YYYY-MM-DD 00:00:00.000' | 'YYYY-MM-DDT00:00:00')
 - 'array'
 - 'object'
-- 'geoPoint' —> gcloud.datastore.geoPoint
+- 'geoPoint' —> gcloud.datastore.geoPoint or an object with 2 props: { longitude: ..., latitude: ... }
 - 'buffer' —> Buffer
 
 ```js
@@ -267,19 +268,30 @@ To disable any validation before save/update, set it to false
 To allow unregistered properties on a schema set `explicitOnly : false`. This will bring back the magic of *Schemaless* databases. The properties explicitly declared will still be validated.
 
 <a name="simplifyResultExplained"></a>
-#### queries
+#### queries config
 **readAll** (default false)
 Override the Schema option property '**read**' ([see above](#schemaPropertyOptionRead)) to return all the properties of the entities.
 
+**format** (default gstore.Queries.formats.JSON)  
+By default queries will return Json plain *objects* with just the entity data + an "id" property added automatically. If you prefer you can have entities gstore instances returned (on which you will be able to call all the methods like "save()", ...).  
+The response format can be set here globally but this setting can be overriden on any query (see below).  
+Valid values are:  
+
+-  gstore.Queries.formats.JSON (default)
+-  gstore.Queries.formats.ENTITY
+
+
 ```js
 // Schema options example
+
 var entitySchema = new Schema({
     name : {type: 'string'}
 }, {
     validateBeforeSave : false,
     explicitOnly : false,
     queries : {
-        readAll : true
+        readAll : true,
+        format: gstore.Queries.formats.ENTITY
     }
 });
 ```
@@ -363,6 +375,71 @@ console.log(user.get('lastname')); // 'Snow';
 user.save(function() {...});
 
 ```
+
+### Custom Methods
+Custom methods can be attached to entities instances through their Schemas.  
+
+`schema.methods.methodName = function(){}`
+
+```js
+var blogPostSchema = new Schema({title:{}});
+
+// Custom method to retrieve all children Text entities
+blogPostSchema.methods.texts = function(cb) {
+	var query = this.model('Text')
+						.query()
+						.hasAncestor(this.entityKey);
+
+	query.run(function(err, result){
+		if (err) {
+			return cb(err);
+		}
+		cb(null, result.entities);
+	});
+};
+
+...
+
+// You can then call it on an entity instance of BlogPost
+BlogPost.get(123).then((data) => {
+	const blogEntity = data[0];
+	blogEntity.texts(function(err, texts) {
+	    console.log(texts); // texts entities;
+	});
+});
+```
+
+Note how entities instances can access other models through `entity.model('OtherModel')`. *Denormalization* can then easily be done with a custom method:
+
+```js
+// Add custom "getImage()" method on the User Schema
+userSchema.methods.getImage = function(cb) {
+    // Any type of query can be done here
+    // note this.get('imageIdx') could also be accessed by virtual property: this.imageIdx
+    return this.model('Image').get(this.get('imageIdx'), cb);
+};
+...
+// In your controller
+var user = new User({name:'John', imageIdx:1234});
+
+// Call custom Method 'getImage'
+user.getImage(function(err, imageEntity) {
+    user.profilePict = imageEntity.get('url');
+    user.save().then(() { ... });
+});
+
+// Or with Promises
+userSchema.methods.getImage = function() {
+    return this.model('Image').get(this.imageIdx);
+};
+...
+var user = new User({name:'John', imageIdx:1234});
+user.getImage().then((data) => {
+	const imageEntity = data[0];
+    ...
+});
+```
+
 
 
 ## Model
@@ -977,7 +1054,26 @@ console.log(valid); // false
 ## Queries
 ### gcloud queries
 
-gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/datastore/query) so you can execute any query from this library.
+gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/datastore/query) so you can execute any query from this library.  
+
+You **first** create the query with "<Model>.query()" then chain all the operators.  **Then** you call query.run() to execute the query.  
+Query.run() has an **optional** parameters to pass 2 settings: "readAll" and "format".
+
+```
+/**
+ * readAll:
+ * If you set it to true, all the properties will be returned regardless of the "read"
+ * setting defined on the Schema
+ *
+ * format: 
+ * Response format, either plain object (default) or entity instances
+*/
+
+{
+    readAll: true | false
+    format : gstore.Queries.formats.JSON | gstore.Queries.formats.ENTITY
+}
+```
 
 ```js
 var User = gstore.model('User'); // with User schema previously defined
@@ -1011,6 +1107,11 @@ var query = User.query()
                 descending: true
             })
             .start(nextPageCursor);
+
+// Example with an options parameter
+query.run({ readAll:true, format: gstore.Queries.formats.ENTITY })
+	 .then( ... );
+
 ```
 
 **namespace**  
@@ -1140,13 +1241,17 @@ BlogPost.list(newSettings, function(err, entities) {
 **Additional settings** in override
 
 - namespace {string}
+- readAll {boolean} true | false
+- format {string} gstore.Queries.formats.JSON (default) | gstore.Queries.formats.ENTITY
 
 Use the **namespace** setting to override the default namespace.
 
 ```js
 var newSettings = {
     ...
-    namespace:'com.domain-dev'
+    namespace:'com.domain-dev',
+    readAll: true,
+    format: gstore.Queries.formats.ENTITY
 };
 
 BlogPost.list(newSettings, ...);
@@ -1220,6 +1325,22 @@ BlogPost.findAround('publishedOn', '2016-03-01', {after:20}).then((data) => {
    ...
 });
 ```
+
+**Additional settings**
+
+- readAll {boolean} true | false
+- format {string} gstore.Queries.formats.JSON (default) | gstore.Queries.formats.ENTITY
+
+```js
+BlogPost.findAround('publishedOn',
+						'2016-03-01',
+						{after:20, readAll: true, format: gstore.Queries.formats.ENTITY})
+		.then((data) => {
+			const entities = data[0];
+		   ...
+		});
+```
+
 
 ### deleteAll()
 ```js
@@ -1439,66 +1560,32 @@ transaction.run().then(() => {
 
 ```
 
-## Custom Methods
-Custom methods can be attached to entities instances.
-`schema.methods.methodName = function(){}`
+----------
+
+## Global Methods
+### save()
+
+gstore has a global method "save" that is an alias of the original Datastore save() method, with the exception that you can pass it an Entity **instance** or an **\<Array\>** of entities instances and it will first convert them to the correct Datastore format before saving.  
+
+**Note**: The entities can be of **any Kind**. You can concat several arrays of queries from different Models and then save them all at once with this method.
 
 ```js
-var blogPostSchema = new Schema({title:{}});
+const query = BlogModel.query().limit(20);
+query.run({ format: gstore.Queries.formats.ENTITY })
+	  .then((result) => {
+	  	const entities = result[0].entities;
+	  	
+	  	// entities are gstore instances, you can manipulate them
+	  	// and then save them by calling:
 
-// Custom method to retrieve all children Text entities
-blogPostSchema.methods.texts = function(cb) {
-	var query = this.model('Text')
-						.query()
-						.hasAncestor(this.entityKey);
+	  	gstore.save(entities).then(() => {
+	  		...
+	  	});
+	  })
 
-	query.run(function(err, result){
-		if (err) {
-			return cb(err);
-		}
-		cb(null, result.entities);
-	});
-};
-
-...
-
-// You can then call it on an entity instance of BlogPost
-BlogPost.get(123).then((data) => {
-	const blogEntity = data[0];
-	blogEntity.texts(function(err, texts) {
-	    console.log(texts); // texts entities;
-	});
-});
 ```
 
-Note how entities instances can access other models through `entity.model('OtherModel')`. *Denormalization* can then easily be done with a custom method:
 
-```js
-// Add custom "getImage()" method on the User Schema
-userSchema.methods.getImage = function(cb) {
-    // Any type of query can be done here
-    // note this.get('imageIdx') could also be accessed by virtual property: this.imageIdx
-    return this.model('Image').get(this.get('imageIdx'), cb);
-};
-...
-// In your controller
-var user = new User({name:'John', imageIdx:1234});
-user.getImage(function(err, imageEntity) {
-    user.set('profilePict', imageEntity.get('url'));
-    user.save(function(err){...});
-});
-
-// Or with Promises
-userSchema.methods.getImage = function() {
-    return this.model('Image').get(this.imageIdx);
-};
-...
-var user = new User({name:'John', imageIdx:1234});
-user.getImage().then((data) => {
-	const imageEntity = data[0];
-    ...
-});
-```
 
 ## Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
