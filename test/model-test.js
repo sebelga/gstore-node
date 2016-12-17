@@ -1749,8 +1749,8 @@ describe('Model', () => {
             // valid geo object
             const model3 = new ModelInstance({
                 location: {
-                    latitude: 40.6894,
-                    longitude: -74.0447,
+                    latitude: 40.68942342541,
+                    longitude: -74.044743654572,
                 },
             });
             const valid3 = model3.validate();
@@ -1765,12 +1765,16 @@ describe('Model', () => {
             const model6 = new ModelInstance({ location: { longitude: 40.6895 } });
             const valid6 = model6.validate();
 
+            const model7 = new ModelInstance({ location: { longitude: '120.123', latitude: '40.12345678' } });
+            const valid7 = model7.validate();
+
             expect(valid.success).equal(false);
             expect(valid2.success).equal(true);
             expect(valid3.success).equal(true);
             expect(valid4.success).equal(false);
             expect(valid5.success).equal(false);
             expect(valid6.success).equal(false);
+            expect(valid7.success).equal(false);
         });
 
         it('--> array ok', () => {
