@@ -1581,7 +1581,7 @@ query.run({ format: gstore.Queries.formats.ENTITY })
 	  	gstore.save(entities).then(() => {
 	  		...
 	  	});
-	  })
+	  });
 
 ```
 
