@@ -47,6 +47,7 @@ describe('Model', () => {
             street: {},
             website: { validate: 'isURL' },
             email: { validate: 'isEmail' },
+            ip: { validate: { rule: 'isIP', args: [4] } },
             modified: { type: 'boolean' },
             tags: { type: 'array' },
             prefs: { type: 'object' },
@@ -1875,6 +1876,25 @@ describe('Model', () => {
             expect(valid2.success).equal(false);
             expect(valid3.success).equal(false);
             expect(valid4.success).equal(false);
+        });
+
+        it('--> is IP ok', () => {
+            const model = new ModelInstance({ ip: '127.0.0.1' });
+
+            const valid = model.validate();
+
+            expect(valid.success).equal(true);
+        });
+
+        it('--> is IP ko', () => {
+            const model = new ModelInstance({ ip: 'fe80::1c2e:f014:10d8:50f5' });
+            const model2 = new ModelInstance({ ip: '1.1.1' });
+
+            const valid = model.validate();
+            const valid2 = model2.validate();
+
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
         });
 
         it('--> is HexColor', () => {
