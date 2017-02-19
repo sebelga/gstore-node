@@ -894,9 +894,10 @@ blogPostEntity.entityData.title = 'My third blog post'; // blogPostEntity.title 
 #### Save()
 
 After the instantiation of a Model, you can persist its data to the Datastore with `entity.save(...args)`  
-This method accepts the following parameters
+This method accepts the following arguments
 
 - transaction (optional). Will execute the save operation inside this transaction
+- options { method: 'upsert | insert | update' }  (optional). Default to { method: 'upsert' }
 - callback (optional, if not passed a **Promise** is returned)
 
 
@@ -925,8 +926,8 @@ blogPostEntity.save(function(err) {
 });
 
 /*
-* From inside a transaction
-*/
+ * From inside a transaction
+ */
 var user = new User({name:'john'});
 var transaction = gstore.transaction();
 
@@ -943,6 +944,15 @@ transaction.run().then(() => {
 	// handle error
    ...
  });
+
+
+/*
+ * Changing the method to save
+ */
+
+var blogPostEntity = new BlogPost(data);
+blogPostEntity.save(null, { method: 'insert' }).then( ... );
+
 
 ```
 
@@ -1071,7 +1081,10 @@ console.log(valid); // false
 
 gstore is built on top of [gcloud-node](https://googlecloudplatform.github.io/gcloud-node/#/docs/v0.37.0/datastore/query) so you can execute any query from this library.  
 
-You **first** create the query with "<Model>.query()" then chain all the operators.  **Then** you call query.run() to execute the query.  
+1. You first create the query:  
+`const query = MyModel.query(namespace /*optional*/, transaction /*optional*/)`  
+then chain all the operators.  
+2. Then you call query.run() to execute the query.  
 Query.run() has an **optional** parameters to pass 2 settings: "readAll" and "format".
 
 ```
@@ -1130,11 +1143,33 @@ query.run({ readAll:true, format: gstore.Queries.formats.ENTITY })
 ```
 
 **namespace**  
-Model.query() takes an optional namespace parameter if needed.
+Model.query() takes an optional "namespace" parameter if needed.
 
 ```js
 var query = User.query('com.domain-dev')
                 .filter('name', '=', 'John');
+...
+```
+
+**transaction**  
+Model.query() takes an optional "transaction" parameter if needed.
+
+```js
+
+var transaction = gstore.transaction();
+transaction.run().then(() => {
+
+	// Create the query inside the transaction
+	var query = User.query(null, transaction)
+                .filter('name', '=', 'John');
+   
+   	query.run().then(() => {
+  		...
+  		
+  		// transaction.commit()...
+   	});	
+});
+
 ...
 ```
 
@@ -1580,9 +1615,11 @@ transaction.run().then(() => {
 ## Global Methods
 ### save()
 
+`gstore.save(entity | entity[], transaction /*optional*/)`
+
 gstore has a global method "save" that is an alias of the original Datastore save() method, with the exception that you can pass it an Entity **instance** or an **\<Array\>** of entities instances and it will first convert them to the correct Datastore format before saving.  
 
-**Note**: The entities can be of **any Kind**. You can concat several arrays of queries from different Models and then save them all at once with this method.
+**Note**: The entities can be of **any** kind. You can concat several arrays of queries from different Models and then save them all at once with this method.
 
 ```js
 const query = BlogModel.query().limit(20);
@@ -1597,6 +1634,21 @@ query.run({ format: gstore.Queries.formats.ENTITY })
 	  		...
 	  	});
 	  });
+
+/*
+ * From inside a transaction
+ */
+const transaction = gstore.transaction();
+
+transaction.run().then(() => {
+	const query = BlogModel.query(null, transaction).limit(20);
+	query.run().then((result) => {
+		const entities = result[0].entities;
+		
+		// Call the global save method passing the transaction.
+		gstore.save(entities, transaction).then( ... );
+	});
+})
 
 ```
 
