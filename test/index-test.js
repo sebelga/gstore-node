@@ -165,10 +165,10 @@ describe('gstore-node', () => {
         gstore.connect(ds);
         sinon.spy(ds, 'transaction');
 
-        const transaction = gstore.transaction();
+        const trans = gstore.transaction();
 
         expect(ds.transaction.called).equal(true);
-        expect(transaction.constructor.name).equal('Transaction');
+        expect(trans.constructor.name).equal('Transaction');
     });
 
     describe('save() alias', () => {

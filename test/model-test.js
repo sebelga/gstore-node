@@ -1368,6 +1368,30 @@ describe('Model', () => {
             });
         });
 
+        it('should set "upsert" method by default', () => (
+            model.save().then(() => {
+                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('upsert');
+            })
+        ));
+
+        it('should accept a method inside the options', () => (
+            model.save(null, { method: 'insert' }).then(() => {
+                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
+            })
+        ));
+
+        it('should only allow "update", "insert", "upsert" as method', (done) => {
+            model.save(null, { method: 'something' }).catch((e) => {
+                expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
+
+                model.save(null, { method: 'update' })
+                    .then(model.save(null, { method: 'upsert' }))
+                    .then(() => {
+                        done();
+                    });
+            });
+        });
+
         it('on Datastore error, return the error', () => {
             ds.save.restore();
 
