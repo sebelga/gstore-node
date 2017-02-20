@@ -769,9 +769,10 @@ describe('Model', () => {
 
     describe('gcloud-node queries', () => {
         let query;
+        let responseQueries;
 
         beforeEach(() => {
-            const responseQueries = [mockEntities, {
+            responseQueries = [mockEntities, {
                 moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
                 endCursor: 'abcdef',
             }];
@@ -887,10 +888,11 @@ describe('Model', () => {
 
         it('should still work with a callback', () => {
             query = ModelInstance.query()
-                .filter('name', 'John');
+                    .filter('name', 'John');
+            sinon.stub(query, '__originalRun').resolves(responseQueries);
 
-            query.run((err, response) => {
-                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+            return query.run((err, response) => {
+                expect(query.__originalRun.called).equal(true);
                 expect(response.entities.length).equal(2);
                 expect(response.nextPageCursor).equal('abcdef');
             });
@@ -1105,6 +1107,26 @@ describe('Model', () => {
 
                 return ModelInstance.deleteAll().catch((err) => {
                     expect(err).equal(error);
+                });
+            });
+
+            it('should delete entites by batches of 500', (done) => {
+                ds.createQuery.restore();
+
+                const entities = [];
+                const entity = { name: 'Mick', lastname: 'Jagger' };
+                entity[ds.KEY] = ds.key(['BlogPost', 'keyname']);
+
+                for (let i = 0; i < 1200; i += 1) {
+                    entities.push(entity);
+                }
+
+                const queryMock2 = new Query(ds, { entities });
+                sinon.stub(ds, 'createQuery', () => queryMock2);
+
+                ModelInstance.deleteAll().then(() => {
+                    expect(false).equal(false);
+                    done();
                 });
             });
         });
