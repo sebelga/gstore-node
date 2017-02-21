@@ -15,10 +15,12 @@ const ds = require('@google-cloud/datastore')({
 const gstore = require('../lib');
 const Schema = require('../lib').Schema;
 const pkg = require('../package.json');
+const Transaction = require('./mocks/transaction');
 
 describe('gstore-node', () => {
     let schema;
     let ModelInstance;
+    let transaction;
 
     beforeEach(() => {
         gstore.models = {};
@@ -29,6 +31,17 @@ describe('gstore-node', () => {
             email: { type: 'string', read: false },
         });
         ModelInstance = gstore.model('Blog', schema, {});
+
+        transaction = new Transaction();
+        sinon.spy(transaction, 'save');
+        sinon.spy(transaction, 'commit');
+        sinon.spy(transaction, 'rollback');
+    });
+
+    afterEach(() => {
+        transaction.save.restore();
+        transaction.commit.restore();
+        transaction.rollback.restore();
     });
 
     it('should initialized its properties', () => {
@@ -152,10 +165,10 @@ describe('gstore-node', () => {
         gstore.connect(ds);
         sinon.spy(ds, 'transaction');
 
-        const transaction = gstore.transaction();
+        const trans = gstore.transaction();
 
         expect(ds.transaction.called).equal(true);
-        expect(transaction.constructor.name).equal('Transaction');
+        expect(trans.constructor.name).equal('Transaction');
     });
 
     describe('save() alias', () => {
@@ -187,6 +200,15 @@ describe('gstore-node', () => {
             });
         });
 
+        it('should work inside a transaction', () => {
+            const model1 = new ModelInstance({ name: 'John' });
+
+            gstore.save(model1, transaction);
+
+            expect(transaction.save.called).equal(true);
+            expect(ds.save.called).equal(false);
+        });
+
         it('should also work with a callback', () => {
             ds.save.restore();
 
@@ -202,10 +224,10 @@ describe('gstore-node', () => {
             });
         });
 
-        it('should forward if no arguments', () => (
-            gstore.save().then(() => {
-                expect(ds.save.getCall(0).args.length).equal(0);
-            })
-        ));
+        it('should throw an error if no entities passed', () => {
+            const func = () => gstore.save();
+
+            expect(func).to.throw('No entities passed');
+        });
     });
 });

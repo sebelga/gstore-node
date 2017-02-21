@@ -47,6 +47,7 @@ describe('Model', () => {
             street: {},
             website: { validate: 'isURL' },
             email: { validate: 'isEmail' },
+            ip: { validate: { rule: 'isIP', args: [4] } },
             modified: { type: 'boolean' },
             tags: { type: 'array' },
             prefs: { type: 'object' },
@@ -768,9 +769,10 @@ describe('Model', () => {
 
     describe('gcloud-node queries', () => {
         let query;
+        let responseQueries;
 
         beforeEach(() => {
-            const responseQueries = [mockEntities, {
+            responseQueries = [mockEntities, {
                 moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
                 endCursor: 'abcdef',
             }];
@@ -886,10 +888,11 @@ describe('Model', () => {
 
         it('should still work with a callback', () => {
             query = ModelInstance.query()
-                .filter('name', 'John');
+                    .filter('name', 'John');
+            sinon.stub(query, '__originalRun').resolves(responseQueries);
 
-            query.run((err, response) => {
-                expect(ds.runQuery.getCall(0).args[0]).equal(query);
+            return query.run((err, response) => {
+                expect(query.__originalRun.called).equal(true);
                 expect(response.entities.length).equal(2);
                 expect(response.nextPageCursor).equal('abcdef');
             });
@@ -1104,6 +1107,26 @@ describe('Model', () => {
 
                 return ModelInstance.deleteAll().catch((err) => {
                     expect(err).equal(error);
+                });
+            });
+
+            it('should delete entites by batches of 500', (done) => {
+                ds.createQuery.restore();
+
+                const entities = [];
+                const entity = { name: 'Mick', lastname: 'Jagger' };
+                entity[ds.KEY] = ds.key(['BlogPost', 'keyname']);
+
+                for (let i = 0; i < 1200; i += 1) {
+                    entities.push(entity);
+                }
+
+                const queryMock2 = new Query(ds, { entities });
+                sinon.stub(ds, 'createQuery', () => queryMock2);
+
+                ModelInstance.deleteAll().then(() => {
+                    expect(false).equal(false);
+                    done();
                 });
             });
         });
@@ -1364,6 +1387,30 @@ describe('Model', () => {
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data[0].excludeFromIndexes);
 
                 spySerializerToDatastore.restore();
+            });
+        });
+
+        it('should set "upsert" method by default', () => (
+            model.save().then(() => {
+                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('upsert');
+            })
+        ));
+
+        it('should accept a method inside the options', () => (
+            model.save(null, { method: 'insert' }).then(() => {
+                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
+            })
+        ));
+
+        it('should only allow "update", "insert", "upsert" as method', (done) => {
+            model.save(null, { method: 'something' }).catch((e) => {
+                expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
+
+                model.save(null, { method: 'update' })
+                    .then(model.save(null, { method: 'upsert' }))
+                    .then(() => {
+                        done();
+                    });
             });
         });
 
@@ -1875,6 +1922,25 @@ describe('Model', () => {
             expect(valid2.success).equal(false);
             expect(valid3.success).equal(false);
             expect(valid4.success).equal(false);
+        });
+
+        it('--> is IP ok', () => {
+            const model = new ModelInstance({ ip: '127.0.0.1' });
+
+            const valid = model.validate();
+
+            expect(valid.success).equal(true);
+        });
+
+        it('--> is IP ko', () => {
+            const model = new ModelInstance({ ip: 'fe80::1c2e:f014:10d8:50f5' });
+            const model2 = new ModelInstance({ ip: '1.1.1' });
+
+            const valid = model.validate();
+            const valid2 = model2.validate();
+
+            expect(valid.success).equal(false);
+            expect(valid2.success).equal(false);
         });
 
         it('--> is HexColor', () => {
