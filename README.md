@@ -81,6 +81,8 @@ This library is in active development, please report any issue you might find.
   - [Pre hooks](#pre-hooks)
   - [Post hooks](#post-hooks)
   - [Transactions and Hooks](#transactions-and-hooks)
+- [Global Methods](#global-methods)
+  - [save()](#save)
 - [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
