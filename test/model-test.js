@@ -851,10 +851,19 @@ describe('Model', () => {
                 })
         ));
 
-        it('should accept "readAll" option', () => query.run(({ readAll: true }))
+        it('should accept "readAll" option', () => (
+            query.run(({ readAll: true }))
                 .then((response) => {
                     assert.isDefined(response.entities[0].password);
-                }));
+                })
+        ));
+
+        it('should accept "showKey" option', () => (
+            query.run(({ showKey: true }))
+                .then((response) => {
+                    assert.isDefined(response.entities[0].__key);
+                })
+        ));
 
         it('should not add endCursor to response', () => {
             query.__originalRun.restore();
@@ -976,6 +985,7 @@ describe('Model', () => {
                 const querySettings = {
                     limit: 10,
                     readAll: true,
+                    showKey: true,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
@@ -984,6 +994,7 @@ describe('Model', () => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
                     expect(queryMock.limit.getCall(0).args[0]).equal(15);
                     assert.isDefined(response.entities[0].password);
+                    assert.isDefined(response.entities[0].__key);
                 });
             });
 
@@ -1195,6 +1206,13 @@ describe('Model', () => {
                             .then((entities) => {
                                 assert.isDefined(entities[0].password);
                                 expect(entities[0].className).equal('Entity');
+                            })
+            ));
+
+            it('should add entities key', () => (
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true })
+                            .then((entities) => {
+                                assert.isDefined(entities[0].__key);
                             })
             ));
 

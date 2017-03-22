@@ -386,7 +386,7 @@ describe('Entity', () => {
             const output = model.plain();
 
             expect(datastoreSerializer.fromDatastore.getCall(0).args[0]).deep.equal(entityData);
-            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: false });
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: false, showKey: false });
             assert.isUndefined(output.password);
         });
 
@@ -395,8 +395,16 @@ describe('Entity', () => {
 
             const output = model.plain({ readAll: true });
 
-            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: true });
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: true, showKey: false });
             assert.isDefined(output.password);
+        });
+
+        it('should pass showKey parameter', () => {
+            const model = new ModelInstance({});
+
+            model.plain({ showKey: true });
+
+            expect(datastoreSerializer.fromDatastore.getCall(0).args[1]).deep.equal({ readAll: false, showKey: true });
         });
 
         it('should add virtuals', () => {
