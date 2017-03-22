@@ -416,8 +416,7 @@ describe('Entity', () => {
 
             const model = new ModelInstance({});
 
-            return model.datastoreEntity().then((result) => {
-                const entity = result[0];
+            return model.datastoreEntity().then((entity) => {
                 expect(ds.get.called).equal(true);
                 expect(ds.get.getCall(0).args[0]).equal(model.entityKey);
                 expect(entity.className).equal('Entity');
