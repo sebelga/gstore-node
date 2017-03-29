@@ -18,11 +18,12 @@ const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 
 const gstore = require('../');
-const Model = require('../lib/model');
 const Entity = require('../lib/entity');
 const Schema = require('../lib').Schema;
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers = require('../lib/helper').QueryHelpers;
+
+let Model = require('../lib/model');
 
 describe('Model', () => {
     let schema;
@@ -244,14 +245,14 @@ describe('Model', () => {
         it('passing an integer id', () => {
             return ModelInstance.get(123).then(onEntity);
 
-            function onEntity(entity) {
+            function onEntity(_entity) {
                 expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-                expect(entity instanceof Entity).equal(true);
+                expect(_entity instanceof Entity).equal(true);
             }
         });
 
-        it('passing an string id', () => ModelInstance.get('keyname').then((entity) => {
-            expect(entity instanceof Entity).equal(true);
+        it('passing an string id', () => ModelInstance.get('keyname').then((_entity) => {
+            expect(_entity instanceof Entity).equal(true);
         }));
 
         it('passing an array of ids', () => {
@@ -267,10 +268,10 @@ describe('Model', () => {
 
             return ModelInstance.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult);
 
-            function onResult(entity) {
+            function onResult(_entity) {
                 expect(is.array(ds.get.getCall(0).args[0])).equal(true);
-                expect(is.array(entity)).equal(true);
-                expect(entity[0].entityKey.id).equal(22); // sorted
+                expect(is.array(_entity)).equal(true);
+                expect(_entity[0].entityKey.id).equal(22); // sorted
             }
         });
 
@@ -322,10 +323,10 @@ describe('Model', () => {
             });
         });
 
-        it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((entity) => {
+        it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((_entity) => {
             expect(transaction.get.called).equal(true);
             expect(ds.get.called).equal(false);
-            expect(entity.className).equal('Entity');
+            expect(_entity.className).equal('Entity');
         }));
 
         it('should throw error if transaction not an instance of glcoud Transaction',
@@ -346,9 +347,9 @@ describe('Model', () => {
         it('should still work with a callback', () => {
             return ModelInstance.get(123, onResult);
 
-            function onResult(err, entity) {
+            function onResult(err, _entity) {
                 expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-                expect(entity instanceof Entity).equal(true);
+                expect(_entity instanceof Entity).equal(true);
             }
         });
     });
@@ -1342,11 +1343,11 @@ describe('Model', () => {
             model = new ModelInstance(data);
         });
 
-        it('should return the entity saved', () => {
-            return model.save().then((entity) => {
-                expect(entity.className).equal('Entity');
-            });
-        });
+        it('should return the entity saved', () => (
+            model.save().then((_entity) => {
+                expect(_entity.className).equal('Entity');
+            })
+        ));
 
         it('should validate() before', () => {
             const validateSpy = sinon.spy(model, 'validate');
@@ -1444,33 +1445,33 @@ describe('Model', () => {
         });
 
         it('should save entity in a transaction and execute "pre" hooks first', () => {
-            const schema = new Schema({});
+            schema = new Schema({});
             const spyPreHook = sinon.spy();
             schema.pre('save', () => {
                 spyPreHook();
                 return Promise.resolve();
             });
-            const Model = gstore.model('TransactionHooks', schema, gstore);
+
+            Model = gstore.model('TransactionHooks', schema, gstore);
             const entity = new Model({});
 
             return entity.save(transaction)
-                .then((entity) => {
-                   expect(spyPreHook.called).equal(true);
-                   expect(transaction.save.called).equal(true);
-                   expect(spyPreHook.calledBefore(transaction.save)).equal(true);
-                   assert.isDefined(entity.entityData);
+                .then((_entity) => {
+                    expect(spyPreHook.called).equal(true);
+                    expect(transaction.save.called).equal(true);
+                    expect(spyPreHook.calledBefore(transaction.save)).equal(true);
+                    assert.isDefined(_entity.entityData);
                 });
-
         });
 
         it('should *not* save entity in a transaction if there are "pre" hooks', () => {
-            const schema = new Schema({});
+            schema = new Schema({});
             const spyPreHook = sinon.spy();
             schema.pre('save', () => {
                 spyPreHook();
                 return Promise.resolve();
             });
-            const Model = gstore.model('TransactionHooks', schema, gstore);
+            Model = gstore.model('TransactionHooks', schema, gstore);
             const entity = new Model({});
 
             entity.save(transaction);
