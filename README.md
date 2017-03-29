@@ -1,4 +1,4 @@
-<img title="logo" src="logo/logo_small.png" width="75%">
+<img title="logo" src="logo/logo.png" width="75%">
 
 # gstore-node
 
