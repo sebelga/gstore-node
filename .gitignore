@@ -17,9 +17,6 @@ coverage
 # IntelliJ
 .idea
 
-# Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
-
 # node-waf configuration
 .lock-wscript
 
@@ -40,3 +37,7 @@ config.json
 .coveralls.yml
 todo.txt
 .vscode/
+logo/**
+
+!logo/logo.png
+!logo/logo_small.png
