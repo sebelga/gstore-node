@@ -29,13 +29,6 @@ describe('Datastore serializer', () => {
     describe('should convert data FROM Datastore format', () => {
         let datastoreMock;
 
-        // const key = {
-        //     namespace: undefined,
-        //     id: 1234,
-        //     kind: 'BlogPost',
-        //     path: ['BlogPost', 1234],
-        // };
-
         const key = ds.key(['BlogPost', 1234]);
 
         let data;
@@ -63,6 +56,12 @@ describe('Datastore serializer', () => {
             const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, { readAll: true });
 
             assert.isDefined(serialized.email);
+        });
+
+        it('accepting "showKey" param', () => {
+            const serialized = datastoreSerializer.fromDatastore.call(ModelInstance, datastoreMock, { showKey: true });
+
+            expect(serialized.__key).equal(key);
         });
 
         it('should convert to entity instances', () => {

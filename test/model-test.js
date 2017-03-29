@@ -18,11 +18,12 @@ const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 
 const gstore = require('../');
-const Model = require('../lib/model');
 const Entity = require('../lib/entity');
 const Schema = require('../lib').Schema;
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers = require('../lib/helper').QueryHelpers;
+
+let Model = require('../lib/model');
 
 describe('Model', () => {
     let schema;
@@ -48,6 +49,7 @@ describe('Model', () => {
             website: { validate: 'isURL' },
             email: { validate: 'isEmail' },
             ip: { validate: { rule: 'isIP', args: [4] } },
+            ip2: { validate: { rule: 'isIP' } }, // no args passed
             modified: { type: 'boolean' },
             tags: { type: 'array' },
             prefs: { type: 'object' },
@@ -241,18 +243,16 @@ describe('Model', () => {
         });
 
         it('passing an integer id', () => {
-            return ModelInstance.get(123).then(onResult);
+            return ModelInstance.get(123).then(onEntity);
 
-            function onResult(data) {
-                entity = data[0];
+            function onEntity(_entity) {
                 expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-                expect(entity instanceof Entity).equal(true);
+                expect(_entity instanceof Entity).equal(true);
             }
         });
 
-        it('passing an string id', () => ModelInstance.get('keyname').then((data) => {
-            entity = data[0];
-            expect(entity instanceof Entity).equal(true);
+        it('passing an string id', () => ModelInstance.get('keyname').then((_entity) => {
+            expect(_entity instanceof Entity).equal(true);
         }));
 
         it('passing an array of ids', () => {
@@ -268,11 +268,10 @@ describe('Model', () => {
 
             return ModelInstance.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult);
 
-            function onResult(data) {
-                entity = data[0];
+            function onResult(_entity) {
                 expect(is.array(ds.get.getCall(0).args[0])).equal(true);
-                expect(is.array(entity)).equal(true);
-                expect(entity[0].entityKey.id).equal(22); // sorted
+                expect(is.array(_entity)).equal(true);
+                expect(_entity[0].entityKey.id).equal(22); // sorted
             }
         });
 
@@ -324,11 +323,10 @@ describe('Model', () => {
             });
         });
 
-        it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((data) => {
-            entity = data[0];
+        it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((_entity) => {
             expect(transaction.get.called).equal(true);
             expect(ds.get.called).equal(false);
-            expect(entity.className).equal('Entity');
+            expect(_entity.className).equal('Entity');
         }));
 
         it('should throw error if transaction not an instance of glcoud Transaction',
@@ -349,9 +347,9 @@ describe('Model', () => {
         it('should still work with a callback', () => {
             return ModelInstance.get(123, onResult);
 
-            function onResult(err, result) {
+            function onResult(err, _entity) {
                 expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-                expect(result instanceof Entity).equal(true);
+                expect(_entity instanceof Entity).equal(true);
             }
         });
     });
@@ -363,8 +361,7 @@ describe('Model', () => {
             expect(transaction.commit.called).equal(true);
         }));
 
-        it('should return an entity instance', () => ModelInstance.update(123).then((data) => {
-            const entity = data[0];
+        it('should return an entity instance', () => ModelInstance.update(123).then((entity) => {
             expect(entity.className).equal('Entity');
         }));
 
@@ -373,19 +370,11 @@ describe('Model', () => {
             expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
         }));
 
-        it('should not convert a string id with mix of number and alpha chars',
-            () => ModelInstance.update('123:456').then(() => {
+        it('should not convert a string id with mix of number and alpha chars', () => (
+            ModelInstance.update('123:456').then(() => {
                 expect(transaction.get.getCall(0).args[0].name).equal('123:456');
-            }));
-
-        it('should return transaction info', () => {
-            const info = { success: true };
-            transaction.commit.restore();
-            sinon.stub(transaction, 'commit').resolves([info]);
-            return ModelInstance.update('123:456').then((result) => {
-                expect(result[1]).equal(info);
-            });
-        });
+            })
+        ));
 
         it('should rollback if error while getting entity', () => {
             transaction.get.restore();
@@ -440,8 +429,7 @@ describe('Model', () => {
                 name: 'Mick',
             };
             return ModelInstance.update(123, data, null, null, null, { replace: true })
-                                .then((result) => {
-                                    const entity = result[0];
+                                .then((entity) => {
                                     expect(entity.entityData.name).equal('Mick');
                                     expect(entity.entityData.lastname).equal(null);
                                     expect(entity.entityData.email).equal(null);
@@ -454,8 +442,7 @@ describe('Model', () => {
                 lastname: 'Snow',
             };
             return ModelInstance.update(123, data, ['Parent', 'keyNameParent'])
-                .then((result) => {
-                    const entity = result[0];
+                .then((entity) => {
                     expect(entity.entityData.name).equal('Sebas');
                     expect(entity.entityData.lastname).equal('Snow');
                     expect(entity.entityData.email).equal('john@snow.com');
@@ -468,37 +455,37 @@ describe('Model', () => {
             });
         });
 
-        it('should return error and rollback transaction if not passing validation',
-            () => ModelInstance.update(123, { unknown: 1 }).catch((err) => {
-                assert.isDefined(err);
-                expect(transaction.rollback.called).equal(true);
-            }));
+        it('should return error and rollback transaction if not passing validation', () => (
+            ModelInstance.update(123, { unknown: 1 })
+                            .catch((err) => {
+                                assert.isDefined(err);
+                                expect(transaction.rollback.called).equal(true);
+                            })
+        ));
 
-        it('should return error if not passing validation',
-            () => ModelInstance.update(123, { unknown: 1 }, null, null, null, { replace: true })
-                    .catch((err) => {
-                        assert.isDefined(err);
-                    }));
+        it('should return error if not passing validation', () => (
+            ModelInstance.update(123, { unknown: 1 }, null, null, null, { replace: true })
+                        .catch((err) => {
+                            assert.isDefined(err);
+                        })
+        ));
 
-        it('should run inside an EXISTING transaction', () => ModelInstance.update(123, {}, null, null, transaction)
-                .then((result) => {
-                    const entity = result[0];
-                    expect(ds.transaction.called).equal(false);
-                    expect(transaction.get.called).equal(true);
-                    expect(transaction.save.called).equal(true);
-                    expect(entity.className).equal('Entity');
-                }));
+        it('should run inside an EXISTING transaction', () => (
+            ModelInstance.update(123, {}, null, null, transaction)
+                            .then((entity) => {
+                                expect(ds.transaction.called).equal(false);
+                                expect(transaction.get.called).equal(true);
+                                expect(transaction.save.called).equal(true);
+                                expect(entity.className).equal('Entity');
+                            })
+        ));
 
-        it('should throw error if transaction passed is not instance of gcloud Transaction',
-            () => ModelInstance.update(123, {}, null, null, {})
-                                .catch((err) => {
-                                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-                                }));
-
-        it('should set save options "op" to "update" ', () => ModelInstance.update(123, {}).then((result) => {
-            const info = result[1];
-            expect(info.op).equal('update');
-        }));
+        it('should throw error if transaction passed is not instance of gcloud Transaction', () => (
+            ModelInstance.update(123, {}, null, null, {})
+                        .catch((err) => {
+                            expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                        })
+        ));
 
         it('should still work passing a callback', () => ModelInstance.update(123, (err, entity) => {
             expect(entity.className).equal('Entity');
@@ -516,18 +503,20 @@ describe('Model', () => {
             transaction.delete.restore();
         });
 
-        it('should call ds.delete with correct Key (int id)', () => ModelInstance.delete(123).then((response) => {
-            expect(ds.delete.called).equal(true);
-            expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
-            expect(response[0]).equal(true);
-        }));
+        it('should call ds.delete with correct Key (int id)', () => (
+            ModelInstance.delete(123).then((response) => {
+                expect(ds.delete.called).equal(true);
+                expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
+                expect(response.success).equal(true);
+            })
+        ));
 
         it('should call ds.delete with correct Key (string id)',
             () => ModelInstance.delete('keyName')
                                 .then((response) => {
                                     expect(ds.delete.called).equal(true);
                                     expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
-                                    expect(response[0]).equal(true);
+                                    expect(response.success).equal(true);
                                 }));
 
         it('not converting string id with mix of number and alpha chars',
@@ -567,8 +556,8 @@ describe('Model', () => {
         it('should deal with empty responses', () => {
             ds.delete.restore();
             sinon.stub(ds, 'delete').resolves();
-            return ModelInstance.delete(1).then((result) => {
-                assert.isDefined(result[1].key);
+            return ModelInstance.delete(1).then((response) => {
+                assert.isDefined(response.key);
             });
         });
 
@@ -589,7 +578,7 @@ describe('Model', () => {
             sinon.stub(ds, 'delete').resolves([{ indexUpdates: 0 }]);
 
             return ModelInstance.delete(123).then((response) => {
-                expect(response[0]).equal(false);
+                expect(response.success).equal(false);
             });
         });
 
@@ -598,7 +587,7 @@ describe('Model', () => {
             sinon.stub(ds, 'delete').resolves([{}]);
 
             return ModelInstance.delete(123).then((response) => {
-                assert.isUndefined(response[0]);
+                assert.isUndefined(response.success);
             });
         });
 
@@ -672,9 +661,9 @@ describe('Model', () => {
         });
 
         it('should pass key deleted to post hooks', () => {
-            schema.post('delete', (result) => {
-                expect(result[1].key.constructor.name).equal('Key');
-                expect(result[1].key.id).equal(123);
+            schema.post('delete', (response) => {
+                expect(response.key.constructor.name).equal('Key');
+                expect(response.key.id).equal(123);
                 return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
@@ -685,8 +674,8 @@ describe('Model', () => {
         it('should pass array of keys deleted to post hooks', () => {
             const ids = [123, 456];
             schema.post('delete', (response) => {
-                expect(response[1].key.length).equal(ids.length);
-                expect(response[1].key[1].id).equal(456);
+                expect(response.key.length).equal(ids.length);
+                expect(response.key[1].id).equal(456);
                 return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
@@ -713,11 +702,34 @@ describe('Model', () => {
         });
 
         it('should still work passing a callback', () => {
-            ModelInstance.delete('keyName', (err, success) => {
+            ModelInstance.delete('keyName', (err, response) => {
                 expect(ds.delete.called).equal(true);
                 expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
-                expect(success).equal(true);
+                expect(response.success).equal(true);
             });
+        });
+    });
+
+    describe('excludeFromIndexes', () => {
+        it('should add properties to schema as optional', () => {
+            const arr = ['newProp', 'url'];
+            ModelInstance.excludeFromIndexes(arr);
+
+            const model = new ModelInstance({});
+
+            expect(model.excludeFromIndexes).deep.equal(['lastname', 'age'].concat(arr));
+            expect(schema.path('newProp').optional).equal(true);
+        });
+
+        it('should only modifiy excludeFromIndexes on properties that already exist', () => {
+            const prop = 'lastname';
+            ModelInstance.excludeFromIndexes(prop);
+
+            const model = new ModelInstance({});
+
+            expect(model.excludeFromIndexes).deep.equal(['lastname', 'age']);
+            assert.isUndefined(schema.path('lastname').optional);
+            expect(schema.path('lastname').excludeFromIndexes).equal(true);
         });
     });
 
@@ -813,14 +825,13 @@ describe('Model', () => {
             expect(fn).to.throw(Error);
         });
 
-        it('should run query', () => query.run().then((data) => {
-            const response = data[0];
-                // We add manually the id in the mocks to be able to deep compare
+        it('should run query', () => query.run().then((response) => {
+            // We add manually the id in the mocks to be able to deep compare
             mockEntities[0].id = 1234;
             mockEntities[1].id = 'keyname';
 
-                // we delete from the mock the property
-                // 'password' it has been defined with read: false
+            // we delete from the mock the property
+            // 'password' it has been defined with read: false
             delete mockEntities[0].password;
 
             expect(query.__originalRun.called).equal(true);
@@ -833,25 +844,33 @@ describe('Model', () => {
             delete mockEntities[1].id;
         }));
 
-        it('should add id to entities', () => query.run()
-                .then((data) => {
-                    const response = data[0];
+        it('should add id to entities', () => (
+             query.run()
+                .then((response) => {
                     expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
                     expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-                }));
+                })
+        ));
 
-        it('should accept "readAll" option', () => query.run(({ readAll: true }))
-                .then((data) => {
-                    const response = data[0];
+        it('should accept "readAll" option', () => (
+            query.run(({ readAll: true }))
+                .then((response) => {
                     assert.isDefined(response.entities[0].password);
-                }));
+                })
+        ));
+
+        it('should accept "showKey" option', () => (
+            query.run(({ showKey: true }))
+                .then((response) => {
+                    assert.isDefined(response.entities[0].__key);
+                })
+        ));
 
         it('should not add endCursor to response', () => {
             query.__originalRun.restore();
             sinon.stub(query, '__originalRun').resolves([[], { moreResults: ds.NO_MORE_RESULTS }]);
 
-            return query.run().then((data) => {
-                const response = data[0];
+            return query.run().then((response) => {
                 assert.isUndefined(response.nextPageCursor);
             });
         });
@@ -923,26 +942,27 @@ describe('Model', () => {
         });
 
         describe('list', () => {
-            it('should work with no settings defined', () => ModelInstance.list().then((data) => {
-                const response = data[0];
-                expect(response.entities.length).equal(2);
-                expect(response.nextPageCursor).equal('abcdef');
-                assert.isUndefined(response.entities[0].password);
-            }));
+            it('should work with no settings defined', () => (
+                ModelInstance.list().then((response) => {
+                    expect(response.entities.length).equal(2);
+                    expect(response.nextPageCursor).equal('abcdef');
+                    assert.isUndefined(response.entities[0].password);
+                })
+            ));
 
-            it('should add id to entities', () => ModelInstance.list().then((data) => {
-                const response = data[0];
-                expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
-                expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-            }));
+            it('should add id to entities', () => (
+                ModelInstance.list().then((response) => {
+                    expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+                    expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+                })
+            ));
 
             it('should not add endCursor to response', () => {
                 ds.createQuery.restore();
                 sinon.stub(ds, 'createQuery',
                     () => new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS }));
 
-                return ModelInstance.list().then((data) => {
-                    const response = data[0];
+                return ModelInstance.list().then((response) => {
                     assert.isUndefined(response.nextPageCursor);
                 });
             });
@@ -955,10 +975,10 @@ describe('Model', () => {
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                return ModelInstance.list().then((result) => {
+                return ModelInstance.list().then((response) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
                     expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
-                    expect(result[0].entities[0].className).equal('Entity');
+                    expect(response.entities[0].className).equal('Entity');
                 });
             });
 
@@ -966,15 +986,16 @@ describe('Model', () => {
                 const querySettings = {
                     limit: 10,
                     readAll: true,
+                    showKey: true,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                return ModelInstance.list({ limit: 15 }).then((data) => {
-                    const response = data[0];
+                return ModelInstance.list({ limit: 15 }).then((response) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
                     expect(queryMock.limit.getCall(0).args[0]).equal(15);
                     assert.isDefined(response.entities[0].password);
+                    assert.isDefined(response.entities[0].__key);
                 });
             });
 
@@ -1096,9 +1117,8 @@ describe('Model', () => {
                 });
             });
 
-            it('should return success:true if all ok', () => ModelInstance.deleteAll().then((data) => {
-                const msg = data[0];
-                expect(msg.success).equal(true);
+            it('should return success:true if all ok', () => ModelInstance.deleteAll().then((response) => {
+                expect(response.success).equal(true);
             }));
 
             it('should return error if any while deleting', () => {
@@ -1132,10 +1152,9 @@ describe('Model', () => {
         });
 
         describe('findAround()', () => {
-            it('should get 3 entities after a given date',
-                () => ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
-                                    .then((result) => {
-                                        const entities = result[0];
+            it('should get 3 entities after a given date', () => (
+                ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
+                                    .then((entities) => {
                                         expect(queryMock.filter.getCall(0).args)
                                             .deep.equal(['createdOn', '>', '2016-1-1']);
                                         expect(queryMock.order.getCall(0).args)
@@ -1144,14 +1163,15 @@ describe('Model', () => {
 
                                         // Make sure to not show properties where read is set to false
                                         assert.isUndefined(entities[0].password);
-                                    }));
+                                    })
+            ));
 
-            it('should get 3 entities before a given date', () =>
+            it('should get 3 entities before a given date', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 12 }).then(() => {
-                    expect(queryMock.filter.getCall(0).args)
-                                            .deep.equal(['createdOn', '<', '2016-1-1']);
+                    expect(queryMock.filter.getCall(0).args).deep.equal(['createdOn', '<', '2016-1-1']);
                     expect(queryMock.limit.getCall(0).args[0]).equal(12);
-                }));
+                })
+            ));
 
             it('should throw error if not all arguments are passed', () =>
                 ModelInstance.findAround('createdOn', '2016-1-1')
@@ -1175,20 +1195,27 @@ describe('Model', () => {
                     expect(err.code).equal(400);
                 }));
 
-            it('should add id to entities', () =>
-                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((result) => {
-                    const entities = result[0];
+            it('should add id to entities', () => (
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((entities) => {
                     expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
                     expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
-                }));
+                })
+            ));
 
-            it('should read all properties', () =>
+            it('should read all properties', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' })
-                            .then((result) => {
-                                const entities = result[0];
+                            .then((entities) => {
                                 assert.isDefined(entities[0].password);
                                 expect(entities[0].className).equal('Entity');
-                            }));
+                            })
+            ));
+
+            it('should add entities key', () => (
+                ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true })
+                            .then((entities) => {
+                                assert.isDefined(entities[0].__key);
+                            })
+            ));
 
             it('should accept a namespace', () => {
                 const namespace = 'com.new-domain.dev';
@@ -1240,26 +1267,28 @@ describe('Model', () => {
                 });
             });
 
-            it('should run correct gcloud Query', () =>
+            it('should run correct gcloud Query', () => (
                 ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
                     expect(queryMock.filter.getCall(0).args)
                         .deep.equal(['name', 'John']);
 
                     expect(queryMock.filter.getCall(1).args)
                         .deep.equal(['email', 'john@snow.com']);
-                }));
+                })
+            ));
 
-            it('should return a Model instance', () =>
-                ModelInstance.findOne({ name: 'John' }).then((result) => {
-                    const entity = result[0];
+            it('should return a Model instance', () => (
+                ModelInstance.findOne({ name: 'John' }).then((entity) => {
                     expect(entity.entityKind).equal('Blog');
                     expect(entity instanceof Model).equal(true);
-                }));
+                })
+            ));
 
-            it('should validate that params passed are object', () =>
+            it('should validate that params passed are object', () => (
                 ModelInstance.findOne('some string').catch((err) => {
                     expect(err.code).equal(400);
-                }));
+                })
+            ));
 
             it('should accept ancestors', () => {
                 const ancestors = ['Parent', 'keyname'];
@@ -1297,34 +1326,12 @@ describe('Model', () => {
                 });
             });
 
-            it('should still work with a callback', () =>
+            it('should still work with a callback', () => (
                 ModelInstance.findOne({ name: 'John' }, (err, entity) => {
                     expect(entity.entityKind).equal('Blog');
                     expect(entity instanceof Model).equal(true);
-                }));
-        });
-
-        describe('excludeFromIndexes', () => {
-            it('should add properties to schema as optional', () => {
-                const arr = ['newProp', 'url'];
-                ModelInstance.excludeFromIndexes(arr);
-
-                const model = new ModelInstance({});
-
-                expect(model.excludeFromIndexes).deep.equal(['lastname', 'age'].concat(arr));
-                expect(schema.path('newProp').optional).equal(true);
-            });
-
-            it('should only modifiy excludeFromIndexes on properties that already exist', () => {
-                const prop = 'lastname';
-                ModelInstance.excludeFromIndexes(prop);
-
-                const model = new ModelInstance({});
-
-                expect(model.excludeFromIndexes).deep.equal(['lastname', 'age']);
-                assert.isUndefined(schema.path('lastname').optional);
-                expect(schema.path('lastname').excludeFromIndexes).equal(true);
-            });
+                })
+            ));
         });
     });
 
@@ -1336,7 +1343,13 @@ describe('Model', () => {
             model = new ModelInstance(data);
         });
 
-        it('---> should validate() before', () => {
+        it('should return the entity saved', () => (
+            model.save().then((_entity) => {
+                expect(_entity.className).equal('Entity');
+            })
+        ));
+
+        it('should validate() before', () => {
             const validateSpy = sinon.spy(model, 'validate');
 
             return model.save().then(() => {
@@ -1344,7 +1357,7 @@ describe('Model', () => {
             });
         });
 
-        it('---> should NOT validate() data before', () => {
+        it('should NOT validate() data before', () => {
             schema = new Schema({}, { validateBeforeSave: false });
             ModelInstance = Model.compile('Blog', schema, gstore);
             model = new ModelInstance({ name: 'John' });
@@ -1361,6 +1374,7 @@ describe('Model', () => {
             return model.save().catch((err) => {
                 assert.isDefined(err);
                 expect(ds.save.called).equal(false);
+                expect(err.message.indexOf('Property not allowed')).equal(0);
             });
         });
 
@@ -1396,7 +1410,7 @@ describe('Model', () => {
             })
         ));
 
-        it('should accept a method inside the options', () => (
+        it('should accept a "method" parameter in options', () => (
             model.save(null, { method: 'insert' }).then(() => {
                 expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
             })
@@ -1430,23 +1444,49 @@ describe('Model', () => {
             });
         });
 
-        it('should save entity in a transaction and return transaction',
-            () => model.save(transaction, {})
-                        .then((result) => {
-                            const entity = result[0];
-                            const info = result[1];
-                            const transPassed = result[2];
-                            expect(transaction.save.called).equal(true);
-                            assert.isDefined(entity.entityData);
-                            expect(transPassed).equal(transaction);
-                            expect(info.op).equal('save');
-                        }));
+        it('should save entity in a transaction and execute "pre" hooks first', () => {
+            schema = new Schema({});
+            const spyPreHook = sinon.spy();
+            schema.pre('save', () => {
+                spyPreHook();
+                return Promise.resolve();
+            });
+
+            Model = gstore.model('TransactionHooks', schema, gstore);
+            const entity = new Model({});
+
+            return entity.save(transaction)
+                .then((_entity) => {
+                    expect(spyPreHook.called).equal(true);
+                    expect(transaction.save.called).equal(true);
+                    expect(spyPreHook.calledBefore(transaction.save)).equal(true);
+                    assert.isDefined(_entity.entityData);
+                });
+        });
+
+        it('should *not* save entity in a transaction if there are "pre" hooks', () => {
+            schema = new Schema({});
+            const spyPreHook = sinon.spy();
+            schema.pre('save', () => {
+                spyPreHook();
+                return Promise.resolve();
+            });
+            Model = gstore.model('TransactionHooks', schema, gstore);
+            const entity = new Model({});
+
+            entity.save(transaction);
+
+            expect(spyPreHook.called).equal(true);
+            expect(transaction.save.called).equal(false);
+        });
 
         it('should save entity in a transaction in sync', () => {
             const schema2 = new Schema({}, { validateBeforeSave: false });
             const ModelInstance2 = gstore.model('NewType', schema2, gstore);
             model = new ModelInstance2({});
             model.save(transaction);
+
+            // dummy test to make sure save method does not block
             expect(true).equal(true);
         });
 
@@ -1469,6 +1509,8 @@ describe('Model', () => {
                 name: { type: 'string' },
             });
 
+            schema.pre('save', () => Promise.resolve());
+
             const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
             model = new ModelInstanceTemp({});
             model.preHooksEnabled = false;
@@ -1483,12 +1525,13 @@ describe('Model', () => {
             expect(transaction2.save.called).equal(false);
         });
 
-        it('should throw error if transaction not instance of Transaction',
-            () => model.save({ id: 0 }, {})
-                        .catch((err) => {
-                            assert.isDefined(err);
-                            expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-                        }));
+        it('should throw error if transaction not instance of Transaction', () => (
+            model.save({ id: 0 }, {})
+                    .catch((err) => {
+                        assert.isDefined(err);
+                        expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                    })
+        ));
 
         it('should call pre hooks', () => {
             const spyPre = sinon.stub().resolves();
@@ -1520,14 +1563,13 @@ describe('Model', () => {
             const error = { code: 500 };
             const spyPost = sinon.stub().rejects(error);
             schema = new Schema({ name: { type: 'string' } });
-            schema.post('save', () => spyPost());
+            schema.post('save', spyPost);
             ModelInstance = Model.compile('Blog', schema, gstore);
             model = new ModelInstance({ name: 'John' });
 
-            return model.save().then((savedData) => {
-                assert.isDefined(savedData.result);
-                assert.isDefined(savedData.errorsPostHook);
-                expect(savedData.errorsPostHook[0]).equal(error);
+            return model.save().then((entity) => {
+                assert.isDefined(entity.errorsPostHook);
+                expect(entity.errorsPostHook[0]).equal(error);
             });
         });
 
@@ -1926,10 +1968,13 @@ describe('Model', () => {
 
         it('--> is IP ok', () => {
             const model = new ModelInstance({ ip: '127.0.0.1' });
+            const model2 = new ModelInstance({ ip2: '127.0.0.1' });
 
             const valid = model.validate();
+            const valid2 = model2.validate();
 
             expect(valid.success).equal(true);
+            expect(valid2.success).equal(true);
         });
 
         it('--> is IP ko', () => {

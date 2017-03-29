@@ -1,5 +1,6 @@
 'use strict';
 
+const gstore = require('../');
 const chai = require('chai');
 const Schema = require('../lib').Schema;
 
@@ -46,13 +47,6 @@ describe('Schema', () => {
             };
 
             expect(fn).to.throw(Error);
-        });
-
-        it('should register default middelwares', () => {
-            const schema = new Schema({});
-
-            assert.isDefined(schema.callQueue.entity.save);
-            expect(schema.callQueue.entity.save.pres.length).equal(1);
         });
     });
 
@@ -140,9 +134,11 @@ describe('Schema', () => {
             schema.callQueue = { model: {}, entity: {} };
 
             schema.pre('save', preMiddleware);
+            schema.pre('save', preMiddleware); // we add 2 so we test both cases L140
 
             assert.isDefined(schema.callQueue.entity.save);
             expect(schema.callQueue.entity.save.pres[0]).equal(preMiddleware);
+            expect(schema.callQueue.entity.save.pres[1]).equal(preMiddleware);
         });
 
         it('should add post hooks to callQueue', () => {
@@ -164,6 +160,19 @@ describe('Schema', () => {
             schema.virtual('fullname', fn);
 
             expect(schema.virtuals.fullname.constructor.name).equal('VirtualType');
+        });
+
+        it('should set the scope on the entityData', () => {
+            const schema = new Schema({ id: {} });
+            schema.virtual('fullname').get(virtualFunc);
+            const Model = gstore.model('VirtualTest', schema);
+            const entity = new Model({ id: 123 });
+
+            entity.plain({ virtuals: true });
+
+            function virtualFunc() {
+                expect(this).equal(entity.entityData);
+            }
         });
     });
 
