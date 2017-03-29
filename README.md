@@ -47,7 +47,7 @@ The @google/datastore instance. This means that you can access **all the API** o
 - `gstore.transaction`. Alias of the same google-cloud/datastore method
 
 # Documentation
-The [complete documentation of gstore-node](https://www.gitbook.com/book/sebelga/gstore-node/details) is in gitbook.
+The [complete documentation of gstore-node](https://sebelga.gitbooks.io/gstore-node/content/) is in gitbook.
 
 # Example
 
