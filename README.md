@@ -84,7 +84,7 @@ const validateAccessList = (value, validator) => {
     return value.some((item) => {
         const isValidIp = !validator.isEmpty(item.ip) && validator.isIP(item.ip, 4);
         const isValidHostname = !validator.isEmpty(item.hostname);
-        
+
         return isValidHostname && isValidIp;
     });
 }
@@ -101,8 +101,16 @@ const userSchema = new Schema({
     dateOfBirth: { type: 'datetime' },
     bio: { type: 'string', excludeFromIndexes: true },
     website: { validate: 'isURL', optional: true },
+    ip: {
+        validate: {
+            validate: 'isIP',
+            args: [4],
+        }
+     }
     accessList: {
-        validate: validateAccessList,
+        validate: {
+            rule: validateAccessList,
+        }
     },
 });
 
