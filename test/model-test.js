@@ -23,6 +23,15 @@ const Schema = require('../lib').Schema;
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers = require('../lib/helper').QueryHelpers;
 
+function customValidationFunction(obj, validator, min, max) {
+    if ('embeddedEntity' in obj) {
+        const value = obj.embeddedEntity.value;
+        return validator.isNumeric(value.toString()) && (value >= min) && (value <= max);
+    }
+
+    return false;
+}
+
 let Model = require('../lib/model');
 
 describe('Model', () => {
@@ -58,6 +67,13 @@ describe('Model', () => {
             location: { type: 'geoPoint' },
             color: { validate: 'isHexColor' },
             type: { values: ['image', 'video'] },
+            customFieldWithEmbeddedEntity: {
+                type: 'object',
+                validate: {
+                    rule: customValidationFunction,
+                    args: [4, 10],
+                },
+            },
         });
 
         schema.virtual('fullname').get(() => { });
@@ -1997,6 +2013,34 @@ describe('Model', () => {
 
             expect(valid.success).equal(true);
             expect(valid2.success).equal(false);
+        });
+
+        it('--> is customFieldWithEmbeddedEntity ok', () => {
+            const model = new ModelInstance({
+                customFieldWithEmbeddedEntity: {
+                    embeddedEntity: {
+                        value: 6,
+                    },
+                },
+            });
+
+            const valid = model.validate();
+
+            expect(valid.success).equal(true);
+        });
+
+        it('--> is customFieldWithEmbeddedEntity ko', () => {
+            const model = new ModelInstance({
+                customFieldWithEmbeddedEntity: {
+                    embeddedEntity: {
+                        value: 2,
+                    },
+                },
+            });
+
+            const valid = model.validate();
+
+            expect(valid.success).equal(false);
         });
 
         it('and only accept value in default values', () => {
