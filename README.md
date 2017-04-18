@@ -74,6 +74,22 @@ const bscrypt = require('bcrypt-nodejs');
 const Schema = gstore.Schema;
 
 /**
+ * A custom validation function for an embedded entity
+ */
+const validateAccessList = (value, validator) => {
+    if (!Array.isArray(value)) {
+        return false;
+    }
+
+    return value.some((item) => {
+        const isValidIp = !validator.isEmpty(item.ip) && validator.isIP(item.ip, 4);
+        const isValidHostname = !validator.isEmpty(item.hostname);
+        
+        return isValidHostname && isValidIp;
+    });
+}
+
+/**
  * Create the schema for the User Model
 */
 const userSchema = new Schema({
@@ -85,9 +101,8 @@ const userSchema = new Schema({
     dateOfBirth: { type: 'datetime' },
     bio: { type: 'string', excludeFromIndexes: true },
     website: { validate: 'isURL', optional: true },
-    ip: {
-        validate: 'isIP',
-        args: [4]
+    accessList: {
+        validate: validateAccessList,
     },
 });
 
