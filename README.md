@@ -103,7 +103,7 @@ const userSchema = new Schema({
     website: { validate: 'isURL', optional: true },
     ip: {
         validate: {
-            validate: 'isIP',
+            rule: 'isIP',
             args: [4],
         }
     },
