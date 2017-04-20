@@ -106,7 +106,7 @@ const userSchema = new Schema({
             validate: 'isIP',
             args: [4],
         }
-     }
+    },
     accessList: {
         validate: {
             rule: validateAccessList,
