@@ -1,6 +1,6 @@
 {
   "name": "gstore-node",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "gstore-node is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {
@@ -35,13 +35,17 @@
       "url": "https://github.com/micaww"
     },
     {
+      "name": "Ricardo Machado",
+      "url": "https://github.com/mAiNiNfEcTiOn"
+    },
+    {
       "name": "jfbenckhuijsen",
       "url": "https://github.com/jfbenckhuijsen"
     }
   ],
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/datastore": "0.7.1",
+    "@google-cloud/datastore": "1.0.0",
     "arrify": "^1.0.1",
     "extend": "^3.0.0",
     "is": "^3.2.1",
