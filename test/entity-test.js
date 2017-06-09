@@ -76,11 +76,17 @@ describe('Entity', () => {
         });
 
         it('should set default values or null from schema', () => {
+            function fn() {
+                return 'generatedValue';
+            }
+
             schema = new Schema({
                 name: { type: 'string', default: 'John' },
                 lastname: { type: 'string' },
                 email: { optional: true },
+                generatedValue: { type: 'string', default: fn },
             });
+
             ModelInstance = gstore.model('BlogPost', schema);
 
             const entity = new ModelInstance({});
@@ -88,6 +94,7 @@ describe('Entity', () => {
             expect(entity.entityData.name).equal('John');
             expect(entity.entityData.lastname).equal(null);
             expect(entity.entityData.email).equal(undefined);
+            expect(entity.entityData.generatedValue).equal('generatedValue');
         });
 
         it('should call handler for default values in gstore.defaultValues constants', () => {
