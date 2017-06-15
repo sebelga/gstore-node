@@ -164,7 +164,7 @@ userSchema.pre('save', hashPassword);
  * Export the User Model
  * It will generate "User" entity kind in the Datastore
 */
-module.exports = gstore.Model('User', userSchema);
+module.exports = gstore.model('User', userSchema);
 
 ```
 Use it in your Controller
