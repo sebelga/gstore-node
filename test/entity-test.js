@@ -85,6 +85,8 @@ describe('Entity', () => {
                 lastname: { type: 'string' },
                 email: { optional: true },
                 generatedValue: { type: 'string', default: fn },
+                availableValues: { values: ['a', 'b', 'c'] },
+                availableValuesRequired: { values: ['a', 'b', 'c'], required: true },
             });
 
             ModelInstance = gstore.model('BlogPost', schema);
@@ -95,6 +97,8 @@ describe('Entity', () => {
             expect(entity.entityData.lastname).equal(null);
             expect(entity.entityData.email).equal(undefined);
             expect(entity.entityData.generatedValue).equal('generatedValue');
+            expect(entity.entityData.availableValues).equal('a');
+            expect(entity.entityData.availableValuesRequired).equal(null);
         });
 
         it('should call handler for default values in gstore.defaultValues constants', () => {
