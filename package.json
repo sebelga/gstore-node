@@ -1,6 +1,6 @@
 {
   "name": "gstore-node",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "gstore-node is a Google Datastore Entity Models tools",
   "main": "index.js",
   "scripts": {

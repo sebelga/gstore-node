@@ -97,7 +97,7 @@ const userSchema = new Schema({
     lastname: { type: 'string', optional: true  },
     email: { type: 'string', validate: 'isEmail', required: true },
     password: { type: 'string', read: false, required: true },
-    createdOn: { type: 'string', default: gstore.defaultValues.NOW, write: false, read: false }
+    createdOn: { type: 'string', default: gstore.defaultValues.NOW, write: false, read: false },
     dateOfBirth: { type: 'datetime' },
     bio: { type: 'string', excludeFromIndexes: true },
     website: { validate: 'isURL', optional: true },
@@ -164,7 +164,7 @@ userSchema.pre('save', hashPassword);
  * Export the User Model
  * It will generate "User" entity kind in the Datastore
 */
-module.exports = gstore.Model('User', userSchema);
+module.exports = gstore.model('User', userSchema);
 
 ```
 Use it in your Controller
