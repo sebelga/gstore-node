@@ -183,6 +183,7 @@ const getUsers(req ,res) {
             res.json(entities);
         })
         .catch(err => res.status(500).json(err));
+}
 
 const getUser(req, res) {
     const userId = +req.params.id;
