@@ -22,6 +22,7 @@ describe('Datastore serializer', () => {
         const schema = new Schema({
             name: { type: 'string' },
             email: { type: 'string', read: false },
+            createdOn: { type: 'datetime' },
         });
         ModelInstance = gstore.model('Blog', schema, {});
     });
@@ -38,6 +39,7 @@ describe('Datastore serializer', () => {
                 name: 'John',
                 lastname: 'Snow',
                 email: 'john@snow.com',
+                createdOn: '2017-12-25',
             };
 
             datastoreMock = data;
@@ -66,10 +68,21 @@ describe('Datastore serializer', () => {
 
         it('should convert to entity instances', () => {
             const serialized = datastoreSerializer
-                                    .fromDatastore
-                                    .call(ModelInstance, datastoreMock, { format: gstore.Queries.formats.ENTITY });
+                .fromDatastore
+                .call(ModelInstance, datastoreMock, { format: gstore.Queries.formats.ENTITY });
 
             expect(serialized.className).equal('Entity');
+        });
+
+        it('should convert Datetime prop to Date object if returned as number', () => {
+            const date = Date.now();
+            datastoreMock.createdOn = date;
+
+            const serialized = datastoreSerializer
+                .fromDatastore
+                .call(ModelInstance, datastoreMock);
+
+            assert.isDefined(serialized.createdOn.getDate);
         });
     });
 
