@@ -24,6 +24,7 @@ This library is in active development, please report any issue you might find.
 npm install gstore-node --save
 ```
 
+IMPORTANT: Since v1.4.0, gstore-node requires Node version **6 or superior**
 INFO: With npm v3+ **you don't need** to install @google-cloud/datastore as a dependency of your project as it is already a dependency of gstore-node.
 
 # Getting started

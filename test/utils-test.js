@@ -3,7 +3,7 @@
 const chai = require('chai');
 const utils = require('../lib/utils');
 
-const expect = chai.expect;
+const { expect } = chai;
 
 describe('Utils', () => {
     describe('promisify()', () => {
