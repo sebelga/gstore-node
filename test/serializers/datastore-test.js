@@ -6,11 +6,10 @@ const ds = require('../mocks/datastore')({
 });
 
 const gstore = require('../../lib');
-const Schema = require('../../lib').Schema;
+const { Schema } = require('../../lib');
 const datastoreSerializer = require('../../lib/serializer').Datastore;
 
-const expect = chai.expect;
-const assert = chai.assert;
+const { expect, assert } = chai;
 
 describe('Datastore serializer', () => {
     let ModelInstance;
