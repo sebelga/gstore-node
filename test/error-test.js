@@ -3,14 +3,12 @@
 
 const chai = require('chai');
 const gstore = require('../');
-const GstoreError = require('../lib/error').GstoreError;
+const { GstoreError } = require('../lib/error');
 const Model = require('../lib/model');
 const Schema = require('../lib/schema');
 
-const ValidationError = GstoreError.ValidationError;
-const ValidatorError = GstoreError.ValidatorError;
-const expect = chai.expect;
-const assert = chai.assert;
+const { ValidationError, ValidatorError } = GstoreError;
+const { expect, assert } = chai;
 
 describe('Datastools Errors', () => {
     it('should extend Error', () => {

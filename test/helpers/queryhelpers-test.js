@@ -5,7 +5,7 @@ const sinon = require('sinon');
 const ds = require('@google-cloud/datastore')();
 const queryHelpers = require('../../lib/helper').QueryHelpers;
 
-const expect = chai.expect;
+const { expect } = chai;
 
 describe('Query Helpers', () => {
     let query;

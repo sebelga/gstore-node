@@ -17,9 +17,15 @@
         "no-use-before-define": ["error", {"functions": false}],
         "prefer-rest-params": "off",
         "prefer-spread": "off",
+        "no-restricted-globals": "off",
         "no-underscore-dangle": "off",
         "no-param-reassign": "off",
         "max-len": ["error", 120],
-        "mocha/no-exclusive-tests": "off"
+        "mocha/no-exclusive-tests": "off",
+        "comma-dangle": ["error", {
+            "arrays": "always-multiline",
+            "objects": "always-multiline",
+            "functions": "ignore"
+        }]
      }
 }

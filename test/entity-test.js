@@ -4,13 +4,10 @@ const chai = require('chai');
 const sinon = require('sinon');
 const ds = require('./mocks/datastore')();
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const Schema = require('../lib').Schema;
+const { Schema } = require('../lib');
 const gstore = require('../lib');
 
-require('sinon-as-promised');
-
-const expect = chai.expect;
-const assert = chai.assert;
+const { expect, assert } = chai;
 gstore.connect(ds);
 
 describe('Entity', () => {
@@ -34,8 +31,7 @@ describe('Entity', () => {
 
         schema.virtual('fullname').set(function setFullName(name) {
             const split = name.split(' ');
-            this.name = split[0];
-            this.lastname = split[1];
+            [this.name, this.lastname] = split;
         });
 
         ModelInstance = gstore.model('User', schema);
@@ -392,7 +388,7 @@ describe('Entity', () => {
 
         it('should call datastoreSerializer "fromDatastore"', () => {
             const model = new ModelInstance({ name: 'John', password: 'test' });
-            const entityData = model.entityData;
+            const { entityData } = model;
 
             const output = model.plain();
 
@@ -513,7 +509,7 @@ describe('Entity', () => {
             const ImageModel = gstore.model('Image', imageSchema);
             const mockEntities = [{ key: ds.key(['BlogPost', 1234]) }];
 
-            sinon.stub(ImageModel, 'get', (cb) => {
+            sinon.stub(ImageModel, 'get').callsFake((cb) => {
                 cb(null, mockEntities[0]);
             });
 
@@ -538,8 +534,7 @@ describe('Entity', () => {
 
             schema.virtual('fullname').set(function setFullName(name) {
                 const split = name.split(' ');
-                this.firstname = split[0];
-                this.lastname = split[1];
+                [this.firstname, this.lastname] = split;
             });
 
             User = gstore.model('Client', schema);

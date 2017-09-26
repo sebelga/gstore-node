@@ -2,10 +2,9 @@
 
 const gstore = require('../');
 const chai = require('chai');
-const Schema = require('../lib').Schema;
+const { Schema } = require('../lib');
 
-const expect = chai.expect;
-const assert = chai.assert;
+const { expect, assert } = chai;
 
 describe('Schema', () => {
     describe('contructor', () => {
