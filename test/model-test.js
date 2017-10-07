@@ -5,10 +5,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
 
-require('sinon-as-promised');
-
-const expect = chai.expect;
-const assert = chai.assert;
+const { expect, assert } = chai;
 
 const ds = require('./mocks/datastore')({
     namespace: 'com.mydomain',
@@ -19,13 +16,13 @@ const Query = require('./mocks/query');
 
 const gstore = require('../');
 const Entity = require('../lib/entity');
-const Schema = require('../lib').Schema;
+const { Schema } = require('../lib');
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const queryHelpers = require('../lib/helper').QueryHelpers;
 
 function customValidationFunction(obj, validator, min, max) {
     if ('embeddedEntity' in obj) {
-        const value = obj.embeddedEntity.value;
+        const { value } = obj.embeddedEntity;
         return validator.isNumeric(value.toString()) && (value >= min) && (value <= max);
     }
 
@@ -96,7 +93,7 @@ describe('Model', () => {
         transaction = new Transaction();
 
         sinon.spy(ds, 'save');
-        sinon.stub(ds, 'transaction', () => transaction);
+        sinon.stub(ds, 'transaction').callsFake(() => transaction);
         sinon.spy(transaction, 'save');
         sinon.spy(transaction, 'commit');
         sinon.spy(transaction, 'rollback');
@@ -137,7 +134,7 @@ describe('Model', () => {
         it('should execute methods passed to schema.methods', () => {
             const imageSchema = new Schema({});
             const ImageModel = gstore.model('Image', imageSchema);
-            sinon.stub(ImageModel, 'get', (id, cb) => {
+            sinon.stub(ImageModel, 'get').callsFake((id, cb) => {
                 cb(null, mockEntities[0]);
             });
             schema.methods.fullName = function fullName(cb) {
@@ -345,10 +342,12 @@ describe('Model', () => {
             expect(_entity.className).equal('Entity');
         }));
 
-        it('should throw error if transaction not an instance of glcoud Transaction',
+        it(
+            'should throw error if transaction not an instance of glcoud Transaction',
             () => ModelInstance.get(123, null, null, {}).catch((err) => {
                 expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-            }));
+            })
+        );
 
         it('should return error from Transaction.get()', () => {
             transaction.get.restore();
@@ -445,11 +444,11 @@ describe('Model', () => {
                 name: 'Mick',
             };
             return ModelInstance.update(123, data, null, null, null, { replace: true })
-                                .then((entity) => {
-                                    expect(entity.entityData.name).equal('Mick');
-                                    expect(entity.entityData.lastname).equal(null);
-                                    expect(entity.entityData.email).equal(null);
-                                });
+                .then((entity) => {
+                    expect(entity.entityData.name).equal('Mick');
+                    expect(entity.entityData.lastname).equal(null);
+                    expect(entity.entityData.email).equal(null);
+                });
         });
 
         it('should merge the new data with the entity data', () => {
@@ -473,34 +472,34 @@ describe('Model', () => {
 
         it('should return error and rollback transaction if not passing validation', () => (
             ModelInstance.update(123, { unknown: 1 })
-                            .catch((err) => {
-                                assert.isDefined(err);
-                                expect(transaction.rollback.called).equal(true);
-                            })
+                .catch((err) => {
+                    assert.isDefined(err);
+                    expect(transaction.rollback.called).equal(true);
+                })
         ));
 
         it('should return error if not passing validation', () => (
             ModelInstance.update(123, { unknown: 1 }, null, null, null, { replace: true })
-                        .catch((err) => {
-                            assert.isDefined(err);
-                        })
+                .catch((err) => {
+                    assert.isDefined(err);
+                })
         ));
 
         it('should run inside an EXISTING transaction', () => (
             ModelInstance.update(123, {}, null, null, transaction)
-                            .then((entity) => {
-                                expect(ds.transaction.called).equal(false);
-                                expect(transaction.get.called).equal(true);
-                                expect(transaction.save.called).equal(true);
-                                expect(entity.className).equal('Entity');
-                            })
+                .then((entity) => {
+                    expect(ds.transaction.called).equal(false);
+                    expect(transaction.get.called).equal(true);
+                    expect(transaction.save.called).equal(true);
+                    expect(entity.className).equal('Entity');
+                })
         ));
 
         it('should throw error if transaction passed is not instance of gcloud Transaction', () => (
             ModelInstance.update(123, {}, null, null, {})
-                        .catch((err) => {
-                            expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-                        })
+                .catch((err) => {
+                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                })
         ));
 
         it('should still work passing a callback', () => ModelInstance.update(123, (err, entity) => {
@@ -511,7 +510,7 @@ describe('Model', () => {
     describe('delete()', () => {
         beforeEach(() => {
             sinon.stub(ds, 'delete').resolves([{ indexUpdates: 3 }]);
-            sinon.stub(transaction, 'delete', () => true);
+            sinon.stub(transaction, 'delete').callsFake(() => true);
         });
 
         afterEach(() => {
@@ -527,19 +526,23 @@ describe('Model', () => {
             })
         ));
 
-        it('should call ds.delete with correct Key (string id)',
+        it(
+            'should call ds.delete with correct Key (string id)',
             () => ModelInstance.delete('keyName')
-                                .then((response) => {
-                                    expect(ds.delete.called).equal(true);
-                                    expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
-                                    expect(response.success).equal(true);
-                                }));
+                .then((response) => {
+                    expect(ds.delete.called).equal(true);
+                    expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
+                    expect(response.success).equal(true);
+                })
+        );
 
-        it('not converting string id with mix of number and alpha chars',
+        it(
+            'not converting string id with mix of number and alpha chars',
             () => ModelInstance.delete('123:456')
-                                .then(() => {
-                                    expect(ds.delete.getCall(0).args[0].name).equal('123:456');
-                                }));
+                .then(() => {
+                    expect(ds.delete.getCall(0).args[0].name).equal('123:456');
+                })
+        );
 
         it('should allow array of ids', () => ModelInstance.delete([22, 69]).then(() => {
             expect(is.array(ds.delete.getCall(0).args[0])).equal(true);
@@ -562,12 +565,14 @@ describe('Model', () => {
             });
         });
 
-        it('should delete entity in a transaction',
+        it(
+            'should delete entity in a transaction',
             () => ModelInstance.delete(123, null, null, transaction)
-                                .then(() => {
-                                    expect(transaction.delete.called).equal(true);
-                                    expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
-                                }));
+                .then(() => {
+                    expect(transaction.delete.called).equal(true);
+                    expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
+                })
+        );
 
         it('should deal with empty responses', () => {
             ds.delete.restore();
@@ -583,11 +588,13 @@ describe('Model', () => {
             expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
         });
 
-        it('should throw error if transaction passed is not instance of gcloud Transaction',
+        it(
+            'should throw error if transaction passed is not instance of gcloud Transaction',
             () => ModelInstance.delete(123, null, null, {})
-                                .catch((err) => {
-                                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-                                }));
+                .catch((err) => {
+                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                })
+        );
 
         it('should set "success" to false if no entity deleted', () => {
             ds.delete.restore();
@@ -660,7 +667,7 @@ describe('Model', () => {
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            return ModelInstance.delete([123, 456], () => {});
+            return ModelInstance.delete([123, 456], () => { });
         });
 
         it('should call post hooks', () => {
@@ -684,7 +691,7 @@ describe('Model', () => {
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            return ModelInstance.delete(123).then(() => {});
+            return ModelInstance.delete(123).then(() => { });
         });
 
         it('should pass array of keys deleted to post hooks', () => {
@@ -861,7 +868,7 @@ describe('Model', () => {
         }));
 
         it('should add id to entities', () => (
-             query.run()
+            query.run()
                 .then((response) => {
                     expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
                     expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
@@ -923,7 +930,7 @@ describe('Model', () => {
 
         it('should still work with a callback', () => {
             query = ModelInstance.query()
-                    .filter('name', 'John');
+                .filter('name', 'John');
             sinon.stub(query, '__originalRun').resolves(responseQueries);
 
             return query.run((err, response) => {
@@ -938,7 +945,7 @@ describe('Model', () => {
         let queryMock;
         beforeEach(() => {
             queryMock = new Query(ds, { entities: mockEntities });
-            sinon.stub(ds, 'createQuery', () => queryMock);
+            sinon.stub(ds, 'createQuery').callsFake(() => queryMock);
             sinon.spy(queryHelpers, 'buildFromOptions');
             sinon.spy(queryMock, 'run');
             sinon.spy(queryMock, 'filter');
@@ -975,8 +982,8 @@ describe('Model', () => {
 
             it('should not add endCursor to response', () => {
                 ds.createQuery.restore();
-                sinon.stub(ds, 'createQuery',
-                    () => new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS }));
+                sinon.stub(ds, 'createQuery').callsFake(() => (
+                    new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS })));
 
                 return ModelInstance.list().then((response) => {
                     assert.isUndefined(response.nextPageCursor);
@@ -1107,7 +1114,7 @@ describe('Model', () => {
                 return ModelInstance.deleteAll().then(() => {
                     expect(ModelInstance.delete.callCount).equal(1);
 
-                    const args = ModelInstance.delete.getCall(0).args;
+                    const { args } = ModelInstance.delete.getCall(0);
                     expect(args.length).equal(5);
                     expect(is.array(args[4])).equal(true);
                     expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
@@ -1158,7 +1165,7 @@ describe('Model', () => {
                 }
 
                 const queryMock2 = new Query(ds, { entities });
-                sinon.stub(ds, 'createQuery', () => queryMock2);
+                sinon.stub(ds, 'createQuery').callsFake(() => queryMock2);
 
                 ModelInstance.deleteAll().then(() => {
                     expect(false).equal(false);
@@ -1170,16 +1177,16 @@ describe('Model', () => {
         describe('findAround()', () => {
             it('should get 3 entities after a given date', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
-                                    .then((entities) => {
-                                        expect(queryMock.filter.getCall(0).args)
-                                            .deep.equal(['createdOn', '>', '2016-1-1']);
-                                        expect(queryMock.order.getCall(0).args)
-                                            .deep.equal(['createdOn', { descending: true }]);
-                                        expect(queryMock.limit.getCall(0).args[0]).equal(3);
+                    .then((entities) => {
+                        expect(queryMock.filter.getCall(0).args)
+                            .deep.equal(['createdOn', '>', '2016-1-1']);
+                        expect(queryMock.order.getCall(0).args)
+                            .deep.equal(['createdOn', { descending: true }]);
+                        expect(queryMock.limit.getCall(0).args[0]).equal(3);
 
-                                        // Make sure to not show properties where read is set to false
-                                        assert.isUndefined(entities[0].password);
-                                    })
+                        // Make sure to not show properties where read is set to false
+                        assert.isUndefined(entities[0].password);
+                    })
             ));
 
             it('should get 3 entities before a given date', () => (
@@ -1191,10 +1198,10 @@ describe('Model', () => {
 
             it('should throw error if not all arguments are passed', () =>
                 ModelInstance.findAround('createdOn', '2016-1-1')
-                                .catch((err) => {
-                                    expect(err.code).equal(400);
-                                    expect(err.message).equal('Argument missing');
-                                }));
+                    .catch((err) => {
+                        expect(err.code).equal(400);
+                        expect(err.message).equal('Argument missing');
+                    }));
 
             it('should validate that options passed is an object', () =>
                 ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
@@ -1220,17 +1227,17 @@ describe('Model', () => {
 
             it('should read all properties', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' })
-                            .then((entities) => {
-                                assert.isDefined(entities[0].password);
-                                expect(entities[0].className).equal('Entity');
-                            })
+                    .then((entities) => {
+                        assert.isDefined(entities[0].password);
+                        expect(entities[0].className).equal('Entity');
+                    })
             ));
 
             it('should add entities key', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true })
-                            .then((entities) => {
-                                assert.isDefined(entities[0].__key);
-                            })
+                    .then((entities) => {
+                        assert.isDefined(entities[0].__key);
+                    })
             ));
 
             it('should accept a namespace', () => {
@@ -1250,7 +1257,8 @@ describe('Model', () => {
                 });
             });
 
-            it('should still work passing a callback',
+            it(
+                'should still work passing a callback',
                 () => ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }, (err, entities) => {
                     expect(queryMock.filter.getCall(0).args)
                         .deep.equal(['createdOn', '>', '2016-1-1']);
@@ -1260,7 +1268,8 @@ describe('Model', () => {
 
                     // Make sure to not show properties where read is set to false
                     assert.isUndefined(entities[0].password);
-                }));
+                })
+            );
         });
 
         describe('findOne()', () => {
@@ -1507,11 +1516,7 @@ describe('Model', () => {
         });
 
         it('should save entity in a transaction synchronous when validateBeforeSave desactivated', () => {
-            schema = new Schema({
-                name: { type: 'string' },
-            }, {
-                validateBeforeSave: false, // Only synchronous if no "pre" validation middleware
-            });
+            schema = new Schema({ name: { type: 'string' } }, { validateBeforeSave: false });
 
             const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
             model = new ModelInstanceTemp({});
@@ -1543,10 +1548,10 @@ describe('Model', () => {
 
         it('should throw error if transaction not instance of Transaction', () => (
             model.save({ id: 0 }, {})
-                    .catch((err) => {
-                        assert.isDefined(err);
-                        expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-                    })
+                .catch((err) => {
+                    assert.isDefined(err);
+                    expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+                })
         ));
 
         it('should call pre hooks', () => {
@@ -1672,11 +1677,7 @@ describe('Model', () => {
         });
 
         it('accept unkwown properties', () => {
-            schema = new Schema({
-                name: { type: 'string' },
-            }, {
-                explicitOnly: false,
-            });
+            schema = new Schema({ name: { type: 'string' } }, { explicitOnly: false });
             ModelInstance = Model.compile('Blog', schema, gstore);
             const model = new ModelInstance({ unknown: 123 });
 
@@ -1815,7 +1816,7 @@ describe('Model', () => {
             const model = new ModelInstance({ icon: 'string' });
             const valid = model.validate();
 
-            const model2 = new ModelInstance({ icon: new Buffer('\uD83C\uDF69') });
+            const model2 = new ModelInstance({ icon: Buffer.from('\uD83C\uDF69') });
             const valid2 = model2.validate();
 
             expect(valid.success).equal(false);
