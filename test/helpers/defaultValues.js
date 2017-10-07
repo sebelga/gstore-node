@@ -3,7 +3,7 @@
 const chai = require('chai');
 const defaultValues = require('../../lib/helpers/defaultValues');
 
-const expect = chai.expect;
+const { expect } = chai;
 
 describe('Query Helpers', () => {
     describe('defaultValues constants handler()', () => {

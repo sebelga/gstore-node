@@ -3,7 +3,7 @@
 const chai = require('chai');
 const VirtualType = require('../lib/virtualType');
 
-const expect = chai.expect;
+const { expect } = chai;
 
 describe('VirtualType', () => {
     it('should add function to getter array', () => {
@@ -72,8 +72,7 @@ describe('VirtualType', () => {
 
         virtualType.set(function setName(name) {
             const split = name.split(' ');
-            this.firstname = split[0];
-            this.lastname = split[1];
+            [this.firstname, this.lastname] = split;
         });
 
         const entityData = {};

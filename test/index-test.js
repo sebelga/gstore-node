@@ -4,8 +4,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 
-const expect = chai.expect;
-const assert = chai.assert;
+const { expect, assert } = chai;
 
 const ds = require('@google-cloud/datastore')({
     namespace: 'com.mydomain',
@@ -13,7 +12,7 @@ const ds = require('@google-cloud/datastore')({
 });
 
 const gstore = require('../lib');
-const Schema = require('../lib').Schema;
+const { Schema } = require('../lib');
 const pkg = require('../package.json');
 const Transaction = require('./mocks/transaction');
 
@@ -150,7 +149,7 @@ describe('gstore-node', () => {
     });
 
     it('should return the package version', () => {
-        const version = pkg.version;
+        const { version } = pkg;
 
         expect(gstore.version).equal(version);
     });
@@ -193,7 +192,7 @@ describe('gstore-node', () => {
             const model2 = new ModelInstance({ name: 'Mick' });
 
             return gstore.save([model1, model2]).then(() => {
-                const args = ds.save.getCall(0).args;
+                const { args } = ds.save.getCall(0);
                 const firstEntity = args[0][0];
                 assert.isUndefined(firstEntity.className);
                 expect(Object.keys(firstEntity)).deep.equal(['key', 'data']);
@@ -212,12 +211,12 @@ describe('gstore-node', () => {
         it('should also work with a callback', () => {
             ds.save.restore();
 
-            sinon.stub(ds, 'save', (entity, cb) => cb());
+            sinon.stub(ds, 'save').callsFake((entity, cb) => cb());
 
             const model = new ModelInstance({ name: 'John' });
 
             return gstore.save(model, () => {
-                const args = ds.save.getCall(0).args;
+                const { args } = ds.save.getCall(0);
                 const firstEntity = args[0];
                 assert.isUndefined(firstEntity.className);
                 expect(Object.keys(firstEntity)).deep.equal(['key', 'data']);
