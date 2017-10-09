@@ -1049,7 +1049,14 @@ describe('Model', () => {
 
         describe('deleteAll()', () => {
             beforeEach(() => {
-                sinon.stub(ds, 'delete').resolves([{ indexUpdates: 3 }]);
+                sinon.stub(ds, 'delete').callsFake(() => {
+                    // We need to update our mock response of the Query
+                    // to not enter in an infinite loop as we recursivly query
+                    // until there are no more entities
+                    ds.createQuery.restore();
+                    sinon.stub(ds, 'createQuery').callsFake(() => new Query(ds, { entities: [] }));
+                    return Promise.resolve([{ indexUpdates: 3 }]);
+                });
             });
 
             afterEach(() => {
