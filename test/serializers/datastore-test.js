@@ -85,26 +85,45 @@ describe('Datastore serializer', () => {
         });
     });
 
-
     describe('should convert data TO Datastore format', () => {
+        let entityMock;
+
+        beforeEach(() => {
+            entityMock = {
+                entityKey: ds.key(['BlogPost', 1234]),
+                entityData: {
+                    name: 'John',
+                    lastname: undefined,
+                    embedded: {
+                        description: 'Long string (...)',
+                    },
+                },
+            };
+        });
+
         it('without passing non-indexed properties', () => {
             const expected = {
-                name: 'name',
-                value: 'John',
-                excludeFromIndexes: false,
+                key: entityMock.entityKey,
+                data: {
+                    name: 'John',
+                    embedded: {
+                        description: 'Long string (...)',
+                    },
+                },
             };
-            const serialized = datastoreSerializer.toDatastore({ name: 'John' });
-            expect(serialized[0]).to.deep.equal(expected);
+            const serialized = datastoreSerializer.toDatastore(entityMock);
+            expect(serialized).to.deep.equal(expected);
         });
 
         it('and not into account undefined variables', () => {
-            const serialized = datastoreSerializer.toDatastore({ name: 'John', lastname: undefined });
-            assert.isUndefined(serialized[0].lastname);
+            const serialized = datastoreSerializer.toDatastore(entityMock);
+            expect({}.hasOwnProperty.call(serialized.data, 'lastname')).equal(false);
         });
 
         it('and set excludeFromIndexes properties', () => {
-            const serialized = datastoreSerializer.toDatastore({ name: 'John' }, ['name']);
-            expect(serialized[0].excludeFromIndexes).equal(true);
+            entityMock.excludeFromIndexes = ['name', 'embedded.description'];
+            const serialized = datastoreSerializer.toDatastore(entityMock);
+            expect(serialized.excludeFromIndexes).to.deep.equal(['name', 'embedded.description']);
         });
     });
 });

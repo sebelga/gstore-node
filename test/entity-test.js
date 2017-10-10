@@ -121,16 +121,20 @@ describe('Entity', () => {
             expect(entity.entityData.email).equal(undefined);
         });
 
-        it('should its array of excludeFromIndexes', () => {
+        it('should create its array of excludeFromIndexes', () => {
             schema = new Schema({
                 name: { excludeFromIndexes: true },
                 lastname: { excludeFromIndexes: true },
+                embedded: { excludeFromIndexes: ['prop1', 'prop2'] },
+                arrayValue: { excludeFromIndexes: 'property', type: 'array' },
             });
             ModelInstance = gstore.model('BlogPost', schema);
 
             const entity = new ModelInstance({ name: 'John' });
 
-            expect(entity.excludeFromIndexes).deep.equal(['name', 'lastname']);
+            expect(entity.excludeFromIndexes).deep.equal([
+                'name', 'lastname', 'embedded.prop1', 'embedded.prop2', 'arrayValue[].property',
+            ]);
         });
 
         describe('should create Datastore Key', () => {
