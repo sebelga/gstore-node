@@ -49,9 +49,10 @@
     "arrify": "^1.0.1",
     "extend": "^3.0.0",
     "is": "^3.2.1",
+    "joi": "^11.3.4",
     "moment": "^2.18.1",
     "promised-hooks": "^1.1.0",
-    "validator": "^8.2.0"
+    "validator": "^9.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",
@@ -63,10 +64,9 @@
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-mocha": "^4.11.0",
     "istanbul": "^0.4.3",
-    "mocha": "^3.5.3",
+    "mocha": "^4.0.1",
     "mocha-lcov-reporter": "^1.2.0",
     "nconf": "^0.8.4",
-    "sinon": "^4.0.0",
-    "sinon-as-promised": "^4.0.3"
+    "sinon": "^4.0.0"
   }
 }

@@ -5,6 +5,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
 
+const gstoreErrors = require('../lib/errors');
 const { expect, assert } = chai;
 
 const ds = require('./mocks/datastore')({
@@ -18,16 +19,7 @@ const gstore = require('../');
 const Entity = require('../lib/entity');
 const { Schema } = require('../lib');
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const queryHelpers = require('../lib/helper').QueryHelpers;
-
-function customValidationFunction(obj, validator, min, max) {
-    if ('embeddedEntity' in obj) {
-        const { value } = obj.embeddedEntity;
-        return validator.isNumeric(value.toString()) && (value >= min) && (value <= max);
-    }
-
-    return false;
-}
+const { queryHelpers, validation } = require('../lib/helpers');
 
 let Model = require('../lib/model');
 
@@ -62,15 +54,6 @@ describe('Model', () => {
             price: { type: 'double', write: false },
             icon: { type: 'buffer' },
             location: { type: 'geoPoint' },
-            color: { validate: 'isHexColor' },
-            type: { values: ['image', 'video'] },
-            customFieldWithEmbeddedEntity: {
-                type: 'object',
-                validate: {
-                    rule: customValidationFunction,
-                    args: [4, 10],
-                },
-            },
         });
 
         schema.virtual('fullname').get(() => { });
@@ -1406,7 +1389,7 @@ describe('Model', () => {
             return model.save().catch((err) => {
                 assert.isDefined(err);
                 expect(ds.save.called).equal(false);
-                expect(err.message.indexOf('Property not allowed')).equal(0);
+                expect(err.code).equal(gstoreErrors.errorCodes.ERR_VALIDATION);
             });
         });
 
@@ -1659,404 +1642,25 @@ describe('Model', () => {
     });
 
     describe('validate()', () => {
-        it('properties passed ok', () => {
-            const model = new ModelInstance({ name: 'John', lastname: 'Snow' });
-
-            const valid = model.validate();
-            expect(valid.success).equal(true);
+        beforeEach(() => {
+            sinon.spy(validation, 'validate');
         });
 
-        it('properties passed ko', () => {
-            const model = new ModelInstance({ unknown: 123 });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
+        afterEach(() => {
+            validation.validate.restore();
         });
 
-        it('should remove virtuals', () => {
-            const model = new ModelInstance({ fullname: 'John Snow' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-            assert.isUndefined(model.entityData.fullname);
-        });
-
-        it('accept unkwown properties', () => {
-            schema = new Schema({ name: { type: 'string' } }, { explicitOnly: false });
-            ModelInstance = Model.compile('Blog', schema, gstore);
-            const model = new ModelInstance({ unknown: 123 });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-        });
-
-        it('required property', () => {
-            schema = new Schema({
-                name: { type: 'string' },
-                email: { type: 'string', required: true },
-            });
-
-            ModelInstance = Model.compile('Blog', schema, gstore);
-
-            const model = new ModelInstance({ name: 'John Snow' });
-            const model2 = new ModelInstance({ name: 'John Snow', email: '' });
-            const model3 = new ModelInstance({ name: 'John Snow', email: '   ' });
-            const model4 = new ModelInstance({ name: 'John Snow', email: null });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-            const valid4 = model4.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(false);
-            expect(valid3.success).equal(false);
-            expect(valid4.success).equal(false);
-        });
-
-        it('don\'t validate empty value', () => {
-            const model = new ModelInstance({ email: undefined });
-            const model2 = new ModelInstance({ email: null });
-            const model3 = new ModelInstance({ email: '' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(true);
-            expect(valid3.success).equal(true);
-        });
-
-        it('no type validation', () => {
-            const model = new ModelInstance({ street: 123 });
-            const model2 = new ModelInstance({ street: '123' });
-            const model3 = new ModelInstance({ street: true });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(true);
-            expect(valid3.success).equal(true);
-        });
-
-        it('--> string', () => {
-            const model = new ModelInstance({ name: 123 });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
-        });
-
-        it('--> number', () => {
-            const model = new ModelInstance({ age: 'string' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
-        });
-
-        it('--> int', () => {
-            const model = new ModelInstance({ age: ds.int('str') });
-            const valid = model.validate();
-
-            const model2 = new ModelInstance({ age: ds.int('7') });
-            const valid2 = model2.validate();
-
-            const model3 = new ModelInstance({ age: ds.int(7) });
-            const valid3 = model3.validate();
-
-            const model4 = new ModelInstance({ age: 'string' });
-            const valid4 = model4.validate();
-
-            const model5 = new ModelInstance({ age: '7' });
-            const valid5 = model5.validate();
-
-            const model6 = new ModelInstance({ age: 7 });
-            const valid6 = model6.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(true);
-            expect(valid3.success).equal(true);
-            expect(valid4.success).equal(false);
-            expect(valid5.success).equal(false);
-            expect(valid6.success).equal(true);
-        });
-
-        it('--> double', () => {
-            const model = new ModelInstance({ price: ds.double('str') });
-            const valid = model.validate();
-
-            const model2 = new ModelInstance({ price: ds.double('1.2') });
-            const valid2 = model2.validate();
-
-            const model3 = new ModelInstance({ price: ds.double(7.0) });
-            const valid3 = model3.validate();
-
-            const model4 = new ModelInstance({ price: 'string' });
-            const valid4 = model4.validate();
-
-            const model5 = new ModelInstance({ price: '7' });
-            const valid5 = model5.validate();
-
-            const model6 = new ModelInstance({ price: 7 });
-            const valid6 = model6.validate();
-
-            const model7 = new ModelInstance({ price: 7.59 });
-            const valid7 = model7.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(true);
-            expect(valid3.success).equal(true);
-            expect(valid4.success).equal(false);
-            expect(valid5.success).equal(false);
-            expect(valid6.success).equal(true);
-            expect(valid7.success).equal(true);
-        });
-
-        it('--> buffer', () => {
-            const model = new ModelInstance({ icon: 'string' });
-            const valid = model.validate();
-
-            const model2 = new ModelInstance({ icon: Buffer.from('\uD83C\uDF69') });
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(true);
-        });
-
-        it('--> boolean', () => {
-            const model = new ModelInstance({ modified: 'string' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
-        });
-
-        it('--> object', () => {
-            const model = new ModelInstance({ prefs: { check: true } });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-        });
-
-        it('--> geoPoint', () => {
-            const model = new ModelInstance({ location: 'string' });
-            const valid = model.validate();
-
-            // datastore geoPoint
-            const model2 = new ModelInstance({
-                location: ds.geoPoint({
-                    latitude: 40.6894,
-                    longitude: -74.0447,
-                }),
-            });
-            const valid2 = model2.validate();
-
-            // valid geo object
-            const model3 = new ModelInstance({
-                location: {
-                    latitude: 40.68942342541,
-                    longitude: -74.044743654572,
-                },
-            });
-            const valid3 = model3.validate();
-
-            // other tests
-            const model4 = new ModelInstance({ location: true });
-            const valid4 = model4.validate();
-
-            const model5 = new ModelInstance({ location: { longitude: 999, latitude: 'abc' } });
-            const valid5 = model5.validate();
-
-            const model6 = new ModelInstance({ location: { longitude: 40.6895 } });
-            const valid6 = model6.validate();
-
-            const model7 = new ModelInstance({ location: { longitude: '120.123', latitude: '40.12345678' } });
-            const valid7 = model7.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(true);
-            expect(valid3.success).equal(true);
-            expect(valid4.success).equal(false);
-            expect(valid5.success).equal(false);
-            expect(valid6.success).equal(false);
-            expect(valid7.success).equal(false);
-        });
-
-        it('--> array ok', () => {
-            const model = new ModelInstance({ tags: [] });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-        });
-
-        it('--> array ko', () => {
-            const model = new ModelInstance({ tags: {} });
-            const model2 = new ModelInstance({ tags: 'string' });
-            const model3 = new ModelInstance({ tags: 123 });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(false);
-            expect(valid3.success).equal(false);
-        });
-
-        it('--> date ok', () => {
-            const model = new ModelInstance({ birthday: '2015-01-01' });
-            const model2 = new ModelInstance({ birthday: new Date() });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(true);
-        });
-
-        it('--> date ko', () => {
-            const model = new ModelInstance({ birthday: '01-2015-01' });
-            const model2 = new ModelInstance({ birthday: '01-01-2015' });
-            const model3 = new ModelInstance({ birthday: '2015/01/01' });
-            const model4 = new ModelInstance({ birthday: '01/01/2015' });
-            const model5 = new ModelInstance({ birthday: 12345 }); // No number allowed
-            const model6 = new ModelInstance({ birthday: 'string' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-            const valid4 = model4.validate();
-            const valid5 = model5.validate();
-            const valid6 = model6.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(false);
-            expect(valid3.success).equal(false);
-            expect(valid4.success).equal(false);
-            expect(valid5.success).equal(false);
-            expect(valid6.success).equal(false);
-        });
-
-        it('--> is URL ok', () => {
-            const model = new ModelInstance({ website: 'http://google.com' });
-            const model2 = new ModelInstance({ website: 'google.com' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(true);
-        });
-
-        it('--> is URL ko', () => {
-            const model = new ModelInstance({ website: 'domain.k' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
-        });
-
-        it('--> is EMAIL ok', () => {
-            const model = new ModelInstance({ email: 'john@snow.com' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-        });
-
-        it('--> is EMAIL ko', () => {
-            const model = new ModelInstance({ email: 'john@snow' });
-            const model2 = new ModelInstance({ email: 'john@snow.' });
-            const model3 = new ModelInstance({ email: 'john@snow.k' });
-            const model4 = new ModelInstance({ email: 'johnsnow.com' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-            const valid3 = model3.validate();
-            const valid4 = model4.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(false);
-            expect(valid3.success).equal(false);
-            expect(valid4.success).equal(false);
-        });
-
-        it('--> is IP ok', () => {
-            const model = new ModelInstance({ ip: '127.0.0.1' });
-            const model2 = new ModelInstance({ ip2: '127.0.0.1' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(true);
-        });
-
-        it('--> is IP ko', () => {
-            const model = new ModelInstance({ ip: 'fe80::1c2e:f014:10d8:50f5' });
-            const model2 = new ModelInstance({ ip: '1.1.1' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(false);
-            expect(valid2.success).equal(false);
-        });
-
-        it('--> is HexColor', () => {
-            const model = new ModelInstance({ color: '#fff' });
-            const model2 = new ModelInstance({ color: 'white' });
-
-            const valid = model.validate();
-            const valid2 = model2.validate();
-
-            expect(valid.success).equal(true);
-            expect(valid2.success).equal(false);
-        });
-
-        it('--> is customFieldWithEmbeddedEntity ok', () => {
-            const model = new ModelInstance({
-                customFieldWithEmbeddedEntity: {
-                    embeddedEntity: {
-                        value: 6,
-                    },
-                },
-            });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(true);
-        });
-
-        it('--> is customFieldWithEmbeddedEntity ko', () => {
-            const model = new ModelInstance({
-                customFieldWithEmbeddedEntity: {
-                    embeddedEntity: {
-                        value: 2,
-                    },
-                },
-            });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
-        });
-
-        it('and only accept value in default values', () => {
-            const model = new ModelInstance({ type: 'other' });
-
-            const valid = model.validate();
-
-            expect(valid.success).equal(false);
+        it('should call "Validation" helper passing entityData, Schema & entityKind', () => {
+            schema = new Schema({ name: { type: 'string' } });
+            ModelInstance = gstore.model('TestValidate', schema);
+            const model = new ModelInstance({ name: 'John' });
+
+            const { error } = model.validate();
+
+            assert.isDefined(error);
+            expect(validation.validate.getCall(0).args[0]).equal(model.entityData);
+            expect(validation.validate.getCall(0).args[1]).equal(schema);
+            expect(validation.validate.getCall(0).args[2]).equal(model.entityKind);
         });
     });
 });

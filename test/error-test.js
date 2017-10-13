@@ -2,94 +2,167 @@
 'use strict';
 
 const chai = require('chai');
+const util = require('util');
 const gstore = require('../');
-const { GstoreError } = require('../lib/error');
+const errors = require('../lib/errors');
 const Model = require('../lib/model');
 const Schema = require('../lib/schema');
 
-const { ValidationError, ValidatorError } = GstoreError;
+const { GstoreError, TypeError, ValueError, message } = errors;
 const { expect, assert } = chai;
 
-describe('Datastools Errors', () => {
-    it('should extend Error', () => {
-        expect(GstoreError.prototype.name).equal('Error');
+const doSomethingBad = (code) => {
+    code = code || 'ERR_GENERIC';
+    throw new GstoreError(code);
+};
+
+describe('message()', () => {
+    it('should return string passed', () => {
+        expect(message('My message')).equal('My message');
     });
 
-    it('should set properties in constructor', () => {
-        const error = new GstoreError('Something went wrong');
+    it('should return string passed with arguments', () => {
+        expect(message('Hello %s %s', 'John', 'Snow')).equal('Hello John Snow');
+        expect(message('Age: %d years old', 27)).equal('Age: 27 years old');
+    });
+});
 
-        expect(error.message).equal('Something went wrong');
-        expect(error.name).equal('GstoreError');
+describe('GstoreError', () => {
+    it('should create a custom Error', () => {
+        try {
+            doSomethingBad();
+        } catch (e) {
+            expect(e.name).equal('GstoreError');
+            expect(e instanceof GstoreError);
+            expect(e instanceof Error);
+
+            // The error should be recognized by Node.js' util#isError
+            expect(util.isError(e)).equal(true);
+            assert.isDefined(e.stack);
+            expect(e.toString()).equal('GstoreError: An error occured');
+
+            // The stack should start with the default error message formatting
+            expect(e.stack.split('\n')[0]).equal('GstoreError: An error occured');
+
+            // The first stack frame should be the function where the error was thrown.
+            expect(e.stack.split('\n')[1].indexOf('doSomethingBad')).equal(7);
+
+            // The error code should be set
+            expect(e.code).equal('ERR_GENERIC');
+        }
+    });
+
+    it('should fall back to generic if no message passed', () => {
+        const func = () => {
+            throw new GstoreError('UNKNOWN_CODE');
+        };
+
+        try {
+            func();
+        } catch (e) {
+            expect(e.toString()).equal('GstoreError: An error occured');
+        }
     });
 
     it('should have static errors', () => {
+        assert.isDefined(GstoreError.TypeError);
+        assert.isDefined(GstoreError.ValueError);
         assert.isDefined(GstoreError.ValidationError);
-        assert.isDefined(GstoreError.ValidatorError);
     });
 });
 
-describe('ValidationError', () => {
-    it('should extend Error', () => {
-        expect(ValidationError.prototype.name).equal('Error');
-    });
-
-    it('should return error data passed in param', () => {
-        const errorData = {
-            code: 400,
-            message: 'Something went really bad',
+describe('TypeError', () => {
+    it('should create a TypeError', () => {
+        const throwTypeError = (code) => {
+            code = code || 'ERR_GENERIC';
+            throw new TypeError(code);
         };
-        const error = new ValidationError(errorData);
 
-        expect(error.message).equal(errorData);
+        try {
+            throwTypeError();
+        } catch (e) {
+            expect(e.name).equal('TypeError');
+            expect(e instanceof TypeError);
+            expect(e instanceof GstoreError);
+            expect(e instanceof Error);
+
+            // The error should be recognized by Node.js' util#isError
+            // expect(util.isError(e)).equal(true);
+            // assert.isDefined(e.stack);
+            // expect(e.toString()).equal('GstoreError: An error occured');
+
+            // // The stack should start with the default error message formatting
+            // expect(e.stack.split('\n')[0]).equal('GstoreError: An error occured');
+
+            // // The first stack frame should be the function where the error was thrown.
+            // expect(e.stack.split('\n')[1].indexOf('doSomethingBad')).equal(7);
+
+            // // The error code should be set
+            // expect(e.code).equal('ERR_GENERIC');
+        }
     });
 
-    it('should return "{entityKind} validation failed" if called with entity instance', () => {
-        const entityKind = 'Blog';
-        const schema = new Schema({});
-        const ModelInstance = Model.compile(entityKind, schema, gstore);
-        const model = new ModelInstance({});
-        const error = new ValidationError(model);
+    // it('should extend Error', () => {
+    //     expect(ValidationError.prototype.name).equal('Error');
+    // });
 
-        expect(error.message).equal(`${entityKind} validation failed`);
-    });
+    // it('should return error data passed in param', () => {
+    //     const errorData = {
+    //         code: 400,
+    //         message: 'Something went really bad',
+    //     };
+    //     const error = new ValidationError(errorData);
 
-    it('should return "Validation failed" if called without param', () => {
-        const error = new ValidationError();
+    //     expect(error.message).equal(errorData);
+    // });
 
-        expect(error.message).equal('Validation failed');
-    });
+    // it('should return "{entityKind} validation failed" if called with entity instance', () => {
+    //     const entityKind = 'Blog';
+    //     const schema = new Schema({});
+    //     const ModelInstance = Model.compile(entityKind, schema, gstore);
+    //     const model = new ModelInstance({});
+    //     const error = new ValidationError(model);
+
+    //     expect(error.message).equal(`${entityKind} validation failed`);
+    // });
+
+    // it('should return "Validation failed" if called without param', () => {
+    //     const error = new ValidationError();
+
+    //     expect(error.message).equal('Validation failed');
+    // });
 });
 
 describe('ValidatorError', () => {
-    it('should extend Error', () => {
-        expect(ValidatorError.prototype.name).equal('Error');
-    });
+    // it('should extend Error', () => {
+    //     expect(ValidatorError.prototype.name).equal('Error');
+    // });
 
-    it('should return error data passed in param', () => {
-        const errorData = {
-            code: 400,
-            message: 'Something went really bad',
-        };
-        const error = new ValidatorError(errorData);
+    // it('should return error data passed in param', () => {
+    //     const errorData = {
+    //         code: 400,
+    //         message: 'Something went really bad',
+    //     };
+    //     const error = new ValidatorError(errorData);
 
-        expect(error.message.errorName).equal('Wrong format');
-        expect(error.message.message).equal(errorData.message);
-    });
+    //     expect(error.message.errorName).equal('Wrong format');
+    //     expect(error.message.message).equal(errorData.message);
+    // });
 
-    it('should set error name passed in param', () => {
-        const errorData = {
-            code: 400,
-            errorName: 'Required',
-            message: 'Something went really bad',
-        };
-        const error = new ValidatorError(errorData);
+    // it('should set error name passed in param', () => {
+    //     const errorData = {
+    //         code: 400,
+    //         errorName: 'Required',
+    //         message: 'Something went really bad',
+    //     };
+    //     const error = new ValidatorError(errorData);
 
-        expect(error.message.errorName).equal(errorData.errorName);
-    });
+    //     expect(error.message.errorName).equal(errorData.errorName);
+    // });
 
-    it('should return "Validation failed" if called without param', () => {
-        const error = new ValidatorError();
+    // it('should return "Validation failed" if called without param', () => {
+    //     const error = new ValidatorError();
 
-        expect(error.message).equal('Value validation failed');
-    });
+    //     expect(error.message).equal('Value validation failed');
+    // });
 });
