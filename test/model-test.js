@@ -6,6 +6,7 @@ const sinon = require('sinon');
 const is = require('is');
 
 const gstoreErrors = require('../lib/errors');
+
 const { expect, assert } = chai;
 
 const ds = require('./mocks/datastore')({

@@ -1,11 +1,8 @@
 'use strict';
 
 const chai = require('chai');
-const sinon = require('sinon');
-const is = require('is');
 const Joi = require('joi');
 
-const gstore = require('../../');
 const { Schema } = require('../../lib');
 const gstoreErrors = require('../../lib/errors');
 const { validation } = require('../../lib/helpers');
@@ -78,10 +75,10 @@ describe('Validation', () => {
             expect(value).equal(entityData);
             return Promise.resolve('test');
         })
-        .catch(() => {})
-        .then((response) => {
-            expect(response).equal('test');
-        });
+            .catch(() => {})
+            .then((response) => {
+                expect(response).equal('test');
+            });
     });
 
     it('should return a Promise and reject with the error', () => {
@@ -397,5 +394,70 @@ describe('Validation', () => {
         const { error } = validate({ type: 'other' });
 
         expect(error.errors[0].code).equal(errorCodes.ERR_PROP_IN_RANGE);
+    });
+});
+
+describe('Joi Validation', () => {
+    let schema;
+
+    const validate = entityData => validation.validate(entityData, schema, 'MyEntityKind');
+
+    beforeEach(() => {
+        schema = new Schema({
+            name: { joi: Joi.string().required() },
+            color: { joi: Joi.valid('a', 'b') },
+            birthyear: { joi: Joi.number().integer().min(1900).max(2013) },
+            email: { joi: Joi.string().email() },
+        }, {
+            joi: true,
+        });
+    });
+
+    it('should validate with Joi', () => {
+        const { error } = validate({ name: 123 });
+        const { error: error2 } = validate({ name: 'John', color: 'c' });
+        const { error: error3 } = validate({ name: 'John', birthyear: 1877 });
+        const { error: error4 } = validate({ name: 'John', email: 'abc' });
+        const { error: error5 } = validate({ name: 'John', unknownProp: 'abc' });
+
+        expect(error).not.equal(null);
+        expect(error2.details[0].type).equal('any.allowOnly');
+        expect(error3.details[0].type).equal('number.min');
+        expect(error4.details[0].type).equal('string.email');
+        expect(error5.details[0].type).equal('object.allowUnknown');
+    });
+
+    it('should accept extra validation on top of the schema', () => {
+        schema = new Schema({
+            name: { joi: Joi.string() },
+            lastname: { joi: Joi.string() },
+        }, {
+            joi: {
+                extra: {
+                    with: ['name', 'lastname'],
+                    unknownMethod: 'shouldBeIgnored',
+                },
+            },
+        });
+
+        const { error } = validate({ name: 'John' });
+
+        expect(error.details[0].type).equal('object.with');
+    });
+
+    it('should accept an "option" object', () => {
+        schema = new Schema({
+            name: { joi: Joi.string().required() },
+        }, {
+            joi: {
+                options: {
+                    allowUnknown: true,
+                },
+            },
+        });
+
+        const { error } = validate({ name: 'John', unknownProp: 'abc' });
+
+        expect(error).equal(null);
     });
 });

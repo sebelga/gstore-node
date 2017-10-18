@@ -1,7 +1,9 @@
 'use strict';
 
-const gstore = require('../');
 const chai = require('chai');
+const Joi = require('joi');
+
+const gstore = require('../');
 const { Schema } = require('../lib');
 
 const { expect, assert } = chai;
@@ -183,5 +185,21 @@ describe('Schema', () => {
 
         assert.isDefined(schema.shortcutQueries.list);
         expect(schema.shortcutQueries.list).to.equal(listQuerySettings);
+    });
+
+    describe('Joi', () => {
+        let schema;
+
+        beforeEach(() => {
+            schema = new Schema({
+                name: { joi: Joi.string().required() },
+            }, {
+                joi: true,
+            });
+        });
+
+        it('should build Joi schema', () => {
+            assert.isDefined(schema._joi);
+        });
     });
 });

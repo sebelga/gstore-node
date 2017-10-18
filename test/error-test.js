@@ -3,12 +3,9 @@
 
 const chai = require('chai');
 const util = require('util');
-const gstore = require('../');
 const errors = require('../lib/errors');
-const Model = require('../lib/model');
-const Schema = require('../lib/schema');
 
-const { GstoreError, TypeError, ValueError, message } = errors;
+const { GstoreError, TypeError, message } = errors;
 const { expect, assert } = chai;
 
 const doSomethingBad = (code) => {
