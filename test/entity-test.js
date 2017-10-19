@@ -2,10 +2,15 @@
 
 const chai = require('chai');
 const sinon = require('sinon');
-const ds = require('./mocks/datastore')();
+const Joi = require('joi');
+
+const ds = require('@google-cloud/datastore')({
+    namespace: 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080',
+});
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const { Schema } = require('../lib');
-const gstore = require('../lib');
+const gstore = require('../lib')();
+const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
 gstore.connect(ds);
@@ -96,6 +101,42 @@ describe('Entity', () => {
             expect(entity.entityData.availableValues).equal('a');
             expect(entity.entityData.availableValuesRequired).equal(null);
         });
+
+        it('should set values from Joi schema', () => {
+            const generateFullName = context => (
+                `${context.name} ${context.lastname}`
+            );
+
+            schema = new Schema({
+                name: { joi: Joi.string() },
+                lastname: { joi: Joi.string().default('Jagger') },
+                fullname: { joi: Joi.string().default(generateFullName, 'generated fullname') },
+            }, { joi: true });
+
+            ModelInstance = gstore.model('EntityKind', schema);
+
+            const user = new ModelInstance({ name: 'Mick' });
+
+            expect(user.entityData.lastname).equal('Jagger');
+            expect(user.entityData.fullname).equal('Mick Jagger');
+        });
+
+        it('should not set default if Joi validation does not pass', () => {
+            schema = new Schema({
+                name: { joi: Joi.string().default('test').required() },
+                lastname: { joi: Joi.string().default('Jagger') },
+                age: { joi: Joi.number() },
+            }, { joi: true });
+
+            ModelInstance = gstore.model('EntityKind', schema);
+
+            const user = new ModelInstance({ age: 77 });
+
+            expect(user.age).equal(77);
+            assert.isUndefined(user.entityData.lastname);
+        });
+
+        // it('should sanitize')
 
         it('should call handler for default values in gstore.defaultValues constants', () => {
             sinon.spy(gstore.defaultValues, '__handler__');

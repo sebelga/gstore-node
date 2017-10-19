@@ -5,8 +5,8 @@ const ds = require('../mocks/datastore')({
     namespace: 'com.mydomain',
 });
 
-const gstore = require('../../lib');
-const { Schema } = require('../../lib');
+const gstore = require('../../lib')();
+const { Schema } = require('../../lib')();
 const datastoreSerializer = require('../../lib/serializer').Datastore;
 
 const { expect, assert } = chai;
