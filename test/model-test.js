@@ -1682,5 +1682,21 @@ describe('Model', () => {
             expect(validation.validate.getCall(0).args[1]).equal(schema);
             expect(validation.validate.getCall(0).args[2]).equal(model.entityKind);
         });
+
+        it('should sanitize the entityData', () => {
+            schema = new Schema({ name: { type: 'string' }, createdOn: { write: false } });
+            ModelInstance = gstore.model('TestValidate', schema);
+            const model = new ModelInstance({ name: 'John', createdOn: 'abc' });
+
+            const schema2 = new Schema({ createdOn: { joi: Joi.string().strip() } }, { joi: true });
+            const ModelInstance2 = gstore.model('TestValidate2', schema2);
+            const model2 = new ModelInstance2({ createdOn: 'abc' });
+
+            const { value } = model.validate();
+            const { value: value2 } = model2.validate();
+
+            assert.isUndefined(value.createdOn);
+            assert.isUndefined(value2.createdOn);
+        });
     });
 });
