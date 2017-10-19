@@ -4,6 +4,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
+const Joi = require('joi');
 
 const gstoreErrors = require('../lib/errors');
 
@@ -16,9 +17,9 @@ const ds = require('./mocks/datastore')({
 const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 
-const gstore = require('../');
+const gstore = require('../')();
 const Entity = require('../lib/entity');
-const { Schema } = require('../lib');
+const { Schema } = require('../lib')();
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
 
@@ -192,6 +193,13 @@ describe('Model', () => {
             data = ModelInstance.sanitize(data);
 
             expect(data).equal(null);
+        });
+
+        it('should not mutate the entityData passed', () => {
+            const data = { name: 'John' };
+            const data2 = ModelInstance.sanitize(data);
+
+            expect(data2).not.equal(data);
         });
     });
 
@@ -1659,9 +1667,34 @@ describe('Model', () => {
             const { error } = model.validate();
 
             assert.isDefined(error);
-            expect(validation.validate.getCall(0).args[0]).equal(model.entityData);
+            expect(validation.validate.getCall(0).args[0]).deep.equal(model.entityData);
             expect(validation.validate.getCall(0).args[1]).equal(schema);
             expect(validation.validate.getCall(0).args[2]).equal(model.entityKind);
+        });
+
+        it('should sanitize data', () => {
+            schema = new Schema({ name: { type: 'string' }, createdOn: { write: false } });
+            ModelInstance = gstore.model('TestValidate', schema);
+            const model = new ModelInstance({ name: 'John', unknown: 123, createdOn: '1900-12-25' });
+
+            const schemaJoi = new Schema({
+                name: { joi: Joi.string() },
+                createdOn: { joi: Joi.date().strip() },
+            }, { joi: true });
+
+            const ModelInstance2 = gstore.model('TestValidate2', schemaJoi);
+            const model2 = new ModelInstance2({ name: 'John', unknown: 123, createdOn: '1900-12-25' });
+
+            const { error, value } = model.validate();
+            const { error: error2, value: value2 } = model2.validate();
+
+            assert.isUndefined(value.createdOn);
+            assert.isUndefined(value.unknown);
+            expect(error).equal(null);
+
+            assert.isUndefined(value2.createdOn);
+            assert.isUndefined(value2.unknown);
+            expect(error2).equal(null);
         });
     });
 });

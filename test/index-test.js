@@ -1,6 +1,11 @@
 
 'use strict';
 
+/**
+ * Make sure that we are starting from a fresh gstore instance
+ */
+delete require.cache[require.resolve('../lib')];
+
 const chai = require('chai');
 const sinon = require('sinon');
 
@@ -11,8 +16,8 @@ const ds = require('@google-cloud/datastore')({
     apiEndpoint: 'http://localhost:8080',
 });
 
-const gstore = require('../lib');
-const { Schema } = require('../lib');
+const gstore = require('../lib')();
+const { Schema } = require('../lib')();
 const pkg = require('../package.json');
 const Transaction = require('./mocks/transaction');
 
@@ -53,6 +58,7 @@ describe('gstore-node', () => {
     it('should save ds instance', () => {
         gstore.connect(ds);
         expect(gstore.ds).to.equal(ds);
+        expect(gstore.ds.packageJson.name).equal('@google-cloud/datastore');
     });
 
     it('should throw an error if ds passed on connect is not a Datastore instance', () => {
@@ -154,14 +160,7 @@ describe('gstore-node', () => {
         expect(gstore.version).equal(version);
     });
 
-    it('should return the datastore instance', () => {
-        gstore.connect(ds);
-
-        expect(gstore.ds).equal(ds);
-    });
-
     it('should create shortcut of datastore.transaction', () => {
-        gstore.connect(ds);
         sinon.spy(ds, 'transaction');
 
         const trans = gstore.transaction();
@@ -173,7 +172,6 @@ describe('gstore-node', () => {
     describe('save() alias', () => {
         beforeEach(() => {
             sinon.stub(ds, 'save').resolves();
-            gstore.connect(ds);
         });
 
         afterEach(() => {
@@ -227,6 +225,35 @@ describe('gstore-node', () => {
             const func = () => gstore.save();
 
             expect(func).to.throw('No entities passed');
+        });
+    });
+
+    describe('multi instances', () => {
+        it('should cache instances', () => {
+            /* eslint-disable global-require  */
+            const cached = require('../lib')();
+            const gstore2 = require('../lib')({ namespace: 'com.mydomain2' });
+            const cached2 = require('../lib')({ namespace: 'com.mydomain2' });
+
+            expect(cached).equal(gstore);
+            expect(gstore2).not.equal(gstore);
+            expect(cached2).equal(gstore2);
+        });
+
+        it('should throw Error if wrong config', () => {
+            const func1 = () => {
+                require('../lib')(0);
+            };
+            const func2 = () => {
+                require('../lib')({});
+            };
+            const func3 = () => {
+                require('../lib')('namespace');
+            };
+
+            expect(func1).throw();
+            expect(func2).throw();
+            expect(func3).throw();
         });
     });
 });

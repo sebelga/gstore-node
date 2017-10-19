@@ -3,8 +3,8 @@
 const chai = require('chai');
 const Joi = require('joi');
 
-const gstore = require('../');
-const { Schema } = require('../lib');
+const gstore = require('../')();
+const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
 
@@ -193,6 +193,7 @@ describe('Schema', () => {
         beforeEach(() => {
             schema = new Schema({
                 name: { joi: Joi.string().required() },
+                notJoi: { type: 'string' },
             }, {
                 joi: true,
             });

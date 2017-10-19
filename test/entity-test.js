@@ -4,10 +4,13 @@ const chai = require('chai');
 const sinon = require('sinon');
 const Joi = require('joi');
 
-const ds = require('./mocks/datastore')();
+const ds = require('@google-cloud/datastore')({
+    namespace: 'com.mydomain',
+    apiEndpoint: 'http://localhost:8080',
+});
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const { Schema } = require('../lib');
-const gstore = require('../lib');
+const gstore = require('../lib')();
+const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
 gstore.connect(ds);
@@ -132,6 +135,8 @@ describe('Entity', () => {
             expect(user.age).equal(77);
             assert.isUndefined(user.entityData.lastname);
         });
+
+        // it('should sanitize')
 
         it('should call handler for default values in gstore.defaultValues constants', () => {
             sinon.spy(gstore.defaultValues, '__handler__');

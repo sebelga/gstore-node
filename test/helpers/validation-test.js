@@ -3,13 +3,14 @@
 const chai = require('chai');
 const Joi = require('joi');
 
-const { Schema } = require('../../lib');
 const gstoreErrors = require('../../lib/errors');
 const { validation } = require('../../lib/helpers');
 
 const ds = require('../mocks/datastore')({
     namespace: 'com.mydomain',
 });
+
+const { Schema } = require('../../lib')();
 
 const { expect, assert } = chai;
 const { errorCodes } = gstoreErrors;
@@ -409,7 +410,7 @@ describe('Joi Validation', () => {
             birthyear: { joi: Joi.number().integer().min(1900).max(2013) },
             email: { joi: Joi.string().email() },
         }, {
-            joi: true,
+            joi: { options: { stripUnknown: false } },
         });
     });
 
@@ -459,5 +460,18 @@ describe('Joi Validation', () => {
         const { error } = validate({ name: 'John', unknownProp: 'abc' });
 
         expect(error).equal(null);
+    });
+
+    it('should set "stripUnknown" according to "explicitOnly" setting', () => {
+        schema = new Schema({ name: { joi: Joi.string() } }, { explicitOnly: false });
+        const schema2 = new Schema({ name: { joi: Joi.string() } });
+
+        const { error, value } = validate({ name: 'John', unknownProp: 'abc' });
+        const { error: error2, value: value2 } = validation.validate({ name: 'John', unknownProp: 'abc' }, schema2, '');
+
+        expect(error).equal(null);
+        expect(value.unknownProp).equal('abc');
+        expect(error2).not.equal(null);
+        expect(value2.unknownProp).equal('abc');
     });
 });
