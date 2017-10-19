@@ -15,6 +15,7 @@ Its main features are:
 - **shortcuts** queries
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
+- :tada: **NEW** Joi schema definition/validation (since v2.0.0)
 
 This library is in active development, please report any issue you might find.
 
@@ -33,7 +34,7 @@ Import gstore-node and @google-cloud/datastore and configure your project.
 For the information on how to configure @google-cloud/datastore [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore).
 
 ```js
-const gstore = require('gstore-node');
+const gstore = require('gstore-node')();
 const datastore = require('@google-cloud/datastore')({
     projectId: 'my-google-project-id',
 });
@@ -57,7 +58,7 @@ The [complete documentation of gstore-node](https://sebelga.gitbooks.io/gstore-n
 Initialize gstore-node in your server file
 ```js
 // server.js
-const gstore = require('gstore-node');
+const gstore = require('gstore-node')();
 const datastore = require('@google-cloud/datastore')({
     projectId: 'my-google-project-id',
 });
@@ -114,6 +115,21 @@ const userSchema = new Schema({
         }
     },
 });
+
+// Or with **Joi** schema definition
+const userSchema = new Schema({
+    firstname: { joi: Joi.string().required() },
+    email: { joi: Joi.string().email() },
+    password: { joi: Joi.string() },
+    ...
+}, {
+    joi: {
+        extra: {
+            // validates that when "email" is present, "password" must be too
+            when: ['email', 'password'],
+        },
+    }
+);
 
 /**
  * List entities query shortcut
@@ -183,7 +199,7 @@ const getUsers(req ,res) {
         .then((entities) => {
             res.json(entities);
         })
-        .catch(err => res.status(500).json(err));
+        .catch(err => res.status(400).json(err));
 }
 
 const getUser(req, res) {
@@ -192,7 +208,7 @@ const getUser(req, res) {
         .then((entity) => {
             res.json(entity.plain());
         })
-        .catch(err => res.status(500).json(err));
+        .catch(err => res.status(400).json(err));
 }
 
 const createUser(req, res) {
@@ -206,13 +222,13 @@ const createUser(req, res) {
         .catch((err) => {
             // If there are any validation error on the schema
             // they will be in this error object
-            res.status(500).json(err);
+            res.status(400).json(err);
         })
 }
 
 const updateUser(req, res) {
     const userId = +req.params.id;
-    const entityData = User.sanitize(req.body); // ex: { email: 'john@snow.com' }
+    const entityData = User.sanitize(req.body); // { email: 'john@snow.com' }
 
     /**
      * This will fetch the entity, merge the data and save it back to the Datastore
@@ -224,7 +240,7 @@ const updateUser(req, res) {
         .catch((err) => {
             // If there are any validation error on the schema
             // they will be in this error object
-            res.status(500).json(err);
+            res.status(400).json(err);
         })
 }
 
@@ -234,7 +250,7 @@ const deleteUser(req, res) {
         .then((response) => {
             res.json(response);
         })
-        .catch(err => res.status(500).json(err));
+        .catch(err => res.status(400).json(err));
 }
 
 module.exports = {

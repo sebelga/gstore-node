@@ -201,6 +201,17 @@ describe('Model', () => {
 
             expect(data2).not.equal(data);
         });
+
+        it('should sanitize with Joi.strip()', () => {
+            schema = new Schema({
+                createdOn: { joi: Joi.strip() },
+            }, { joi: true });
+            ModelInstance = gstore.model('BlogJoi', schema, gstore);
+
+            const entityData = ModelInstance.sanitize({ createdOn: 'abc' });
+
+            assert.isUndefined(entityData.createdOn);
+        });
     });
 
     describe('key()', () => {
@@ -1670,31 +1681,6 @@ describe('Model', () => {
             expect(validation.validate.getCall(0).args[0]).deep.equal(model.entityData);
             expect(validation.validate.getCall(0).args[1]).equal(schema);
             expect(validation.validate.getCall(0).args[2]).equal(model.entityKind);
-        });
-
-        it('should sanitize data', () => {
-            schema = new Schema({ name: { type: 'string' }, createdOn: { write: false } });
-            ModelInstance = gstore.model('TestValidate', schema);
-            const model = new ModelInstance({ name: 'John', unknown: 123, createdOn: '1900-12-25' });
-
-            const schemaJoi = new Schema({
-                name: { joi: Joi.string() },
-                createdOn: { joi: Joi.date().strip() },
-            }, { joi: true });
-
-            const ModelInstance2 = gstore.model('TestValidate2', schemaJoi);
-            const model2 = new ModelInstance2({ name: 'John', unknown: 123, createdOn: '1900-12-25' });
-
-            const { error, value } = model.validate();
-            const { error: error2, value: value2 } = model2.validate();
-
-            assert.isUndefined(value.createdOn);
-            assert.isUndefined(value.unknown);
-            expect(error).equal(null);
-
-            assert.isUndefined(value2.createdOn);
-            assert.isUndefined(value2.unknown);
-            expect(error2).equal(null);
         });
     });
 });
