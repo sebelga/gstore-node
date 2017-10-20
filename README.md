@@ -70,7 +70,7 @@ Create your Model
 ```js
 // user.model.js
 
-const gstore = require('gstore-node');
+const gstore = require('gstore-node')();
 const bscrypt = require('bcrypt-nodejs');
 
 const Schema = gstore.Schema;
@@ -189,7 +189,7 @@ Use it in your Controller
 ```js
 // user.constroller.js
 
-const gstore = require('gstore-node');
+const gstore = require('gstore-node')();
 const User = require('./user.model');
 
 const getUsers(req ,res) {
