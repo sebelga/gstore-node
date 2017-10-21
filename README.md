@@ -192,7 +192,7 @@ Use it in your Controller
 const gstore = require('gstore-node')();
 const User = require('./user.model');
 
-const getUsers(req ,res) {
+const getUsers = (req ,res) => {
     const pageCursor = req.query.cursor;
 
     User.list({ start: pageCursor })
@@ -200,18 +200,18 @@ const getUsers(req ,res) {
             res.json(entities);
         })
         .catch(err => res.status(400).json(err));
-}
+};
 
-const getUser(req, res) {
+const getUser = (req, res) => {
     const userId = +req.params.id;
     User.get(userId)
         .then((entity) => {
             res.json(entity.plain());
         })
         .catch(err => res.status(400).json(err));
-}
+};
 
-const createUser(req, res) {
+const createUser = (req, res) => {
     const entityData = User.sanitize(req.body);
     const user = new User(entityData);
 
@@ -224,9 +224,9 @@ const createUser(req, res) {
             // they will be in this error object
             res.status(400).json(err);
         })
-}
+};
 
-const updateUser(req, res) {
+const updateUser = (req, res) => {
     const userId = +req.params.id;
     const entityData = User.sanitize(req.body); // { email: 'john@snow.com' }
 
@@ -242,16 +242,16 @@ const updateUser(req, res) {
             // they will be in this error object
             res.status(400).json(err);
         })
-}
+};
 
-const deleteUser(req, res) {
+const deleteUser = (req, res) => {
     const userId = +req.params.id;
     User.delete(userId)
         .then((response) => {
             res.json(response);
         })
         .catch(err => res.status(400).json(err));
-}
+};
 
 module.exports = {
     getUsers,
