@@ -129,7 +129,7 @@ const userSchema = new Schema({
             when: ['email', 'password'],
         },
     }
-);
+});
 
 /**
  * List entities query shortcut
@@ -259,7 +259,7 @@ module.exports = {
     createUser,
     updateUser,
     deleteUser
-}
+};
 
 ```
 
