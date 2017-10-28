@@ -955,6 +955,7 @@ describe('Model', () => {
             sinon.spy(queryMock, 'hasAncestor');
             sinon.spy(queryMock, 'order');
             sinon.spy(queryMock, 'limit');
+            sinon.spy(queryMock, 'offset');
         });
 
         afterEach(() => {
@@ -965,6 +966,7 @@ describe('Model', () => {
             queryMock.hasAncestor.restore();
             queryMock.order.restore();
             queryMock.limit.restore();
+            queryMock.offset.restore();
         });
 
         describe('list', () => {
@@ -996,6 +998,7 @@ describe('Model', () => {
             it('should read settings passed', () => {
                 const querySettings = {
                     limit: 10,
+                    offset: 10,
                     format: gstore.Queries.formats.ENTITY,
                 };
                 schema.queries('list', querySettings);
@@ -1004,6 +1007,8 @@ describe('Model', () => {
                 return ModelInstance.list().then((response) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1].limit).equal(querySettings.limit);
                     expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
+                    expect(queryHelpers.buildFromOptions.getCall(0).args[1].offset).equal(querySettings.offset);
+                    expect(queryMock.offset.getCall(0).args[0]).equal(querySettings.offset);
                     expect(response.entities[0].className).equal('Entity');
                 });
             });
@@ -1011,15 +1016,17 @@ describe('Model', () => {
             it('should override global setting with options', () => {
                 const querySettings = {
                     limit: 10,
+                    offset: 10,
                     readAll: true,
                     showKey: true,
                 };
                 schema.queries('list', querySettings);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                return ModelInstance.list({ limit: 15 }).then((response) => {
+                return ModelInstance.list({ limit: 15, offset: 15 }).then((response) => {
                     expect(queryHelpers.buildFromOptions.getCall(0).args[1]).not.deep.equal(querySettings);
                     expect(queryMock.limit.getCall(0).args[0]).equal(15);
+                    expect(queryMock.offset.getCall(0).args[0]).equal(15);
                     assert.isDefined(response.entities[0].password);
                     assert.isDefined(response.entities[0].__key);
                 });
