@@ -73,7 +73,7 @@ Create your Model
 const gstore = require('gstore-node')();
 const bscrypt = require('bcrypt-nodejs');
 
-const Schema = gstore.Schema;
+const { Schema } = gstore;
 
 /**
  * A custom validation function for an embedded entity

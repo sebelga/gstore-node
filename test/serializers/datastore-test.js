@@ -1,6 +1,7 @@
 'use strict';
 
 const chai = require('chai');
+const Joi = require('joi');
 const ds = require('../mocks/datastore')({
     namespace: 'com.mydomain',
 });
@@ -10,6 +11,7 @@ const { Schema } = require('../../lib')();
 const datastoreSerializer = require('../../lib/serializer').Datastore;
 
 const { expect, assert } = chai;
+gstore.connect(ds);
 
 describe('Datastore serializer', () => {
     let ModelInstance;
@@ -86,44 +88,92 @@ describe('Datastore serializer', () => {
     });
 
     describe('should convert data TO Datastore format', () => {
-        let entityMock;
+        let entity;
 
         beforeEach(() => {
-            entityMock = {
-                entityKey: ds.key(['BlogPost', 1234]),
-                entityData: {
-                    name: 'John',
-                    lastname: undefined,
-                    embedded: {
-                        description: 'Long string (...)',
-                    },
+            const schema = new Schema({
+                name: { type: 'string', excludeFromIndexes: true },
+                lastname: { type: 'string' },
+                embedded: { type: 'object', excludeFromIndexes: 'description' },
+                array: { type: 'array', excludeFromIndexes: true },
+                array2: { type: 'array', excludeFromIndexes: true, joi: Joi.array() },
+            });
+            ModelInstance = gstore.model('Serializer', schema);
+
+            entity = new ModelInstance({
+                name: 'John',
+                lastname: undefined,
+                embedded: {
+                    description: 'Long string (...)',
                 },
-            };
+                array2: [1, 2, 3],
+            });
         });
 
         it('without passing non-indexed properties', () => {
-            const expected = {
-                key: entityMock.entityKey,
-                data: {
-                    name: 'John',
-                    embedded: {
+            const expected = [
+                {
+                    name: 'name',
+                    value: 'John',
+                },
+                {
+                    name: 'embedded',
+                    value: {
                         description: 'Long string (...)',
                     },
                 },
-            };
-            const serialized = datastoreSerializer.toDatastore(entityMock);
-            expect(serialized).to.deep.equal(expected);
+                {
+                    name: 'array2',
+                    value: [1, 2, 3],
+                    excludeFromIndexes: true,
+                },
+                {
+                    name: 'array',
+                    value: null,
+                    excludeFromIndexes: true,
+                },
+            ];
+            const { data } = datastoreSerializer.toDatastore(entity);
+            expect(data).to.deep.equal(expected);
         });
 
-        it('and not into account undefined variables', () => {
-            const serialized = datastoreSerializer.toDatastore(entityMock);
+        it('not takint into account "undefined" variables', () => {
+            const serialized = datastoreSerializer.toDatastore(entity);
             expect({}.hasOwnProperty.call(serialized.data, 'lastname')).equal(false);
         });
 
         it('and set excludeFromIndexes properties', () => {
-            entityMock.excludeFromIndexes = ['name', 'embedded.description'];
-            const serialized = datastoreSerializer.toDatastore(entityMock);
+            const serialized = datastoreSerializer.toDatastore(entity);
             expect(serialized.excludeFromIndexes).to.deep.equal(['name', 'embedded.description']);
+        });
+
+        it('should set all excludeFromIndexes on all properties of object', () => {
+            const schema = new Schema({
+                embedded: { type: 'object', excludeFromIndexes: true },
+                embedded2: { joi: Joi.object(), excludeFromIndexes: true },
+                embedded3: { joi: Joi.object(), excludeFromIndexes: true },
+            });
+            ModelInstance = gstore.model('Serializer2', schema);
+
+            entity = new ModelInstance({
+                embedded: {
+                    prop1: 123,
+                    prop2: 123,
+                    prop3: 123,
+                },
+                embedded2: {
+                    prop1: 123,
+                    prop2: 123,
+                    prop3: 123,
+                },
+            });
+
+            const serialized = datastoreSerializer.toDatastore(entity);
+            expect(serialized.excludeFromIndexes).to.deep.equal([
+                'embedded', 'embedded2', 'embedded3',
+                'embedded.prop1', 'embedded.prop2', 'embedded.prop3',
+                'embedded2.prop1', 'embedded2.prop2', 'embedded2.prop3',
+            ]);
         });
     });
 });
