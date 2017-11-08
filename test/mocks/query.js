@@ -16,6 +16,8 @@ class Query {
 
     limit() { return this; }
 
+    offset() { return this; }
+
     order() { return this; }
 
     filter() { return this; }
