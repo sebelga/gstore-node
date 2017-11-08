@@ -165,16 +165,19 @@ describe('Entity', () => {
         it('should create its array of excludeFromIndexes', () => {
             schema = new Schema({
                 name: { excludeFromIndexes: true },
-                lastname: { excludeFromIndexes: true },
+                age: { excludeFromIndexes: true, type: 'int' },
                 embedded: { excludeFromIndexes: ['prop1', 'prop2'] },
                 arrayValue: { excludeFromIndexes: 'property', type: 'array' },
+                // Array in @google-cloud have to be set on the data value
+                arrayValue2: { excludeFromIndexes: true, type: 'array' },
+                arrayValue3: { excludeFromIndexes: true, joi: Joi.array() },
             });
             ModelInstance = gstore.model('BlogPost', schema);
 
             const entity = new ModelInstance({ name: 'John' });
 
             expect(entity.excludeFromIndexes).deep.equal([
-                'name', 'lastname', 'embedded.prop1', 'embedded.prop2', 'arrayValue[].property',
+                'name', 'age', 'embedded.prop1', 'embedded.prop2', 'arrayValue[].property',
             ]);
         });
 
