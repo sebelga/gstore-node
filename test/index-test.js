@@ -58,7 +58,7 @@ describe('gstore-node', () => {
     it('should save ds instance', () => {
         gstore.connect(ds);
         expect(gstore.ds).to.equal(ds);
-        expect(gstore.ds.packageJson.name).equal('@google-cloud/datastore');
+        expect(gstore.ds.constructor.name).equal('Datastore');
     });
 
     it('should throw an error if ds passed on connect is not a Datastore instance', () => {
