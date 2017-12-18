@@ -2,23 +2,9 @@
 # yarn lockfile v1
 
 
-"@google-cloud/common-grpc@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/common-grpc/-/common-grpc-0.4.0.tgz#39f3058b6c6f5f233ee7d4279e9dcb8903afbff0"
-  dependencies:
-    "@google-cloud/common" "^0.13.0"
-    dot-prop "^2.4.0"
-    duplexify "^3.5.0"
-    extend "^3.0.0"
-    grpc "^1.3.1"
-    is "^3.2.0"
-    modelo "^4.2.0"
-    retry-request "^2.0.0"
-    through2 "^2.0.3"
-
-"@google-cloud/common@^0.13.0":
-  version "0.13.5"
-  resolved "https://registry.yarnpkg.com/@google-cloud/common/-/common-0.13.5.tgz#b90599f29ce957b366adea8d7c0c3f3593d981ca"
+"@google-cloud/common@^0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/common/-/common-0.14.0.tgz#c56038297247ea72a750d51455e801710976ac43"
   dependencies:
     array-uniq "^1.0.3"
     arrify "^1.0.1"
@@ -33,30 +19,33 @@
     methmeth "^1.1.0"
     modelo "^4.2.0"
     request "^2.79.0"
-    retry-request "^2.0.0"
+    retry-request "^3.0.0"
     split-array-stream "^1.0.0"
     stream-events "^1.0.1"
     string-format-obj "^1.1.0"
     through2 "^2.0.3"
 
-"@google-cloud/datastore@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/datastore/-/datastore-1.1.0.tgz#386e9c9bdc4397945c8a47983821470f47041889"
+"@google-cloud/datastore@1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@google-cloud/datastore/-/datastore-1.2.1.tgz#e86e836d8a06af6d704674684b89dcb8b6048718"
   dependencies:
-    "@google-cloud/common" "^0.13.0"
-    "@google-cloud/common-grpc" "^0.4.0"
+    "@google-cloud/common" "^0.14.0"
     arrify "^1.0.0"
     concat-stream "^1.5.0"
     create-error-class "^3.0.2"
-    extend "^3.0.0"
-    google-gax "^0.13.0"
-    google-proto-files "^0.12.0"
+    extend "^3.0.1"
+    google-auto-auth "^0.7.2"
+    google-gax "^0.14.2"
+    google-proto-files "^0.13.1"
     is "^3.0.1"
     lodash.flatten "^4.2.0"
-    modelo "^4.2.0"
+    lodash.merge "^4.6.0"
     prop-assign "^1.0.0"
     propprop "^0.3.0"
+    safe-buffer "^5.1.1"
     split-array-stream "^1.0.0"
+    stream-events "^1.0.2"
+    through2 "^2.0.3"
 
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
@@ -272,7 +261,7 @@ async@1.x, async@^1.4.0:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/async/-/async-1.5.2.tgz#ec6a61ae56480c0c3cb241c95618e20892f9672a"
 
-async@^2.1.2, async@^2.3.0, async@^2.4.0:
+async@^2.3.0, async@^2.4.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/async/-/async-2.5.0.tgz#843190fd6b7357a0b9e1c956edddd5ec8462b54d"
   dependencies:
@@ -1090,12 +1079,6 @@ doctrine@^2.0.0:
     esutils "^2.0.2"
     isarray "^1.0.0"
 
-dot-prop@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/dot-prop/-/dot-prop-2.4.0.tgz#848e28f7f1d50740c6747ab3cb07670462b6f89c"
-  dependencies:
-    is-obj "^1.0.0"
-
 duplexify@^3.5.0:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/duplexify/-/duplexify-3.5.1.tgz#4e1516be68838bc90a49994f0b39a6e5960befcd"
@@ -1295,7 +1278,7 @@ expand-range@^1.8.1:
   dependencies:
     fill-range "^2.1.0"
 
-extend@^3.0.0, extend@~3.0.0, extend@~3.0.1:
+extend@^3.0.0, extend@^3.0.1, extend@~3.0.0, extend@~3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.1.tgz#a755ea7bc1adfcc5a31ce7e762dbaadc5e636444"
 
@@ -1554,16 +1537,7 @@ google-auth-library@^0.10.0:
     lodash.noop "^3.0.1"
     request "^2.74.0"
 
-google-auto-auth@^0.5.2:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/google-auto-auth/-/google-auto-auth-0.5.4.tgz#1d86c7928d633e75a9c1ab034a527efcce4a40b1"
-  dependencies:
-    async "^2.1.2"
-    google-auth-library "^0.10.0"
-    object-assign "^3.0.0"
-    request "^2.79.0"
-
-google-auto-auth@^0.7.1:
+google-auto-auth@^0.7.1, google-auto-auth@^0.7.2:
   version "0.7.2"
   resolved "https://registry.yarnpkg.com/google-auto-auth/-/google-auto-auth-0.7.2.tgz#bf9352d5c4a0897bf31fd9c491028b765fbea71e"
   dependencies:
@@ -1572,13 +1546,13 @@ google-auto-auth@^0.7.1:
     google-auth-library "^0.10.0"
     request "^2.79.0"
 
-google-gax@^0.13.0:
-  version "0.13.5"
-  resolved "https://registry.yarnpkg.com/google-gax/-/google-gax-0.13.5.tgz#3a48cc52b7e164f731938f37eadd2b73f7c493d7"
+google-gax@^0.14.2:
+  version "0.14.2"
+  resolved "https://registry.yarnpkg.com/google-gax/-/google-gax-0.14.2.tgz#2b1f2b86e8be98a620041cee710e4f4ce61b6e2b"
   dependencies:
     extend "^3.0.0"
     globby "^6.1.0"
-    google-auto-auth "^0.5.2"
+    google-auto-auth "^0.7.2"
     google-proto-files "^0.13.1"
     grpc "^1.2"
     is-stream-ended "^0.1.0"
@@ -1594,10 +1568,6 @@ google-p12-pem@^0.1.0:
   dependencies:
     node-forge "^0.7.1"
 
-google-proto-files@^0.12.0:
-  version "0.12.1"
-  resolved "https://registry.yarnpkg.com/google-proto-files/-/google-proto-files-0.12.1.tgz#6434dc7e025a0d0c82e5f04e615c737d6a4c4387"
-
 google-proto-files@^0.13.1:
   version "0.13.1"
   resolved "https://registry.yarnpkg.com/google-proto-files/-/google-proto-files-0.13.1.tgz#fcf123637d1811612d6a4cb030fd14516b5aec4b"
@@ -1610,7 +1580,7 @@ growl@1.10.3:
   version "1.10.3"
   resolved "https://registry.yarnpkg.com/growl/-/growl-1.10.3.tgz#1926ba90cf3edfe2adb4927f5880bc22c66c790f"
 
-grpc@^1.2, grpc@^1.3.1:
+grpc@^1.2:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/grpc/-/grpc-1.6.0.tgz#2d637d1e58a03c530ebc9bc2dd6c135c24c122cf"
   dependencies:
@@ -1888,10 +1858,6 @@ is-number@^3.0.0:
   dependencies:
     kind-of "^3.0.2"
 
-is-obj@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/is-obj/-/is-obj-1.0.1.tgz#3e4729ac1f5fde025cd7d83a896dab9f4f67db0f"
-
 is-path-cwd@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/is-path-cwd/-/is-path-cwd-1.0.0.tgz#d225ec23132e89edd38fda767472e62e65f1106d"
@@ -2152,6 +2118,10 @@ lodash.get@^4.4.2:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
 
+lodash.merge@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.0.tgz#69884ba144ac33fe699737a6086deffadd0f89c5"
+
 lodash.noop@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/lodash.noop/-/lodash.noop-3.0.1.tgz#38188f4d650a3a474258439b96ec45b32617133c"
@@ -2386,10 +2356,6 @@ number-is-nan@^1.0.0:
 oauth-sign@~0.8.1, oauth-sign@~0.8.2:
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/oauth-sign/-/oauth-sign-0.8.2.tgz#46a6ab7f0aead8deae9ec0565780b7d4efeb9d43"
-
-object-assign@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-3.0.0.tgz#9bedd5ca0897949bca47e7ff408062d549f587f2"
 
 object-assign@^4.0.1, object-assign@^4.1.0:
   version "4.1.1"
@@ -2867,13 +2833,6 @@ restore-cursor@^2.0.0:
     onetime "^2.0.0"
     signal-exit "^3.0.2"
 
-retry-request@^2.0.0:
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/retry-request/-/retry-request-2.0.5.tgz#d089a14a15db9ed60685b8602b40f4dcc0d3fb3c"
-  dependencies:
-    request "^2.81.0"
-    through2 "^2.0.0"
-
 retry-request@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/retry-request/-/retry-request-3.0.0.tgz#8bad2b1dcf04938bb211e2ced862e591b82f1917"
@@ -3043,7 +3002,7 @@ sshpk@^1.7.0:
     jsbn "~0.1.0"
     tweetnacl "~0.14.0"
 
-stream-events@^1.0.1:
+stream-events@^1.0.1, stream-events@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/stream-events/-/stream-events-1.0.2.tgz#abf39f66c0890a4eb795bc8d5e859b2615b590b2"
   dependencies:
