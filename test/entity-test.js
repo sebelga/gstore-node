@@ -216,7 +216,18 @@ describe('Entity', () => {
             it('---> with a full Key ("string" Integer keyname passed)', () => {
                 const entity = new Model({}, '123');
 
-                expect(entity.entityKey.id).equal(123);
+                expect(entity.entityKey.id).equal('123');
+            });
+
+            it('---> with a full Key ("string" Integer **not** converted)', () => {
+                schema = new Schema({
+                    name: { type: 'string' },
+                }, { keyType: 'name' });
+                Model = gstore.model('EntityKind', schema);
+
+                const entity = new Model({}, '123');
+
+                expect(entity.entityKey.name).equal('123');
             });
 
             it('---> throw error is id passed is not string or number', () => {
