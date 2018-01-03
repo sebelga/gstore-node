@@ -25,16 +25,16 @@
     string-format-obj "^1.1.0"
     through2 "^2.0.3"
 
-"@google-cloud/datastore@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@google-cloud/datastore/-/datastore-1.2.1.tgz#e86e836d8a06af6d704674684b89dcb8b6048718"
+"@google-cloud/datastore@1.3.3":
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/@google-cloud/datastore/-/datastore-1.3.3.tgz#19faf363d5677b0338b779e099e27a6abfa94cbc"
   dependencies:
     "@google-cloud/common" "^0.14.0"
     arrify "^1.0.0"
     concat-stream "^1.5.0"
     create-error-class "^3.0.2"
     extend "^3.0.1"
-    google-auto-auth "^0.7.2"
+    google-auto-auth "^0.9.0"
     google-gax "^0.14.2"
     google-proto-files "^0.13.1"
     is "^3.0.1"
@@ -1537,6 +1537,16 @@ google-auth-library@^0.10.0:
     lodash.noop "^3.0.1"
     request "^2.74.0"
 
+google-auth-library@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/google-auth-library/-/google-auth-library-0.12.0.tgz#a3fc6c296d00bb54e4d877ef581a05947330d07f"
+  dependencies:
+    gtoken "^1.2.3"
+    jws "^3.1.4"
+    lodash.isstring "^4.0.1"
+    lodash.merge "^4.6.0"
+    request "^2.81.0"
+
 google-auto-auth@^0.7.1, google-auto-auth@^0.7.2:
   version "0.7.2"
   resolved "https://registry.yarnpkg.com/google-auto-auth/-/google-auto-auth-0.7.2.tgz#bf9352d5c4a0897bf31fd9c491028b765fbea71e"
@@ -1544,6 +1554,15 @@ google-auto-auth@^0.7.1, google-auto-auth@^0.7.2:
     async "^2.3.0"
     gcp-metadata "^0.3.0"
     google-auth-library "^0.10.0"
+    request "^2.79.0"
+
+google-auto-auth@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/google-auto-auth/-/google-auto-auth-0.9.0.tgz#83ca1236c39e1d4f8e497a1157d3acc5dfcf4e9a"
+  dependencies:
+    async "^2.3.0"
+    gcp-metadata "^0.3.0"
+    google-auth-library "^0.12.0"
     request "^2.79.0"
 
 google-gax@^0.14.2:
@@ -1597,6 +1616,15 @@ gtoken@^1.2.1:
     google-p12-pem "^0.1.0"
     jws "^3.0.0"
     mime "^1.2.11"
+    request "^2.72.0"
+
+gtoken@^1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/gtoken/-/gtoken-1.2.3.tgz#5509571b8afd4322e124cf66cf68115284c476d8"
+  dependencies:
+    google-p12-pem "^0.1.0"
+    jws "^3.0.0"
+    mime "^1.4.1"
     request "^2.72.0"
 
 handlebars@^4.0.1:
@@ -2118,6 +2146,10 @@ lodash.get@^4.4.2:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
 
+lodash.isstring@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/lodash.isstring/-/lodash.isstring-4.0.1.tgz#d527dfb5456eca7cc9bb95d5daeaf88ba54a5451"
+
 lodash.merge@^4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.0.tgz#69884ba144ac33fe699737a6086deffadd0f89c5"
@@ -2198,6 +2230,10 @@ mime-types@^2.1.12, mime-types@~2.1.17, mime-types@~2.1.7:
 mime@^1.2.11:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/mime/-/mime-1.4.1.tgz#121f9ebc49e3766f311a76e1fa1c8003c4b03aa6"
+
+mime@^1.4.1:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1"
 
 mimic-fn@^1.0.0:
   version "1.1.0"

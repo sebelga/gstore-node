@@ -97,6 +97,7 @@ describe('Datastore serializer', () => {
                 embedded: { type: 'object', excludeFromIndexes: 'description' },
                 array: { type: 'array', excludeFromIndexes: true },
                 array2: { type: 'array', excludeFromIndexes: true, joi: Joi.array() },
+                array3: { type: 'array', excludeFromIndexes: true, optional: true },
             });
             ModelInstance = gstore.model('Serializer', schema);
 
@@ -111,40 +112,26 @@ describe('Datastore serializer', () => {
         });
 
         it('without passing non-indexed properties', () => {
-            const expected = [
-                {
-                    name: 'name',
-                    value: 'John',
+            const expected = {
+                name: 'John',
+                embedded: {
+                    description: 'Long string (...)',
                 },
-                {
-                    name: 'embedded',
-                    value: {
-                        description: 'Long string (...)',
-                    },
-                },
-                {
-                    name: 'array2',
-                    value: [1, 2, 3],
-                    excludeFromIndexes: true,
-                },
-                {
-                    name: 'array',
-                    value: null,
-                    excludeFromIndexes: true,
-                },
-            ];
+                array2: [1, 2, 3],
+                array: null,
+            };
             const { data } = datastoreSerializer.toDatastore(entity);
             expect(data).to.deep.equal(expected);
         });
 
-        it('not takint into account "undefined" variables', () => {
-            const serialized = datastoreSerializer.toDatastore(entity);
-            expect({}.hasOwnProperty.call(serialized.data, 'lastname')).equal(false);
+        it('not taking into account "undefined" variables', () => {
+            const { data } = datastoreSerializer.toDatastore(entity);
+            expect({}.hasOwnProperty.call(data, 'lastname')).equal(false);
         });
 
         it('and set excludeFromIndexes properties', () => {
-            const serialized = datastoreSerializer.toDatastore(entity);
-            expect(serialized.excludeFromIndexes).to.deep.equal(['name', 'embedded.description']);
+            const { excludeFromIndexes } = datastoreSerializer.toDatastore(entity);
+            expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]']);
         });
 
         it('should set all excludeFromIndexes on all properties of object', () => {
