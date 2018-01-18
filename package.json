@@ -51,7 +51,7 @@
     "is": "^3.2.1",
     "joi": "^11.3.4",
     "moment": "^2.18.1",
-    "promised-hooks": "^1.1.0",
+    "promised-hooks": "^2.0.2",
     "validator": "^9.0.0"
   },
   "devDependencies": {

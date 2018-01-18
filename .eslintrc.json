@@ -12,7 +12,6 @@
         "mocha"
     ],
      "rules": {
-        // enable additional rules
         "indent": ["error", 4, {"SwitchCase": 1}],
         "no-use-before-define": ["error", {"functions": false}],
         "prefer-rest-params": "off",

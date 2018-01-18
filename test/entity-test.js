@@ -136,8 +136,6 @@ describe('Entity', () => {
             assert.isUndefined(user.entityData.lastname);
         });
 
-        // it('should sanitize')
-
         it('should call handler for default values in gstore.defaultValues constants', () => {
             sinon.spy(gstore.defaultValues, '__handler__');
             schema = new Schema({
@@ -294,7 +292,7 @@ describe('Entity', () => {
             beforeEach(() => {
                 spyOn = {
                     fnHookPre: () => Promise.resolve(),
-                    fnHookPost: () => Promise.resolve(1234),
+                    fnHookPost: () => Promise.resolve({ __override: 1234 }),
                 };
 
                 sinon.spy(spyOn, 'fnHookPre');

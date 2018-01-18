@@ -1593,7 +1593,7 @@ describe('Model', () => {
 
             return model.save().then((result) => {
                 expect(spyPost.called).equal(true);
-                expect(result).equal(123);
+                expect(result.name).equal('John');
             });
         });
 

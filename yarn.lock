@@ -2578,9 +2578,9 @@ progress@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f"
 
-promised-hooks@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/promised-hooks/-/promised-hooks-1.1.0.tgz#cc015b971d3bacf8b60d205ab1a9f9b22a562ff6"
+promised-hooks@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/promised-hooks/-/promised-hooks-2.0.2.tgz#3c596f49668d41be0db612f49fa51a3d4ec5107b"
   dependencies:
     arrify "^1.0.1"
     is "^3.2.0"
