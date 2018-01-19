@@ -18,11 +18,13 @@ const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 
 const gstore = require('../')();
+
 const Entity = require('../lib/entity');
-const { Schema } = require('../lib')();
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
+const { createDataLoader } = require('../lib/dataloader');
 
+const { Schema } = gstore;
 let Model = require('../lib/model');
 
 describe('Model', () => {
@@ -369,6 +371,45 @@ describe('Model', () => {
                 expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
                 expect(_entity instanceof Entity).equal(true);
             }
+        });
+
+        it('should get data through a Dataloader instance (singe key)', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.stub(dataloader, 'load').resolves([{}]);
+
+            return ModelInstance.get(123, null, null, null, { dataloader }).then(() => {
+                expect(spy.called).equal(true);
+
+                const args = spy.getCall(0).args[0];
+                const key = ds.key({ path: ['Blog', 123], namespace: 'com.mydomain' });
+                expect(args).deep.equal(key);
+            });
+        });
+
+        it('should get data through a Dataloader instance (multiple key)', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.stub(dataloader, 'loadMany').resolves([[{}, {}]]);
+
+            return ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {
+                expect(spy.called).equal(true);
+
+                const args = spy.getCall(0).args[0];
+                const key1 = ds.key({ path: ['Blog', 123], namespace: 'com.mydomain' });
+                const key2 = ds.key({ path: ['Blog', 456], namespace: 'com.mydomain' });
+
+                expect(args[0]).deep.equal(key1);
+                expect(args[1]).deep.equal(key2);
+            });
+        });
+
+        it('should throw an error if dataloader is not a DataLoader instance', (done) => {
+            const dataloader = {};
+
+            ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {}, (err) => {
+                expect(err.name).equal('GstoreError');
+                expect(err.message).equal('dataloader must be a "DataLoader" instance');
+                done();
+            });
         });
     });
 
