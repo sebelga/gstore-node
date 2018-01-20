@@ -658,7 +658,7 @@ describe('Model', () => {
             });
         });
 
-        it('should deal with err response', () => {
+        it('should handle errors', () => {
             ds.delete.restore();
             const error = { code: 500, message: 'We got a problem Houston' };
             sinon.stub(ds, 'delete').rejects(error);
@@ -694,7 +694,7 @@ describe('Model', () => {
             });
         });
 
-        it('should set "pre" hook scope to entity being deleted', () => {
+        it('should set "pre" hook scope to entity being deleted (1)', () => {
             schema.pre('delete', function preDelete() {
                 expect(this.className).equal('Entity');
                 return Promise.resolve();
@@ -702,6 +702,17 @@ describe('Model', () => {
             ModelInstance = Model.compile('Blog', schema, gstore);
 
             return ModelInstance.delete(123);
+        });
+
+        it('should set "pre" hook scope to entity being deleted (2)', () => {
+            schema.pre('delete', function preDelete() {
+                expect(this.entityKey.id).equal(777);
+                return Promise.resolve();
+            });
+            ModelInstance = Model.compile('Blog', schema, gstore);
+
+            // ... passing a datastore.key
+            return ModelInstance.delete(null, null, null, null, ModelInstance.key(777));
         });
 
         it('should NOT set "pre" hook scope if deleting an array of ids', () => {
@@ -1637,7 +1648,7 @@ describe('Model', () => {
             });
         });
 
-        it.only('error in post hooks should be added to response', () => {
+        it('error in post hooks should be added to response', () => {
             const error = { code: 500 };
             const spyPost = sinon.stub().rejects(error);
             schema = new Schema({ name: { type: 'string' } });
@@ -1688,7 +1699,8 @@ describe('Model', () => {
 
             return entity.save().then(() => {
                 assert.isDefined(entity.entityData.modifiedOn);
-                expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+                const diff = Math.abs(entity.entityData.modifiedOn.getTime() - Date.now());
+                expect(diff < 10).equal(true);
             });
         });
 

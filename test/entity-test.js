@@ -25,7 +25,7 @@ describe('Entity', () => {
         gstore.options = {};
 
         schema = new Schema({
-            name: { type: 'string' },
+            name: { type: 'string', default: 'Mick' },
             lastname: { type: 'string' },
             password: { type: 'string', read: false },
         });
@@ -63,6 +63,11 @@ describe('Entity', () => {
         it('should add data passed to entityData', () => {
             const entity = new ModelInstance({ name: 'John' });
             expect(entity.entityData.name).to.equal('John');
+        });
+
+        it('should have default if no data passed', () => {
+            const entity = new ModelInstance();
+            expect(entity.entityData.name).to.equal('Mick');
         });
 
         it('should not add any data if nothing is passed', () => {
