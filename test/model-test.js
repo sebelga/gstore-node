@@ -484,14 +484,21 @@ describe('Model', () => {
         });
 
         it('should save and replace data', () => {
-            const data = {
-                name: 'Mick',
-            };
+            const data = { name: 'Mick' };
             return ModelInstance.update(123, data, null, null, null, { replace: true })
                 .then((entity) => {
                     expect(entity.entityData.name).equal('Mick');
                     expect(entity.entityData.lastname).equal(null);
                     expect(entity.entityData.email).equal(null);
+                });
+        });
+
+        it('should accept a DataLoader instance and add it to the entity object', () => {
+            const dataloader = createDataLoader(ds);
+
+            return ModelInstance.update(123, {}, null, null, null, { dataloader })
+                .then((entity) => {
+                    expect(entity.dataloader).equal(dataloader);
                 });
         });
 
@@ -1503,21 +1510,23 @@ describe('Model', () => {
             })
         ));
 
-        it('should accept a "method" parameter in options', () => (
-            model.save(null, { method: 'insert' }).then(() => {
-                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
-            })
-        ));
+        describe('options', () => {
+            it('should accept a "method" parameter in options', () => (
+                model.save(null, { method: 'insert' }).then(() => {
+                    expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
+                })
+            ));
 
-        it('should only allow "update", "insert", "upsert" as method', (done) => {
-            model.save(null, { method: 'something' }).catch((e) => {
-                expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
+            it('should only allow "update", "insert", "upsert" as method', (done) => {
+                model.save(null, { method: 'something' }).catch((e) => {
+                    expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
 
-                model.save(null, { method: 'update' })
-                    .then(model.save(null, { method: 'upsert' }))
-                    .then(() => {
-                        done();
-                    });
+                    model.save(null, { method: 'update' })
+                        .then(model.save(null, { method: 'upsert' }))
+                        .then(() => {
+                            done();
+                        });
+                });
             });
         });
 
