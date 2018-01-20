@@ -37,7 +37,7 @@ describe('dataloader', () => {
         entity2[ds.KEY] = key2;
         entity3[ds.KEY] = key3;
 
-        sinon.stub(ds, 'get').resolves([entity3, entity2, entity1]);
+        sinon.stub(ds, 'get').resolves([[entity3, entity2, entity1]]);
 
         const loader = createDataLoader(ds);
 
