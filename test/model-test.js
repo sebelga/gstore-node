@@ -493,11 +493,15 @@ describe('Model', () => {
                 });
         });
 
-        it('should accept a DataLoader instance and add it to the entity object', () => {
+        it('should accept a DataLoader instance, add it to the entity created and clear the key', () => {
             const dataloader = createDataLoader(ds);
+            const spy = sinon.spy(dataloader, 'clear');
 
             return ModelInstance.update(123, {}, null, null, null, { dataloader })
                 .then((entity) => {
+                    const keyToClear = spy.getCalls()[0].args[0];
+                    expect(keyToClear.kind).equal('Blog');
+                    expect(keyToClear.id).equal(123);
                     expect(entity.dataloader).equal(dataloader);
                 });
         });
@@ -792,6 +796,18 @@ describe('Model', () => {
                 expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
                 expect(response.success).equal(true);
             });
+        });
+
+        it('should accept a DataLoader instance and clear the cached key after deleting', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.spy(dataloader, 'clear');
+
+            return ModelInstance.delete(123, null, null, null, null, { dataloader })
+                .then(() => {
+                    const keyToClear = spy.getCalls()[0].args[0];
+                    expect(keyToClear.kind).equal('Blog');
+                    expect(keyToClear.id).equal(123);
+                });
         });
     });
 
