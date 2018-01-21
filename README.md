@@ -117,6 +117,7 @@ const userSchema = new Schema({
 });
 
 // Or with **Joi** schema definition
+// You need to have joi as a dependency of your project ("npm install joi --save")
 const userSchema = new Schema({
     firstname: { joi: Joi.string().required() },
     email: { joi: Joi.string().email() },
