@@ -76,7 +76,7 @@ describe('Validation', () => {
             expect(value).equal(entityData);
             return Promise.resolve('test');
         })
-            .catch(() => {})
+            .catch(() => { })
             .then((response) => {
                 expect(response).equal('test');
             });
@@ -389,6 +389,37 @@ describe('Validation', () => {
         });
 
         expect(error.errors[0].code).equal(errorCodes.ERR_PROP_VALUE);
+    });
+
+    it('--> is custom function (array containing objectsj)', () => {
+        const validateFn = (obj) => {
+            if (!Array.isArray(obj)) {
+                return false;
+            }
+
+            return obj.every(item => (
+                item !== null && typeof item === 'object'
+            ));
+        };
+
+        schema = new Schema({
+            arrOfObjs: {
+                type: 'array',
+                validate: {
+                    rule: validateFn,
+                },
+            },
+        });
+
+        const error1 = validate({ arrOfObjs: [{ name: 'foo' }, { name: 'bar' }] }).error;
+        const error2 = validate({ arrOfObjs: 'string' }).error;
+        const error3 = validate({ arrOfObjs: ['string'] }).error;
+        const error4 = validate({ arrOfObjs: [{ name: 'foo' }, 'string'] }).error;
+
+        expect(error1).equal(null);
+        expect(error2.code).equal(gstoreErrors.errorCodes.ERR_VALIDATION);
+        expect(error3.code).equal(gstoreErrors.errorCodes.ERR_VALIDATION);
+        expect(error4.code).equal(gstoreErrors.errorCodes.ERR_VALIDATION);
     });
 
     it('--> only accept value in range of values', () => {
