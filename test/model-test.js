@@ -1432,15 +1432,15 @@ describe('Model', () => {
         it('should convert to Datastore format before saving to Datastore', () => {
             const spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
-            model.save().then(() => {
+            return model.save().then(() => {
                 expect(model.gstore.ds.save.calledOnce).equal(true);
                 expect(spySerializerToDatastore.called).equal(true);
-                expect(spySerializerToDatastore.getCall(0).args[0]).equal(model.entityData);
-                expect(spySerializerToDatastore.getCall(0).args[1]).equal(model.excludeFromIndexes);
+                expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(model.entityData);
+                expect(spySerializerToDatastore.getCall(0).args[0].excludeFromIndexes).equal(model.excludeFromIndexes);
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].key);
                 expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data);
-                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data[0].excludeFromIndexes);
+                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].excludeFromIndexes);
 
                 spySerializerToDatastore.restore();
             });
