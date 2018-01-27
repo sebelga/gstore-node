@@ -49,7 +49,7 @@
         "extend": "^3.0.1",
         "is": "^3.2.1",
         "moment": "^2.20.1",
-        "promised-hooks": "^3.0.0",
+        "promised-hooks": "^2.0.2",
         "validator": "^9.2.0"
     },
     "devDependencies": {

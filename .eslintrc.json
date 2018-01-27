@@ -13,6 +13,9 @@
     ],
      "rules": {
         "indent": ["error", 4, {"SwitchCase": 1}],
+        "import/no-extraneous-dependencies": [
+            "error", {"devDependencies": ["**/test/**/*.js"]}
+        ],
         "no-use-before-define": ["error", {"functions": false}],
         "prefer-rest-params": "off",
         "prefer-spread": "off",
