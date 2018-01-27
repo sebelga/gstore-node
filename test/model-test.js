@@ -1511,6 +1511,7 @@ describe('Model', () => {
                 expect(model.gstore.ds.save.calledOnce).equal(true);
                 expect(spySerializerToDatastore.called).equal(true);
                 expect(spySerializerToDatastore.getCall(0).args[0].className).equal('Entity');
+				expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(model.entityData);
                 expect(spySerializerToDatastore.getCall(0).args[0].excludeFromIndexes).equal(model.excludeFromIndexes);
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].key);
                 expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
