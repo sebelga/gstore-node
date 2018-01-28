@@ -25,8 +25,7 @@ This library is in active development, please report any issue you might find.
 npm install gstore-node --save
 ```
 
-IMPORTANT: Since v1.4.0, gstore-node requires Node version **6 or superior**
-INFO: With npm v3+ **you don't need** to install @google-cloud/datastore as a dependency of your project as it is already a dependency of gstore-node.
+IMPORTANT: gstore-node requires Node version **6 or superior**  
 
 # Getting started
 
@@ -117,6 +116,7 @@ const userSchema = new Schema({
 });
 
 // Or with **Joi** schema definition
+// You need to have joi as a dependency of your project ("npm install joi --save")
 const userSchema = new Schema({
     firstname: { joi: Joi.string().required() },
     email: { joi: Joi.string().email() },

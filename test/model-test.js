@@ -18,11 +18,13 @@ const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 
 const gstore = require('../')();
+
 const Entity = require('../lib/entity');
-const { Schema } = require('../lib')();
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
+const { createDataLoader } = require('../lib/dataloader');
 
+const { Schema } = gstore;
 let Model = require('../lib/model');
 
 describe('Model', () => {
@@ -370,6 +372,45 @@ describe('Model', () => {
                 expect(_entity instanceof Entity).equal(true);
             }
         });
+
+        it('should get data through a Dataloader instance (singe key)', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.stub(dataloader, 'load').resolves([{}]);
+
+            return ModelInstance.get(123, null, null, null, { dataloader }).then(() => {
+                expect(spy.called).equal(true);
+
+                const args = spy.getCall(0).args[0];
+                const key = ds.key({ path: ['Blog', 123], namespace: 'com.mydomain' });
+                expect(args).deep.equal(key);
+            });
+        });
+
+        it('should get data through a Dataloader instance (multiple key)', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.stub(dataloader, 'loadMany').resolves([[{}, {}]]);
+
+            return ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {
+                expect(spy.called).equal(true);
+
+                const args = spy.getCall(0).args[0];
+                const key1 = ds.key({ path: ['Blog', 123], namespace: 'com.mydomain' });
+                const key2 = ds.key({ path: ['Blog', 456], namespace: 'com.mydomain' });
+
+                expect(args[0]).deep.equal(key1);
+                expect(args[1]).deep.equal(key2);
+            });
+        });
+
+        it('should throw an error if dataloader is not a DataLoader instance', (done) => {
+            const dataloader = {};
+
+            ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {}, (err) => {
+                expect(err.name).equal('GstoreError');
+                expect(err.message).equal('dataloader must be a "DataLoader" instance');
+                done();
+            });
+        });
     });
 
     describe('update()', () => {
@@ -443,14 +484,25 @@ describe('Model', () => {
         });
 
         it('should save and replace data', () => {
-            const data = {
-                name: 'Mick',
-            };
+            const data = { name: 'Mick' };
             return ModelInstance.update(123, data, null, null, null, { replace: true })
                 .then((entity) => {
                     expect(entity.entityData.name).equal('Mick');
                     expect(entity.entityData.lastname).equal(null);
                     expect(entity.entityData.email).equal(null);
+                });
+        });
+
+        it('should accept a DataLoader instance, add it to the entity created and clear the key', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.spy(dataloader, 'clear');
+
+            return ModelInstance.update(123, {}, null, null, null, { dataloader })
+                .then((entity) => {
+                    const keyToClear = spy.getCalls()[0].args[0];
+                    expect(keyToClear.kind).equal('Blog');
+                    expect(keyToClear.id).equal(123);
+                    expect(entity.dataloader).equal(dataloader);
                 });
         });
 
@@ -617,7 +669,7 @@ describe('Model', () => {
             });
         });
 
-        it('should deal with err response', () => {
+        it('should handle errors', () => {
             ds.delete.restore();
             const error = { code: 500, message: 'We got a problem Houston' };
             sinon.stub(ds, 'delete').rejects(error);
@@ -653,7 +705,7 @@ describe('Model', () => {
             });
         });
 
-        it('should set "pre" hook scope to entity being deleted', () => {
+        it('should set "pre" hook scope to entity being deleted (1)', () => {
             schema.pre('delete', function preDelete() {
                 expect(this.className).equal('Entity');
                 return Promise.resolve();
@@ -661,6 +713,17 @@ describe('Model', () => {
             ModelInstance = Model.compile('Blog', schema, gstore);
 
             return ModelInstance.delete(123);
+        });
+
+        it('should set "pre" hook scope to entity being deleted (2)', () => {
+            schema.pre('delete', function preDelete() {
+                expect(this.entityKey.id).equal(777);
+                return Promise.resolve();
+            });
+            ModelInstance = Model.compile('Blog', schema, gstore);
+
+            // ... passing a datastore.key
+            return ModelInstance.delete(null, null, null, null, ModelInstance.key(777));
         });
 
         it('should NOT set "pre" hook scope if deleting an array of ids', () => {
@@ -733,6 +796,18 @@ describe('Model', () => {
                 expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
                 expect(response.success).equal(true);
             });
+        });
+
+        it('should accept a DataLoader instance and clear the cached key after deleting', () => {
+            const dataloader = createDataLoader(ds);
+            const spy = sinon.spy(dataloader, 'clear');
+
+            return ModelInstance.delete(123, null, null, null, null, { dataloader })
+                .then(() => {
+                    const keyToClear = spy.getCalls()[0].args[0];
+                    expect(keyToClear.kind).equal('Blog');
+                    expect(keyToClear.id).equal(123);
+                });
         });
     });
 
@@ -1435,12 +1510,12 @@ describe('Model', () => {
             return model.save().then(() => {
                 expect(model.gstore.ds.save.calledOnce).equal(true);
                 expect(spySerializerToDatastore.called).equal(true);
+                expect(spySerializerToDatastore.getCall(0).args[0].className).equal('Entity');
                 expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(model.entityData);
                 expect(spySerializerToDatastore.getCall(0).args[0].excludeFromIndexes).equal(model.excludeFromIndexes);
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].key);
                 expect(model.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
                 assert.isDefined(model.gstore.ds.save.getCall(0).args[0].data);
-                assert.isDefined(model.gstore.ds.save.getCall(0).args[0].excludeFromIndexes);
 
                 spySerializerToDatastore.restore();
             });
@@ -1452,21 +1527,23 @@ describe('Model', () => {
             })
         ));
 
-        it('should accept a "method" parameter in options', () => (
-            model.save(null, { method: 'insert' }).then(() => {
-                expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
-            })
-        ));
+        describe('options', () => {
+            it('should accept a "method" parameter in options', () => (
+                model.save(null, { method: 'insert' }).then(() => {
+                    expect(model.gstore.ds.save.getCall(0).args[0].method).equal('insert');
+                })
+            ));
 
-        it('should only allow "update", "insert", "upsert" as method', (done) => {
-            model.save(null, { method: 'something' }).catch((e) => {
-                expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
+            it('should only allow "update", "insert", "upsert" as method', (done) => {
+                model.save(null, { method: 'something' }).catch((e) => {
+                    expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
 
-                model.save(null, { method: 'update' })
-                    .then(model.save(null, { method: 'upsert' }))
-                    .then(() => {
-                        done();
-                    });
+                    model.save(null, { method: 'update' })
+                        .then(model.save(null, { method: 'upsert' }))
+                        .then(() => {
+                            done();
+                        });
+                });
             });
         });
 
@@ -1606,8 +1683,8 @@ describe('Model', () => {
             model = new ModelInstance({ name: 'John' });
 
             return model.save().then((entity) => {
-                assert.isDefined(entity.errorsPostHook);
-                expect(entity.errorsPostHook[0]).equal(error);
+                assert.isDefined(entity[gstore.ERR_HOOKS]);
+                expect(entity[gstore.ERR_HOOKS][0]).equal(error);
             });
         });
 
@@ -1648,7 +1725,8 @@ describe('Model', () => {
 
             return entity.save().then(() => {
                 assert.isDefined(entity.entityData.modifiedOn);
-                expect(entity.entityData.modifiedOn.toString()).to.equal(new Date().toString());
+                const diff = Math.abs(entity.entityData.modifiedOn.getTime() - Date.now());
+                expect(diff < 10).equal(true);
             });
         });
 
