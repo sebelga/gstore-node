@@ -13,7 +13,6 @@ const gstore = require('../lib')();
 const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
-gstore.connect(ds);
 
 describe('Entity', () => {
     let schema;
@@ -23,6 +22,7 @@ describe('Entity', () => {
         gstore.models = {};
         gstore.modelSchemas = {};
         gstore.options = {};
+        gstore.connect(ds);
 
         schema = new Schema({
             name: { type: 'string', default: 'Mick' },

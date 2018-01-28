@@ -4,12 +4,19 @@ const Datastore = require('@google-cloud/datastore');
 const chai = require('chai');
 const sinon = require('sinon');
 
-const ds = new Datastore();
-
-const { expect } = chai;
+const gstore = require('../lib/index')();
 const { createDataLoader } = require('../lib/dataloader');
 
+const { expect, assert } = chai;
+const ds = new Datastore();
+
 describe('dataloader', () => {
+    it('should read the ds instance from gstore', () => {
+        gstore.connect(ds);
+        const loader = gstore.createDataLoader();
+        assert.isDefined(loader);
+    });
+
     it('should create a dataloader instance', () => {
         const loader = createDataLoader(ds);
         expect(loader.constructor.name).equal('DataLoader');
