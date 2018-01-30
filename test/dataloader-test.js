@@ -11,6 +11,7 @@ const { expect, assert } = chai;
 const ds = new Datastore();
 
 describe('dataloader', () => {
+
     it('should read the ds instance from gstore', () => {
         gstore.connect(ds);
         const loader = gstore.createDataLoader();

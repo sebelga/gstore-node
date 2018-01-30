@@ -5,6 +5,8 @@ const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
 const Joi = require('joi');
+// const cacheManager = require('cache-manager');
+// const MemoryStore = require('cache-manager-memory-store');
 
 const gstoreErrors = require('../lib/errors');
 
@@ -19,8 +21,9 @@ const Query = require('./mocks/query');
 const gstore = require('../')();
 const Entity = require('../lib/entity');
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const { queryHelpers, validation } = require('../lib/helpers');
+const { queryHelpers, validation, googleCloud } = require('../lib/helpers');
 const { createDataLoader } = require('../lib/dataloader');
+const cache = require('../lib/cache/index');
 
 const { Schema } = gstore;
 let Model = require('../lib/model');
@@ -36,6 +39,7 @@ describe('Model', () => {
         gstore.models = {};
         gstore.modelSchemas = {};
         gstore.options = {};
+        gstore.cache = undefined;
 
         gstore.connect(ds);
 
@@ -407,6 +411,69 @@ describe('Model', () => {
                 expect(err.name).equal('GstoreError');
                 expect(err.message).equal('dataloader must be a "DataLoader" instance');
                 done();
+            });
+        });
+
+        describe('--> cache', () => {
+            beforeEach(() => {
+                gstore.cache = cache.init(true);
+            });
+
+            it.only('should call "getKeys" on cache', () => {
+                sinon.stub(cache, 'getKeys').resolves(null);
+
+                return ModelInstance.get(123)
+                    .then(() => {
+                        const { args } = cache.getKeys.getCall(0);
+                        expect(args[0].id).equal(123);
+                        expect(args[1]).equal(gstore.cache);
+                    });
+            });
+
+            it('should check the cache and return its value', () => {
+                const entityData = { name: 'User cached 123', __fromCache: true };
+
+                const key = ModelInstance.key(123);
+                gstore.cache.set(googleCloud.key.toString(key), entityData, () => {});
+
+                return ModelInstance.get(123).then((result) => {
+                    expect(ds.get.called).equal(false);
+                    expect(result.name).equal('User cached 123');
+                });
+            });
+
+            it('should fetch entity if not found in the cache and then prime the cache', () => (
+                ModelInstance.get(123).then(() => (
+                    ModelInstance.get(123)
+                        .then(() => {
+                            const key = ds.get.getCall(0).args[0];
+                            expect(key.kind).equal('Blog');
+                            expect(key.id).equal(123);
+                            expect(ds.get.callCount).equal(1);
+                        })
+                ))
+            ));
+
+            it('should forward the error returned when "get" on cache', () => {
+                const error = new Error('Error getting the cache');
+                gstore.cache.get = (val, cb) => cb(error);
+
+                return ModelInstance.get(123)
+                    .then(() => {})
+                    .catch((err) => {
+                        expect(err).equal(error);
+                    });
+            });
+
+            it('should forward the error returned when "set" on cache', () => {
+                const error = new Error('Error setting the cache');
+                gstore.cache.set = () => Promise.reject(error);
+
+                return ModelInstance.get(123)
+                    .then(() => {})
+                    .catch((err) => {
+                        expect(err).equal(error);
+                    });
             });
         });
     });

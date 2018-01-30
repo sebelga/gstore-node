@@ -284,7 +284,7 @@ async-each@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/async-each/-/async-each-1.0.1.tgz#19d386a1d9edc6e7c1c85d388aedbcc56d33602d"
 
-async@1.x, async@^1.4.0:
+async@1.5.2, async@1.x, async@^1.4.0:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/async/-/async-1.5.2.tgz#ec6a61ae56480c0c3cb241c95618e20892f9672a"
 
@@ -891,6 +891,17 @@ bytebuffer@~5:
   resolved "https://registry.yarnpkg.com/bytebuffer/-/bytebuffer-5.0.1.tgz#582eea4b1a873b6d020a48d58df85f0bba6cfddd"
   dependencies:
     long "~3"
+
+cache-manager-memory-store@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/cache-manager-memory-store/-/cache-manager-memory-store-1.1.0.tgz#a67b4ee5c1de3562b443747835a9cce721fdd001"
+
+cache-manager@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/cache-manager/-/cache-manager-2.6.0.tgz#1050d8d9a9452a80a0cf5672f1394d31ef3d4109"
+  dependencies:
+    async "1.5.2"
+    lru-cache "4.0.0"
 
 caller-path@^0.1.0:
   version "0.1.0"
@@ -2538,6 +2549,13 @@ loose-envify@^1.0.0:
   dependencies:
     js-tokens "^3.0.0"
 
+lru-cache@4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-4.0.0.tgz#b5cbf01556c16966febe54ceec0fb4dc90df6c28"
+  dependencies:
+    pseudomap "^1.0.1"
+    yallist "^2.0.0"
+
 lru-cache@^4.0.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-4.1.1.tgz#622e32e82488b49279114a4f9ecf45e7cd6bba55"
@@ -3015,8 +3033,8 @@ progress@^2.0.0:
   resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f"
 
 promised-hooks@^3.0.0:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/promised-hooks/-/promised-hooks-2.0.2.tgz#3c596f49668d41be0db612f49fa51a3d4ec5107b"
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/promised-hooks/-/promised-hooks-3.0.0.tgz#855e43ade1da99ea7ec3c822f855d134127c05a5"
   dependencies:
     arrify "^1.0.1"
     is "^3.2.0"
@@ -3056,7 +3074,7 @@ protobufjs@^6.8.0:
     "@types/node" "^7.0.29"
     long "^3.2.0"
 
-pseudomap@^1.0.2:
+pseudomap@^1.0.1, pseudomap@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/pseudomap/-/pseudomap-1.0.2.tgz#f052a28da70e618917ef0a8ac34c1ae5a68286b3"
 
@@ -3820,9 +3838,9 @@ validate-npm-package-license@^3.0.1:
     spdx-correct "~1.0.0"
     spdx-expression-parse "~1.0.0"
 
-validator@^9.2.0:
-  version "9.2.0"
-  resolved "https://registry.yarnpkg.com/validator/-/validator-9.2.0.tgz#ad216eed5f37cac31a6fe00ceab1f6b88bded03e"
+validator@^9.3.0:
+  version "9.3.0"
+  resolved "https://registry.yarnpkg.com/validator/-/validator-9.3.0.tgz#9fbe89a73848560b87377561776766d565e2ee54"
 
 verror@1.10.0:
   version "1.10.0"
@@ -3895,7 +3913,7 @@ y18n@^3.2.0:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-3.2.1.tgz#6d15fba884c08679c0d77e88e7759e811e07fa41"
 
-yallist@^2.1.2:
+yallist@^2.0.0, yallist@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
 

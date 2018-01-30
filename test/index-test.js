@@ -245,15 +245,11 @@ describe('gstore-node', () => {
                 require('../lib')(0);
             };
             const func2 = () => {
-                require('../lib')({});
-            };
-            const func3 = () => {
                 require('../lib')('namespace');
             };
 
             expect(func1).throw();
             expect(func2).throw();
-            expect(func3).throw();
         });
     });
 });
