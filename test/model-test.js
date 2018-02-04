@@ -16,9 +16,7 @@ const ds = require('./mocks/datastore')({
 
 const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
-
 const gstore = require('../')();
-
 const Entity = require('../lib/entity');
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
@@ -331,13 +329,13 @@ describe('Model', () => {
                 });
         });
 
-        it('on no entity found, should return a 404 error', () => {
+        it('on no entity found, should return a "ERR_ENTITY_NOT_FOUND" error', () => {
             ds.get.restore();
 
             sinon.stub(ds, 'get').resolves([]);
 
             return ModelInstance.get(123).catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
             });
         });
 
@@ -447,12 +445,12 @@ describe('Model', () => {
             });
         });
 
-        it('should return 404 if entity not found', () => {
+        it('should return "ERR_ENTITY_NOT_FOUND" if entity not found', () => {
             transaction.get.restore();
             sinon.stub(transaction, 'get').resolves([]);
 
             return ModelInstance.update('keyname').catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
             });
         });
 
@@ -1434,12 +1432,12 @@ describe('Model', () => {
                 });
             });
 
-            it('if entity not found should return 404', () => {
+            it('if entity not found should return "ERR_ENTITY_NOT_FOUND"', () => {
                 queryMock.run.restore();
                 sinon.stub(queryMock, 'run').resolves();
 
                 return ModelInstance.findOne({ name: 'John' }).catch((err) => {
-                    expect(err.code).equal(404);
+                    expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
                 });
             });
 
