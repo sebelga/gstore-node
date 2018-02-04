@@ -7,27 +7,49 @@
     "env": {
         "node": true
     },
-     "extends": "airbnb-base",
-     "plugins": [
+    "extends": "airbnb-base",
+    "plugins": [
         "mocha"
     ],
-     "rules": {
-        "indent": ["error", 4, {"SwitchCase": 1}],
-        "import/no-extraneous-dependencies": [
-            "error", {"devDependencies": ["**/test/**/*.js"]}
+    "rules": {
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
         ],
-        "no-use-before-define": ["error", {"functions": false}],
+        "import/no-extraneous-dependencies": [
+            "error",
+            {
+                "devDependencies": [
+                    "**/test/**/*.js"
+                ]
+            }
+        ],
+        "no-use-before-define": [
+            "error",
+            {
+                "functions": false
+            }
+        ],
         "prefer-rest-params": "off",
         "prefer-spread": "off",
         "no-restricted-globals": "off",
         "no-underscore-dangle": "off",
         "no-param-reassign": "off",
-        "max-len": ["error", 120],
+        "max-len": [
+            "error",
+            120
+        ],
         "mocha/no-exclusive-tests": "off",
-        "comma-dangle": ["error", {
-            "arrays": "always-multiline",
-            "objects": "always-multiline",
-            "functions": "ignore"
-        }]
-     }
+        "comma-dangle": [
+            "error",
+            {
+                "arrays": "always-multiline",
+                "objects": "always-multiline",
+                "functions": "ignore"
+            }
+        ]
+    }
 }

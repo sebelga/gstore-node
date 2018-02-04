@@ -8,6 +8,7 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
+const gstoreCache = require('gstore-cache');
 
 const { expect, assert } = chai;
 
@@ -225,6 +226,24 @@ describe('gstore-node', () => {
             const func = () => gstore.save();
 
             expect(func).to.throw('No entities passed');
+        });
+    });
+
+    describe('gstore-cache', () => {
+        /* eslint-disable global-require  */
+        it('should not set any cache by default', () => {
+            const gstoreNoCache = require('../lib')({ namespace: 'com.no-cache' });
+            assert.isUndefined(gstoreNoCache.cache);
+        });
+
+        it('should set the default cache to memory lru-cache', () => {
+            sinon.spy(gstoreCache, 'init');
+            const config = { store: [{ store: 'memory' }] };
+            const gstoreWithCache = require('../lib')({ namespace: 'com.gstore-cache', cache: config });
+
+            assert.isDefined(gstoreWithCache.cache);
+            expect(gstoreCache.init.getCall(0).args[0]).equal(config);
+            expect(gstoreWithCache.cache.store.name).equal('memory');
         });
     });
 
