@@ -428,12 +428,13 @@ describe('Model', () => {
 
             it('should call "getKeys" on cache', () => {
                 sinon.stub(gstoreCache, 'getKeys').resolves([{ name: 'John' }]);
-
-                return ModelInstance.get(123)
+                const options = { cache: { ttl: { keys: 6000 } } };
+                return ModelInstance.get(123, null, null, null, options)
                     .then((response) => {
                         const { args } = gstoreCache.getKeys.getCall(0);
                         expect(args[0].id).equal(123);
-                        expect(typeof args[1]).equal('function');
+                        expect(args[1]).equal(options);
+                        expect(typeof args[2]).equal('function');
                         expect(response.name).equal('John');
                     });
             });
