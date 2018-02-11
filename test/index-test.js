@@ -8,7 +8,7 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
-const gstoreCache = require('gstore-cache');
+const GstoreCache = require('gstore-cache');
 
 const { expect, assert } = chai;
 
@@ -232,18 +232,31 @@ describe('gstore-node', () => {
     describe('gstore-cache', () => {
         /* eslint-disable global-require  */
         it('should not set any cache by default', () => {
-            const gstoreNoCache = require('../lib')({ namespace: 'com.no-cache' });
+            const gstoreNoCache = require('../lib')({ namespace: 'no-cache' });
             assert.isUndefined(gstoreNoCache.cache);
         });
 
         it('should set the default cache to memory lru-cache', () => {
-            sinon.spy(gstoreCache, 'init');
-            const config = { store: [{ store: 'memory' }] };
-            const gstoreWithCache = require('../lib')({ namespace: 'com.gstore-cache', cache: config });
+            const gstoreWithCache = require('../lib')({ namespace: 'with-cache', cache: true });
 
-            assert.isDefined(gstoreWithCache.cache);
-            expect(gstoreCache.init.getCall(0).args[0]).equal(config);
-            expect(gstoreWithCache.cache.store.name).equal('memory');
+            const { cache } = gstoreWithCache;
+            assert.isDefined(cache);
+            expect(cache.config.stores.length).equal(1);
+            expect(cache.config.stores[0].store).equal('memory');
+        });
+
+        it('should create gstoreCache from config passed', () => {
+            const config = {
+                stores: [{ store: 'memory' }],
+                ttl: {
+                    keys: 12345,
+                    queries: 6789,
+                },
+            };
+            const gstoreWithCache = require('../lib')({ namespace: 'with-cache-2', cache: config });
+            const gstoreCache = GstoreCache();
+
+            expect(gstoreWithCache.cache).equal(gstoreCache);
         });
     });
 

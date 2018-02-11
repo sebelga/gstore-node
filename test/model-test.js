@@ -5,7 +5,6 @@ const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
 const Joi = require('joi');
-const gstoreCache = require('gstore-cache');
 
 const gstoreErrors = require('../lib/errors');
 
@@ -18,6 +17,7 @@ const ds = require('./mocks/datastore')({
 const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 const gstore = require('../')();
+const gstoreWithCache = require('../')({ namespace: 'with-cache', cache: true });
 const Entity = require('../lib/entity');
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
@@ -92,8 +92,8 @@ describe('Model', () => {
         /**
          * Make sure we are not using any cache layer.
          */
-        if (gstoreCache.getCacheManager()) {
-            gstoreCache.deleteCacheManager(done);
+        if (gstore.cache) {
+            gstore.cache.deleteCacheManager(done);
         } else {
             done();
         }
@@ -414,7 +414,7 @@ describe('Model', () => {
         it('should throw an error if dataloader is not a DataLoader instance', (done) => {
             const dataloader = {};
 
-            ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {}, (err) => {
+            ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => { }, (err) => {
                 expect(err.name).equal('GstoreError');
                 expect(err.message).equal('dataloader must be a "DataLoader" instance');
                 done();
@@ -423,21 +423,63 @@ describe('Model', () => {
 
         describe('--> cache', () => {
             beforeEach(() => {
-                gstore.cache = gstoreCache.init(true);
+                gstore.cache = gstoreWithCache.cache;
+
+                // empty the cache
+                gstore.cache.cacheManager.reset();
             });
 
-            it('should call "getKeys" on cache', () => {
-                sinon.stub(gstoreCache, 'getKeys').resolves([{ name: 'John' }]);
-                const options = { cache: { ttl: { keys: 6000 } } };
-                return ModelInstance.get(123, null, null, null, options)
-                    .then((response) => {
-                        const { args } = gstoreCache.getKeys.getCall(0);
-                        expect(args[0].id).equal(123);
-                        expect(args[1]).equal(options);
-                        expect(typeof args[2]).equal('function');
-                        expect(response.name).equal('John');
-                    });
+            it('should get value from cache', () => {
+                const key = ModelInstance.key(123);
+                const value = { name: 'Michael' };
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        ModelInstance.get(123)
+                            .then((response) => {
+                                assert.ok(!ds.get.called);
+                                expect(response.entityData).include(value);
+                            })
+                    ));
             });
+
+            it('should get value from fetchHandler', () => (
+                ModelInstance.get(123)
+                    .then((response) => {
+                        assert.ok(ds.get.called);
+                        const { args } = ds.get.getCall(0);
+                        expect(args[0].id).equal(123);
+                        expect(response.entityData).include(entity);
+                    })
+            ));
+
+            it('should get value from cache and call Handler with missing keys', () => {
+                // TODO REMOVE when gstore-cache is a real dependency (not symlinked)
+                // When symlinked the ds.KEY symbol is from another instance of google-cloud datastore.
+                /* eslint-disable global-require */
+                const dsTemp = require('gstore-cache/node_modules/@google-cloud/datastore')();
+                ModelInstance.ds = dsTemp;
+                entity[dsTemp.KEY] = ModelInstance.key(123);
+                // End REMOVE
+
+                const key = ModelInstance.key(456);
+                const cacheEntity = { name: 'John' };
+                cacheEntity[dsTemp.KEY] = key;
+
+                return gstore.cache.keys.set(key, cacheEntity)
+                    .then(() => (
+                        ModelInstance.get([123, 456])
+                            .then((response) => {
+                                assert.ok(ds.get.called);
+
+                                const { args } = ds.get.getCall(0);
+                                expect(args[0].id).equal(123);
+                                expect(response.length).equal(2);
+                            })
+                    ));
+            });
+
+            // TODO: Add Symbol to cache response
         });
     });
 
