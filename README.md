@@ -2,8 +2,11 @@
 
 # gstore-node
 
-[![npm version](https://badge.fury.io/js/gstore-node.svg)](https://badge.fury.io/js/gstore-node) [![Build Status](https://travis-ci.org/sebelga/gstore-node.svg?branch=master)](https://travis-ci.org/sebelga/gstore-node)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)  
+[![NPM Version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
+[![Downloads Stats][npm-downloads]][npm-url]
+[![coveralls-image]][coveralls-url]  
+
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built **on top** of the **[@google-cloud/datastore](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore)** library.  
 It is not a replacement of @google-cloud/datastore but a tool built to help modeling Entities through Schemas and to help validating the data saved in the Datastore.
 
@@ -267,3 +270,11 @@ module.exports = {
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
 Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
+
+[npm-image]: https://img.shields.io/npm/v/gstore-node.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/gstore-node
+[npm-downloads]: https://img.shields.io/npm/dm/gstore-node.svg?style=flat-square
+[travis-image]: https://img.shields.io/travis/sebelga/gstore-node/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/sebelga/gstore-node
+[coveralls-image]: https://img.shields.io/coveralls/github/sebelga/gstore-node.svg
+[coveralls-url]: https://coveralls.io/github/sebelga/gstore-node?branch=master
