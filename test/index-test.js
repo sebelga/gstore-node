@@ -8,6 +8,7 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
+const GstoreCache = require('gstore-cache');
 
 const { expect, assert } = chai;
 
@@ -228,6 +229,37 @@ describe('gstore-node', () => {
         });
     });
 
+    describe('gstore-cache', () => {
+        /* eslint-disable global-require  */
+        it('should not set any cache by default', () => {
+            const gstoreNoCache = require('../lib')({ namespace: 'no-cache' });
+            assert.isUndefined(gstoreNoCache.cache);
+        });
+
+        it('should set the default cache to memory lru-cache', () => {
+            const gstoreWithCache = require('../lib')({ namespace: 'with-cache', cache: true });
+
+            const { cache } = gstoreWithCache;
+            assert.isDefined(cache);
+            expect(cache.config.stores.length).equal(1);
+            expect(cache.config.stores[0].store).equal('memory');
+        });
+
+        it('should create gstoreCache from config passed', () => {
+            const config = {
+                stores: [{ store: 'memory' }],
+                ttl: {
+                    keys: 12345,
+                    queries: 6789,
+                },
+            };
+            const gstoreWithCache = require('../lib')({ namespace: 'with-cache-2', cache: config });
+            const gstoreCache = GstoreCache();
+
+            expect(gstoreWithCache.cache).equal(gstoreCache);
+        });
+    });
+
     describe('multi instances', () => {
         it('should cache instances', () => {
             /* eslint-disable global-require  */
@@ -245,15 +277,11 @@ describe('gstore-node', () => {
                 require('../lib')(0);
             };
             const func2 = () => {
-                require('../lib')({});
-            };
-            const func3 = () => {
                 require('../lib')('namespace');
             };
 
             expect(func1).throw();
             expect(func2).throw();
-            expect(func3).throw();
         });
     });
 });
