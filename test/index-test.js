@@ -8,7 +8,7 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
-const GstoreCache = require('gstore-cache');
+const gstoreCache = require('gstore-cache');
 
 const { expect, assert } = chai;
 
@@ -232,17 +232,20 @@ describe('gstore-node', () => {
     describe('gstore-cache', () => {
         /* eslint-disable global-require  */
         it('should not set any cache by default', () => {
-            const gstoreNoCache = require('../lib')({ namespace: 'no-cache' });
+            const gstoreNoCache = require('../lib')({ namespace: 'index-no-cache' });
             assert.isUndefined(gstoreNoCache.cache);
         });
 
         it('should set the default cache to memory lru-cache', () => {
-            const gstoreWithCache = require('../lib')({ namespace: 'with-cache', cache: true });
+            sinon.spy(gstoreCache, 'init');
+
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache', cache: true });
 
             const { cache } = gstoreWithCache;
             assert.isDefined(cache);
             expect(cache.config.stores.length).equal(1);
             expect(cache.config.stores[0].store).equal('memory');
+            assert.isUndefined(gstoreCache.init.getCall(0).args[0]);
         });
 
         it('should create gstoreCache from config passed', () => {
@@ -253,10 +256,16 @@ describe('gstore-node', () => {
                     queries: 6789,
                 },
             };
-            const gstoreWithCache = require('../lib')({ namespace: 'with-cache-2', cache: config });
-            const gstoreCache = GstoreCache();
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: config });
+            const cache = gstoreCache.instance();
 
-            expect(gstoreWithCache.cache).equal(gstoreCache);
+            expect(gstoreWithCache.cache).equal(cache);
+        });
+
+        it('connect() should pass the datastore instance to the cache', () => {
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache', cache: true });
+            gstoreWithCache.connect(ds);
+            expect(gstoreWithCache.cache.ds).to.equal(ds);
         });
     });
 

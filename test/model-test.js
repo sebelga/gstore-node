@@ -17,7 +17,7 @@ const ds = require('./mocks/datastore')({
 const Transaction = require('./mocks/transaction');
 const Query = require('./mocks/query');
 const gstore = require('../')();
-const gstoreWithCache = require('../')({ namespace: 'with-cache', cache: true });
+const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: true });
 const Entity = require('../lib/entity');
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
@@ -40,6 +40,7 @@ describe('Model', () => {
         gstore.cache = undefined;
 
         gstore.connect(ds);
+        gstoreWithCache.connect(ds);
 
         schema = new Schema({
             name: { type: 'string' },
@@ -261,7 +262,7 @@ describe('Model', () => {
 
         beforeEach(() => {
             entity = { name: 'John' };
-            entity[ds.KEY] = ds.key(['BlogPost', 123]);
+            entity[ds.KEY] = ModelInstance.key(123);
             sinon.stub(ds, 'get').resolves([entity]);
         });
 
@@ -424,9 +425,12 @@ describe('Model', () => {
         describe('--> cache', () => {
             beforeEach(() => {
                 gstore.cache = gstoreWithCache.cache;
+            });
 
+            afterEach(() => {
                 // empty the cache
-                gstore.cache.cacheManager.reset();
+                gstore.cache.reset();
+                delete gstore.cache;
             });
 
             it('should get value from cache', () => {
@@ -443,6 +447,28 @@ describe('Model', () => {
                     ));
             });
 
+            it('should *not* get value from cache', () => {
+                const key = ModelInstance.key(123);
+                const value = { name: 'Michael' };
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        ModelInstance.get(123, null, null, null, { cache: false })
+                            .then((response) => {
+                                assert.ok(ds.get.called);
+                                expect(response.entityData).contains(entity);
+                                ds.get.reset();
+                                ds.get.resolves([entity]);
+                            })
+                    ))
+                    .then(() => (
+                        ModelInstance.get(123, null, null, null, { ttl: -1 })
+                            .then(() => {
+                                assert.ok(ds.get.called);
+                            })
+                    ));
+            });
+
             it('should get value from fetchHandler', () => (
                 ModelInstance.get(123)
                     .then((response) => {
@@ -453,18 +479,10 @@ describe('Model', () => {
                     })
             ));
 
-            it('should get value from cache and call Handler with missing keys', () => {
-                // TODO REMOVE when gstore-cache is a real dependency (not symlinked)
-                // When symlinked the ds.KEY symbol is from another instance of google-cloud datastore.
-                /* eslint-disable global-require */
-                const dsTemp = require('gstore-cache/node_modules/@google-cloud/datastore')();
-                ModelInstance.ds = dsTemp;
-                entity[dsTemp.KEY] = ModelInstance.key(123);
-                // End REMOVE
-
+            it('should get value from cache and call the fetchHandler **only** with the missing keys', () => {
                 const key = ModelInstance.key(456);
                 const cacheEntity = { name: 'John' };
-                cacheEntity[dsTemp.KEY] = key;
+                cacheEntity[ds.KEY] = key;
 
                 return gstore.cache.keys.set(key, cacheEntity)
                     .then(() => (
@@ -473,13 +491,12 @@ describe('Model', () => {
                                 assert.ok(ds.get.called);
 
                                 const { args } = ds.get.getCall(0);
+                                assert.ok(!Array.isArray(args[0]));
                                 expect(args[0].id).equal(123);
                                 expect(response.length).equal(2);
                             })
                     ));
             });
-
-            // TODO: Add Symbol to cache response
         });
     });
 
