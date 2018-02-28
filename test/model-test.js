@@ -462,9 +462,11 @@ describe('Model', () => {
                             })
                     ))
                     .then(() => (
-                        ModelInstance.get(123, null, null, null, { ttl: -1 })
+                        ModelInstance.get(123)
                             .then(() => {
-                                assert.ok(ds.get.called);
+                                // Make sure we get from the cache
+                                // if no options config is passed
+                                assert.ok(!ds.get.called);
                             })
                     ));
             });
