@@ -21,10 +21,9 @@ const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: t
 const Entity = require('../lib/entity');
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const { queryHelpers, validation } = require('../lib/helpers');
-const { createDataLoader } = require('../lib/dataloader');
-
-const { Schema } = gstore;
 let Model = require('../lib/model');
+
+const { Schema, createDataLoader } = gstore;
 
 describe('Model', () => {
     let schema;
@@ -467,6 +466,23 @@ describe('Model', () => {
                                 // Make sure we get from the cache
                                 // if no options config is passed
                                 assert.ok(!ds.get.called);
+                            })
+                    ));
+            });
+
+            it('should *not* get value from cache when ttl = -1', () => {
+                const copyConfig = gstore.cache.config.ttl;
+                gstore.cache.config.ttl = Object.assign({}, gstore.cache.config.ttl, { keys: -1 });
+
+                const key = ModelInstance.key(123);
+                const value = { name: 'Michael' };
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        ModelInstance.get(123)
+                            .then(() => {
+                                assert.ok(ds.get.called);
+                                gstore.cache.config.ttl = copyConfig;
                             })
                     ));
             });
@@ -1106,6 +1122,60 @@ describe('Model', () => {
                 expect(response.nextPageCursor).equal('abcdef');
             });
         });
+
+        describe('--> cache', () => {
+            let resQuery;
+
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+
+                query = ModelInstance.query()
+                    .filter('name', '=', 'John');
+                resQuery = [mockEntities, {
+                    moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+                    endCursor: 'abcdef',
+                }];
+
+                sinon.stub(query, '__originalRun').resolves(responseQueries);
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+                query.__originalRun.restore();
+            });
+
+            it('should get query from cache', () => (
+                gstore.cache.queries.set(query, resQuery, { ttl: 600 })
+                    .then(() => (
+                        query.run()
+                            .then((response) => {
+                                assert.ok(!query.__originalRun.called);
+                                expect(response.entities[0].name).deep.equal(mockEntities[0].name);
+                                expect(response.entities[1].name).deep.equal(mockEntities[1].name);
+                            })
+                    ))
+            ));
+
+            it('should *not* get query from cache', () => (
+                gstore.cache.queries.set(query, resQuery, { ttl: 600 })
+                    .then(() => (
+                        query.run({ cache: false })
+                            .then(() => {
+                                assert.ok(query.__originalRun.called);
+                            })
+                    ))
+            ));
+
+            it('should *not* get query from cache when ttl = -1', () => {
+                // TODO: Make 2 tests
+                // - one with ttl set to -1 in global
+                // - one with ttl set to -1 in global + option cache set to "true"
+            });
+
+            // TODO: Test to pass custom ttl value for caching
+        });
     });
 
     describe('shortcut queries', () => {
@@ -1528,7 +1598,7 @@ describe('Model', () => {
                 sinon.stub(queryMock, 'run').resolves();
 
                 return ModelInstance.findOne({ name: 'John' }).catch((err) => {
-                    expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
+                    expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 });
             });
 
@@ -1538,6 +1608,43 @@ describe('Model', () => {
                     expect(entity instanceof Model).equal(true);
                 })
             ));
+
+            it('should call pre hooks and override parameters', () => {
+                const spyPre = sinon.stub().callsFake((...args) => {
+                    // Make sure the original arguments are passed to the hook
+                    if (args[0].name === 'John') {
+                        // And override them
+                        return Promise.resolve({
+                            __override: [
+                                { name: 'Mick', email: 'mick@jagger.com' },
+                                ['Parent', 'default'],
+                            ],
+                        });
+                    }
+                    return Promise.resolve();
+                });
+
+                schema = new Schema({ name: { type: 'string' } });
+                schema.pre('findOne', function preHook(...args) {
+                    return spyPre.apply(this, args);
+                });
+
+                ModelInstance = Model.compile('Blog', schema, gstore);
+
+                return ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
+                    assert.ok(spyPre.calledBefore(ds.createQuery));
+                    const { args } = queryMock.filter.getCall(0);
+                    const { args: args2 } = queryMock.filter.getCall(1);
+                    const { args: args3 } = queryMock.hasAncestor.getCall(0);
+
+                    expect(args[0]).equal('name');
+                    expect(args[1]).equal('Mick');
+                    expect(args2[0]).equal('email');
+                    expect(args2[1]).equal('mick@jagger.com');
+                    expect(args3[0].kind).equal('Parent');
+                    expect(args3[0].name).equal('default');
+                });
+            });
         });
     });
 
