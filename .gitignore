@@ -13,6 +13,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+.nyc*
 
 # IntelliJ
 .idea

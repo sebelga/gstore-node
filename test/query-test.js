@@ -2,7 +2,6 @@
 
 const chai = require('chai');
 const sinon = require('sinon');
-const is = require('is');
 
 const gstore = require('../')();
 const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: true });
@@ -445,11 +444,11 @@ describe('Query', () => {
                     });
                 });
 
-                it('should get *not* get query from cache', () => {
-                    return ModelInstance.list({ cache: false }).then(() => {
+                it('should get *not* get query from cache', () => (
+                    ModelInstance.list({ cache: false }).then(() => {
                         expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
-                    });
-                });
+                    })
+                ));
             });
         });
 

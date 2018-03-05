@@ -7,8 +7,9 @@
         "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
         "pretest": "npm run lint",
         "test": "mocha test --recursive",
-        "coverage": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec --recursive",
-        "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec --recursive && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
+        "coverage-old": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec --recursive",
+        "coverage": "nyc mocha test --recursive",
+        "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage"
     },
     "engines": {
         "node": ">=6.0"
@@ -42,6 +43,12 @@
             "url": "https://github.com/jfbenckhuijsen"
         }
     ],
+    "nyc": {
+        "reporter": [
+            "lcov",
+            "text"
+        ]
+    },
     "license": "ISC",
     "dependencies": {
         "@google-cloud/datastore": "^1.3.4",
@@ -58,18 +65,18 @@
         "babel-preset-es2015": "^6.24.1",
         "cache-manager-redis-store": "^1.4.0",
         "chai": "^3.5.0",
-        "coveralls": "^2.11.9",
+        "coveralls": "^3.0.0",
         "dataloader": "^1.4.0",
         "eslint": "^4.18.2",
         "eslint-config-airbnb-base": "^12.1.0",
         "eslint-import-resolver-webpack": "^0.8.4",
         "eslint-plugin-import": "^2.9.0",
         "eslint-plugin-mocha": "^4.11.0",
-        "istanbul": "^0.4.5",
         "joi": "^13.1.1",
         "mocha": "^4.0.1",
         "mocha-lcov-reporter": "^1.3.0",
         "nconf": "^0.10.0",
+        "nyc": "^11.4.1",
         "redis-mock": "^0.21.0",
         "sinon": "^4.4.2"
     }
