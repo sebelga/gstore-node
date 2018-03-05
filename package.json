@@ -48,7 +48,6 @@
         "arrify": "^1.0.1",
         "cache-manager": "^2.8.0",
         "extend": "^3.0.1",
-        "gstore-cache": "1.0.0",
         "is": "^3.2.1",
         "moment": "^2.21.0",
         "promised-hooks": "^3.0.0",

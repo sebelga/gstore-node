@@ -18,11 +18,34 @@ const Model = require('../lib/model');
 const { Schema } = gstore;
 const { expect, assert } = chai;
 
+let query;
+let mockEntities;
+let responseQueries;
+let ModelInstance;
+
+const setupCacheContext = () => {
+    gstore.cache = gstoreWithCache.cache;
+
+    query = ModelInstance.query()
+        .filter('name', '=', 'John');
+
+    responseQueries = [mockEntities, {
+        moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+        endCursor: 'abcdef',
+    }];
+
+    sinon.spy(gstore.cache.queries, 'read');
+};
+
+const cleanupCacheContext = () => {
+    gstore.cache.reset();
+    gstore.cache.queries.read.restore();
+    delete gstore.cache;
+};
+
 describe('Query', () => {
     let schema;
-    let ModelInstance;
     let transaction;
-    let mockEntities;
 
     beforeEach(() => {
         gstore.models = {};
@@ -58,10 +81,13 @@ describe('Query', () => {
         ({ mockEntities } = generateEntities());
     });
 
-    describe('gcloud-node queries', () => {
-        let query;
-        let responseQueries;
+    afterEach(() => {
+        if (query && query.__originalRun && query.__originalRun.restore) {
+            query.__originalRun.restore();
+        }
+    });
 
+    describe('gcloud-node queries', () => {
         beforeEach(() => {
             responseQueries = [mockEntities, {
                 moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
@@ -196,43 +222,29 @@ describe('Query', () => {
             });
         });
 
-        describe('--> cache', () => {
-            let resQuery;
-
+        context('when cache is active', () => {
             beforeEach(() => {
-                gstore.cache = gstoreWithCache.cache;
-
-                query = ModelInstance.query()
-                    .filter('name', '=', 'John');
-                resQuery = [mockEntities, {
-                    moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
-                    endCursor: 'abcdef',
-                }];
-
+                setupCacheContext();
                 sinon.stub(query, '__originalRun').resolves(responseQueries);
             });
 
             afterEach(() => {
-                // empty the cache
-                gstore.cache.reset();
-                delete gstore.cache;
-                query.__originalRun.restore();
+                cleanupCacheContext();
             });
 
-            it('should get query from cache', () => (
-                gstore.cache.queries.set(query, resQuery, { ttl: 600 })
-                    .then(() => (
-                        query.run()
-                            .then((response) => {
-                                assert.ok(!query.__originalRun.called);
-                                expect(response.entities[0].name).deep.equal(mockEntities[0].name);
-                                expect(response.entities[1].name).deep.equal(mockEntities[1].name);
-                            })
-                    ))
+            it('should get query from cache and pass down options', () => (
+                query.run({ ttl: 9999 })
+                    .then((response) => {
+                        assert.ok(query.__originalRun.called);
+                        expect(gstore.cache.queries.read.callCount).equal(1);
+                        expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
+                        expect(response.entities[0].name).deep.equal(mockEntities[0].name);
+                        expect(response.entities[1].name).deep.equal(mockEntities[1].name);
+                    })
             ));
 
             it('should *not* get query from cache', () => (
-                gstore.cache.queries.set(query, resQuery, { ttl: 600 })
+                gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
                     .then(() => (
                         query.run({ cache: false })
                             .then(() => {
@@ -241,28 +253,56 @@ describe('Query', () => {
                     ))
             ));
 
-            it('should *not* get query from cache when ttl = -1', () => {
-                // TODO: Make 2 tests
-                // - one with ttl set to -1 in global
-                // - one with ttl set to -1 in global + option cache set to "true"
+            it('should *not* get query from cache when ttl === -1', () => {
+                const conf = Object.assign({}, gstore.cache.config.ttl);
+                gstore.cache.config.ttl.queries = -1;
+
+                return gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
+                    .then(() => (
+                        query.run()
+                            .then(() => {
+                                expect(gstore.cache.queries.read.callCount).equal(0);
+                                assert.ok(query.__originalRun.called);
+                                gstore.cache.config.ttl = conf; // put back original config
+                            })
+                    ));
             });
 
-            // TODO: Test to pass custom ttl value for caching
+            it('should get query from the cache when ttl === -1 but option.cache is set to "true"', () => {
+                const conf = Object.assign({}, gstore.cache.config.ttl);
+                gstore.cache.config.ttl.queries = -1;
+
+                return gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
+                    .then(() => (
+                        query.run({ cache: true })
+                            .then(() => {
+                                expect(gstore.cache.queries.read.callCount).equal(1);
+                                assert.ok(!query.__originalRun.called);
+                                gstore.cache.config.ttl = conf; // put back original config
+                            })
+                    ));
+            });
         });
     });
 
     describe('shortcut queries', () => {
         let queryMock;
+
         beforeEach(() => {
-            queryMock = new Query(ds, { entities: mockEntities });
-            sinon.stub(ds, 'createQuery').callsFake(() => queryMock);
+            sinon.stub(ds, 'createQuery').callsFake(() => {
+                queryMock = new Query(ds, { entities: mockEntities });
+
+                sinon.spy(queryMock, 'run');
+                sinon.spy(queryMock, 'filter');
+                sinon.spy(queryMock, 'hasAncestor');
+                sinon.spy(queryMock, 'order');
+                sinon.spy(queryMock, 'limit');
+                sinon.spy(queryMock, 'offset');
+
+                return queryMock;
+            });
+
             sinon.spy(queryHelpers, 'buildFromOptions');
-            sinon.spy(queryMock, 'run');
-            sinon.spy(queryMock, 'filter');
-            sinon.spy(queryMock, 'hasAncestor');
-            sinon.spy(queryMock, 'order');
-            sinon.spy(queryMock, 'limit');
-            sinon.spy(queryMock, 'offset');
         });
 
         afterEach(() => {
@@ -271,11 +311,21 @@ describe('Query', () => {
             if (queryMock.run.restore) {
                 queryMock.run.restore();
             }
-            queryMock.filter.restore();
-            queryMock.hasAncestor.restore();
-            queryMock.order.restore();
-            queryMock.limit.restore();
-            queryMock.offset.restore();
+            if (queryMock.filter.restore) {
+                queryMock.filter.restore();
+            }
+            if (queryMock.hasAncestor.restore) {
+                queryMock.hasAncestor.restore();
+            }
+            if (queryMock.order.restore) {
+                queryMock.order.restore();
+            }
+            if (queryMock.limit.restore) {
+                queryMock.limit.restore();
+            }
+            if (queryMock.offset.restore) {
+                queryMock.offset.restore();
+            }
         });
 
         describe('list', () => {
@@ -342,9 +392,12 @@ describe('Query', () => {
             });
 
             it('should deal with err response', () => {
-                queryMock.run.restore();
                 const error = { code: 500, message: 'Server error' };
-                sinon.stub(queryMock, 'run').rejects(error);
+                ds.createQuery.callsFake(() => {
+                    queryMock = new Query(ds, { entities: mockEntities });
+                    sinon.stub(queryMock, 'run').rejects(error);
+                    return queryMock;
+                });
 
                 return ModelInstance.list().catch((err) => {
                     expect(err).equal(err);
@@ -364,143 +417,31 @@ describe('Query', () => {
                 expect(response.nextPageCursor).equal('abcdef');
                 assert.isUndefined(response.entities[0].password);
             }));
-        });
 
-        describe('deleteAll()', () => {
-            beforeEach(() => {
-                sinon.stub(ds, 'delete').callsFake(() => {
-                    // We need to update our mock response of the Query
-                    // to not enter in an infinite loop as we recursivly query
-                    // until there are no more entities
-                    ds.createQuery.restore();
-                    sinon.stub(ds, 'createQuery').callsFake(() => new Query(ds, { entities: [] }));
-                    return Promise.resolve([{ indexUpdates: 3 }]);
+            context('when cache is active', () => {
+                beforeEach(() => {
+                    setupCacheContext();
                 });
 
-                sinon.spy(ModelInstance, 'query');
-            });
-
-            afterEach(() => {
-                ds.delete.restore();
-            });
-
-            it('should get all entities through Query', () => ModelInstance.deleteAll().then(() => {
-                // expect(queryMock.run.called).equal(true);
-                // expect(ds.createQuery.getCall(0).args.length).equal(1);
-                expect(ModelInstance.query.called).equal(true);
-                expect(ModelInstance.query.getCall(0).args.length).equal(1);
-            }));
-
-            it('should catch error if could not fetch entities', () => {
-                const error = { code: 500, message: 'Something went wrong' };
-                queryMock.run.restore();
-                sinon.stub(queryMock, 'run').rejects(error);
-
-                return ModelInstance.deleteAll().catch((err) => {
-                    expect(err).equal(error);
+                afterEach(() => {
+                    cleanupCacheContext();
                 });
-            });
 
-            it('if pre hooks, should call "delete" on all entities found (in series)', () => {
-                schema = new Schema({});
-                const spies = {
-                    pre: () => Promise.resolve(),
-                };
-                sinon.spy(spies, 'pre');
-
-                schema.pre('delete', spies.pre);
-
-                ModelInstance = gstore.model('NewBlog', schema);
-                sinon.spy(ModelInstance, 'delete');
-
-                return ModelInstance.deleteAll().then(() => {
-                    expect(spies.pre.callCount).equal(mockEntities.length);
-                    expect(ModelInstance.delete.callCount).equal(mockEntities.length);
-                    expect(ModelInstance.delete.getCall(0).args.length).equal(5);
-                    expect(ModelInstance.delete.getCall(0).args[4].constructor.name).equal('Key');
-                });
-            });
-
-            it('if post hooks, should call "delete" on all entities found (in series)', () => {
-                schema = new Schema({});
-                const spies = {
-                    post: () => Promise.resolve(),
-                };
-                sinon.spy(spies, 'post');
-                schema.post('delete', spies.post);
-
-                ModelInstance = gstore.model('NewBlog', schema);
-                sinon.spy(ModelInstance, 'delete');
-
-                return ModelInstance.deleteAll().then(() => {
-                    expect(spies.post.callCount).equal(mockEntities.length);
-                    expect(ModelInstance.delete.callCount).equal(2);
-                });
-            });
-
-            it('if NO hooks, should call delete passing an array of keys', () => {
-                sinon.spy(ModelInstance, 'delete');
-
-                return ModelInstance.deleteAll().then(() => {
-                    expect(ModelInstance.delete.callCount).equal(1);
-
-                    const { args } = ModelInstance.delete.getCall(0);
-                    expect(args.length).equal(5);
-                    expect(is.array(args[4])).equal(true);
-                    expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
-
-                    ModelInstance.delete.restore();
-                });
-            });
-
-            it('should call with ancestors', () => {
-                const ancestors = ['Parent', 'keyname'];
-
-                return ModelInstance.deleteAll(ancestors).then(() => {
-                    expect(queryMock.hasAncestor.calledOnce).equal(true);
-                    expect(queryMock.ancestors.path).deep.equal(ancestors);
-                });
-            });
-
-            it('should call with namespace', () => {
-                const namespace = 'com.new-domain.dev';
-
-                return ModelInstance.deleteAll(null, namespace).then(() => {
-                    expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
-                });
-            });
-
-            it('should return success:true if all ok', () => ModelInstance.deleteAll().then((response) => {
-                expect(response.success).equal(true);
-            }));
-
-            it('should return error if any while deleting', () => {
-                const error = { code: 500, message: 'Could not delete' };
-                sinon.stub(ModelInstance, 'delete').rejects(error);
-
-                return ModelInstance.deleteAll().catch((err) => {
-                    expect(err).equal(error);
-                });
-            });
-
-            it('should delete entites by batches of 500', (done) => {
-                ds.createQuery.restore();
-
-                const entities = [];
-                const entity = { name: 'Mick', lastname: 'Jagger' };
-                entity[ds.KEY] = ds.key(['BlogPost', 'keyname']);
-
-                for (let i = 0; i < 1200; i += 1) {
-                    entities.push(entity);
-                }
-
-                const queryMock2 = new Query(ds, { entities });
-                sinon.stub(ds, 'createQuery').callsFake(() => queryMock2);
-
-                ModelInstance.deleteAll().then(() => {
-                    expect(false).equal(false);
-                    done();
-                });
+                it('should get query from cache and pass down options', () => (
+                    ModelInstance.list().then((response) => {
+                        expect(response.entities.length).equal(2);
+                        expect(response.nextPageCursor).equal('abcdef');
+                    })
+                    // query.run({ ttl: 9999 })
+                    //     .then((response) => {
+                    //         expect(true).equal(true);
+                    //         // assert.ok(query.__originalRun.called);
+                    //         // expect(gstore.cache.queries.read.callCount).equal(1);
+                    //         // expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
+                    //         // expect(response.entities[0].name).deep.equal(mockEntities[0].name);
+                    //         // expect(response.entities[1].name).deep.equal(mockEntities[1].name);
+                    //     })
+                ));
             });
         });
 
@@ -578,9 +519,13 @@ describe('Query', () => {
             });
 
             it('should deal with err response', () => {
-                queryMock.run.restore();
                 const error = { code: 500, message: 'Server error' };
-                sinon.stub(queryMock, 'run').rejects(error);
+
+                ds.createQuery.callsFake(() => {
+                    queryMock = new Query(ds, { entities: mockEntities });
+                    sinon.stub(queryMock, 'run').rejects(error);
+                    return queryMock;
+                });
 
                 return ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).catch((err) => {
                     expect(err).equal(error);
@@ -663,9 +608,13 @@ describe('Query', () => {
             });
 
             it('should deal with err response', () => {
-                queryMock.run.restore();
                 const error = { code: 500, message: 'Server error' };
-                sinon.stub(queryMock, 'run').rejects(error);
+
+                ds.createQuery.callsFake(() => {
+                    queryMock = new Query(ds, { entities: mockEntities });
+                    sinon.stub(queryMock, 'run').rejects(error);
+                    return queryMock;
+                });
 
                 return ModelInstance.findOne({ name: 'John' }).catch((err) => {
                     expect(err).equal(error);
@@ -673,8 +622,11 @@ describe('Query', () => {
             });
 
             it('if entity not found should return "ERR_ENTITY_NOT_FOUND"', () => {
-                queryMock.run.restore();
-                sinon.stub(queryMock, 'run').resolves();
+                ds.createQuery.callsFake(() => {
+                    queryMock = new Query(ds, { entities: mockEntities });
+                    sinon.stub(queryMock, 'run').resolves();
+                    return queryMock;
+                });
 
                 return ModelInstance.findOne({ name: 'John' }).catch((err) => {
                     expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);

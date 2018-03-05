@@ -229,7 +229,7 @@ describe('gstore-node', () => {
         });
     });
 
-    describe('gstore-cache', () => {
+    describe('cache', () => {
         /* eslint-disable global-require  */
         it('should not set any cache by default', () => {
             const gstoreNoCache = require('../lib')({ namespace: 'index-no-cache' });
@@ -291,6 +291,18 @@ describe('gstore-node', () => {
 
             expect(func1).throw();
             expect(func2).throw();
+        });
+
+        it('should clear all instances', () => {
+            const gs = require('../lib');
+
+            let instance = gs({ cache: true });
+            assert.ok(!instance.cache);
+
+            gs.clear();
+
+            instance = gs({ cache: true });
+            expect(instance.cache.constructor.name).equal('GstoreCache');
         });
     });
 });
