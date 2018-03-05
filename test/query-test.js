@@ -418,6 +418,15 @@ describe('Query', () => {
                 assert.isUndefined(response.entities[0].password);
             }));
 
+            it('should call Model.query() to create Datastore Query', () => {
+                const namespace = 'com.mydomain-dev';
+                sinon.spy(ModelInstance, 'query');
+
+                return ModelInstance.list({ namespace }).then(() => {
+                    expect(ModelInstance.query.getCall(0).args[0]).deep.equal(namespace);
+                });
+            });
+
             context('when cache is active', () => {
                 beforeEach(() => {
                     setupCacheContext();
@@ -427,21 +436,20 @@ describe('Query', () => {
                     cleanupCacheContext();
                 });
 
-                it('should get query from cache and pass down options', () => (
-                    ModelInstance.list().then((response) => {
-                        expect(response.entities.length).equal(2);
-                        expect(response.nextPageCursor).equal('abcdef');
-                    })
-                    // query.run({ ttl: 9999 })
-                    //     .then((response) => {
-                    //         expect(true).equal(true);
-                    //         // assert.ok(query.__originalRun.called);
-                    //         // expect(gstore.cache.queries.read.callCount).equal(1);
-                    //         // expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
-                    //         // expect(response.entities[0].name).deep.equal(mockEntities[0].name);
-                    //         // expect(response.entities[1].name).deep.equal(mockEntities[1].name);
-                    //     })
-                ));
+                it('should get query from cache and pass down options', () => {
+                    const options = { ttl: 7777, cache: true };
+
+                    return ModelInstance.list(options).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
+                        expect(ModelInstance.gstore.cache.queries.read.getCall(0).args[1]).contains(options);
+                    });
+                });
+
+                it('should get *not* get query from cache', () => {
+                    return ModelInstance.list({ cache: false }).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+                    });
+                });
             });
         });
 
