@@ -1,6 +1,6 @@
 <img title="logo" src="logo/logo.png" width="75%">
 
-# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20entities%20of%20Google%20Datastore%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
+# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20Google%20Datastore%20entities%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
 
 [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]

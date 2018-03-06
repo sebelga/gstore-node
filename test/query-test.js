@@ -453,6 +453,16 @@ describe('Query', () => {
         });
 
         describe('findAround()', () => {
+            it('should call Model.query() to create Datastore Query', () => {
+                const namespace = 'com.mydomain-dev';
+                sinon.spy(ModelInstance, 'query');
+
+                return ModelInstance.findAround('xxx', 'xxx', { after: 3 }, namespace)
+                    .then(() => {
+                        expect(ModelInstance.query.getCall(0).args[0]).deep.equal(namespace);
+                    });
+            });
+
             it('should get 3 entities after a given date', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
                     .then((entities) => {
@@ -552,6 +562,32 @@ describe('Query', () => {
                     assert.isUndefined(entities[0].password);
                 })
             );
+
+            context('when cache is active', () => {
+                beforeEach(() => {
+                    setupCacheContext();
+                });
+
+                afterEach(() => {
+                    cleanupCacheContext();
+                });
+
+                it('should get query from cache and pass down options', () => {
+                    const options = { ttl: 7777, cache: true, after: 3 };
+
+                    return ModelInstance.findAround('xxx', 'xxx', options).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
+                        const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
+                        expect(args[1]).contains({ ttl: 7777, cache: true });
+                    });
+                });
+
+                it('should get *not* get query from cache', () => (
+                    ModelInstance.findAround('xxx', 'xxx', { after: 3, cache: false }).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+                    })
+                ));
+            });
         });
 
         describe('findOne()', () => {
