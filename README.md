@@ -1,6 +1,6 @@
 <img title="logo" src="logo/logo.png" width="75%">
 
-# gstore-node
+# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20entities%20of%20Google%20Datastore%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
 
 [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
@@ -8,7 +8,7 @@
 [![coveralls-image]][coveralls-url]  
 
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built **on top** of the **[@google-cloud/datastore](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore)** library.  
-It is not a replacement of @google-cloud/datastore but a tool built to help modeling Entities through Schemas and to help validating the data saved in the Datastore.
+It is not a replacement of @google-cloud/datastore but a layer on top of it to help modeling your entities through Schemas and to help validating the data saved in the Datastore.
 
 Its main features are:
 
@@ -20,7 +20,8 @@ Its main features are:
 - **custom methods** on entity instances
 - :tada: **NEW** Joi schema definition/validation (since v2.0.0)
 
-This library is in active development, please report any issue you might find.
+This library is in active development, please report any issue you might find.  
+> Please don’t forget to star this repo if you found it useful :)
 
 # Installation
 
@@ -28,20 +29,22 @@ This library is in active development, please report any issue you might find.
 npm install gstore-node --save
 ```
 
-IMPORTANT: gstore-node requires Node version **6 or superior**  
+Info: gstore-node requires Node version **6+**  
 
 # Getting started
 
 Import gstore-node and @google-cloud/datastore and configure your project.  
-For the information on how to configure @google-cloud/datastore [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore).
+For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/1.3.x/Datastore).
 
 ```js
 const gstore = require('gstore-node')();
-const datastore = require('@google-cloud/datastore')({
+const Datastore = require('@google-cloud/datastore');
+
+const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
 
-// Then connect gstore to the datastore
+// Then connect gstore to the datastore instance
 gstore.connect(datastore);
 ```
 
@@ -53,22 +56,27 @@ The @google/datastore instance. This means that you can access **all the API** o
 - `gstore.transaction`. Alias of the same google-cloud/datastore method
 
 # Documentation
-The [complete documentation of gstore-node](https://sebelga.gitbooks.io/gstore-node/content/) is in gitbook.
+The [complete documentation](https://sebelga.gitbooks.io/gstore-node/content/)  of gstore-node is in gitbook.  
+If you find and mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
 
 # Example
 
 Initialize gstore-node in your server file
 ```js
 // server.js
+
 const gstore = require('gstore-node')();
-const datastore = require('@google-cloud/datastore')({
+const Datastore = require('@google-cloud/datastore');
+
+const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
-gstore.connect(datastore);
 
+gstore.connect(datastore);
 ```
 
 Create your Model
+
 ```js
 // user.model.js
 
@@ -192,7 +200,6 @@ Use it in your Controller
 ```js
 // user.constroller.js
 
-const gstore = require('gstore-node')();
 const User = require('./user.model');
 
 const getUsers = (req ,res) => {
@@ -244,7 +251,7 @@ const updateUser = (req, res) => {
             // If there are any validation error on the schema
             // they will be in this error object
             res.status(400).json(err);
-        })
+        });
 };
 
 const deleteUser = (req, res) => {
@@ -269,7 +276,7 @@ module.exports = {
 # Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
-Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
+Not much could neither have been done without the great work of the guys at [googleapis](https://github.com/googleapis/nodejs-datastore).
 
 [npm-image]: https://img.shields.io/npm/v/gstore-node.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/gstore-node

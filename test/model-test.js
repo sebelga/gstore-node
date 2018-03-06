@@ -414,15 +414,21 @@ describe('Model', () => {
             });
 
             it('should get value from cache', () => {
+                sinon.spy(ModelInstance.gstore.cache.keys, 'read');
                 const key = ModelInstance.key(123);
                 const value = { name: 'Michael' };
 
                 return gstore.cache.keys.set(key, value)
                     .then(() => (
-                        ModelInstance.get(123)
+                        ModelInstance.get(123, null, null, null, { ttl: 334455 })
                             .then((response) => {
                                 assert.ok(!ds.get.called);
                                 expect(response.entityData).include(value);
+                                assert.ok(ModelInstance.gstore.cache.keys.read.called);
+                                const { args } = ModelInstance.gstore.cache.keys.read.getCall(0);
+                                expect(args[0].id).equal(123);
+                                expect(args[1].ttl).equal(334455);
+                                ModelInstance.gstore.cache.keys.read.restore();
                             })
                     ));
             });
@@ -451,19 +457,17 @@ describe('Model', () => {
                     ));
             });
 
-            it('should *not* get value from cache when ttl = -1', () => {
-                const copyConfig = gstore.cache.config.ttl;
+            it('should *not* get value from cache when global ttl === -1', () => {
+                const originalConf = gstore.cache.config.ttl;
                 gstore.cache.config.ttl = Object.assign({}, gstore.cache.config.ttl, { keys: -1 });
-
                 const key = ModelInstance.key(123);
-                const value = { name: 'Michael' };
 
-                return gstore.cache.keys.set(key, value)
+                return gstore.cache.keys.set(key, {})
                     .then(() => (
                         ModelInstance.get(123)
                             .then(() => {
                                 assert.ok(ds.get.called);
-                                gstore.cache.config.ttl = copyConfig;
+                                gstore.cache.config.ttl = originalConf;
                             })
                     ));
             });
@@ -478,7 +482,7 @@ describe('Model', () => {
                     })
             ));
 
-            it('should get value from cache and call the fetchHandler **only** with the missing keys', () => {
+            it('should get value from cache and call the fetchHandler **only** with keys not in the cache', () => {
                 const key = ModelInstance.key(456);
                 const cacheEntity = { name: 'John' };
                 cacheEntity[ds.KEY] = key;
@@ -488,7 +492,6 @@ describe('Model', () => {
                         ModelInstance.get([123, 456])
                             .then((response) => {
                                 assert.ok(ds.get.called);
-
                                 const { args } = ds.get.getCall(0);
                                 assert.ok(!Array.isArray(args[0]));
                                 expect(args[0].id).equal(123);
