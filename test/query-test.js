@@ -591,6 +591,16 @@ describe('Query', () => {
         });
 
         describe('findOne()', () => {
+            it('should call Model.query() to create Datastore Query', () => {
+                const namespace = 'com.mydomain-dev';
+                sinon.spy(ModelInstance, 'query');
+
+                return ModelInstance.findOne({ name: 'John' }, null, namespace)
+                    .then(() => {
+                        expect(ModelInstance.query.getCall(0).args[0]).deep.equal(namespace);
+                    });
+            });
+
             it('should call pre and post hooks', () => {
                 const spies = {
                     pre: () => Promise.resolve(),
@@ -602,11 +612,11 @@ describe('Query', () => {
                 schema.post('findOne', spies.post);
                 ModelInstance = Model.compile('Blog', schema, gstore);
 
-                ModelInstance.findOne({}).then(() => {
+                return ModelInstance.findOne({}).then(() => {
                     expect(spies.pre.calledOnce).equal(true);
                     expect(spies.post.calledOnce).equal(true);
-                    expect(spies.pre.calledBefore(queryMock.run)).equal(true);
-                    expect(spies.post.calledAfter(queryMock.run)).equal(true);
+                    expect(spies.pre.calledBefore(queryMock.__originalRun)).equal(true);
+                    expect(spies.post.calledAfter(queryMock.__originalRun)).equal(true);
                 });
             });
 
@@ -666,8 +676,7 @@ describe('Query', () => {
 
             it('if entity not found should return "ERR_ENTITY_NOT_FOUND"', () => {
                 ds.createQuery.callsFake(() => {
-                    queryMock = new Query(ds, { entities: mockEntities });
-                    sinon.stub(queryMock, 'run').resolves();
+                    queryMock = new Query(ds, { entities: [] });
                     return queryMock;
                 });
 
@@ -718,6 +727,30 @@ describe('Query', () => {
                     expect(args3[0].kind).equal('Parent');
                     expect(args3[0].name).equal('default');
                 });
+            });
+
+            context('when cache is active', () => {
+                beforeEach(() => {
+                    setupCacheContext();
+                });
+
+                afterEach(() => {
+                    cleanupCacheContext();
+                });
+
+                it('should get query from cache and pass down options', () => (
+                    ModelInstance.findOne({ name: 'John', ttl: 7777, cache: true }).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
+                        const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
+                        expect(args[1]).contains({ ttl: 7777, cache: true });
+                    })
+                ));
+
+                it('should get *not* get query from cache', () => (
+                    ModelInstance.findOne({ name: 'John', cache: false }).then(() => {
+                        expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+                    })
+                ));
             });
         });
     });
