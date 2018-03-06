@@ -444,7 +444,7 @@ describe('Query', () => {
                     });
                 });
 
-                it('should get *not* get query from cache', () => (
+                it('should *not* get query from cache', () => (
                     ModelInstance.list({ cache: false }).then(() => {
                         expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
                     })
@@ -582,7 +582,7 @@ describe('Query', () => {
                     });
                 });
 
-                it('should get *not* get query from cache', () => (
+                it('should *not* get query from cache', () => (
                     ModelInstance.findAround('xxx', 'xxx', { after: 3, cache: false }).then(() => {
                         expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
                     })
@@ -739,15 +739,15 @@ describe('Query', () => {
                 });
 
                 it('should get query from cache and pass down options', () => (
-                    ModelInstance.findOne({ name: 'John', ttl: 7777, cache: true }).then(() => {
+                    ModelInstance.findOne({ name: 'John' }, null, null, { ttl: 7777, cache: true }).then(() => {
                         expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
                         const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
                         expect(args[1]).contains({ ttl: 7777, cache: true });
                     })
                 ));
 
-                it('should get *not* get query from cache', () => (
-                    ModelInstance.findOne({ name: 'John', cache: false }).then(() => {
+                it('should *not* get query from cache', () => (
+                    ModelInstance.findOne({ name: 'John' }, null, null, { cache: false }).then(() => {
                         expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
                     })
                 ));
