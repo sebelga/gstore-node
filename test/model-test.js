@@ -513,10 +513,12 @@ describe('Model', () => {
             expect(entity.className).equal('Entity');
         }));
 
-        it('should first get the entity by Key', () => ModelInstance.update(123).then(() => {
-            expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
-            expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
-        }));
+        it('should first get the entity by Key', () => (
+            ModelInstance.update(123).then(() => {
+                expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
+                expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
+            })
+        ));
 
         it('should not convert a string id with mix of number and alpha chars', () => (
             ModelInstance.update('123:456').then(() => {
@@ -629,7 +631,7 @@ describe('Model', () => {
                 })
         ));
 
-        it('should run inside an EXISTING transaction', () => (
+        it('should run inside an *existing* transaction', () => (
             ModelInstance.update(123, {}, null, null, transaction)
                 .then((entity) => {
                     expect(ds.transaction.called).equal(false);
@@ -649,6 +651,42 @@ describe('Model', () => {
         it('should still work passing a callback', () => ModelInstance.update(123, (err, entity) => {
             expect(entity.className).equal('Entity');
         }));
+
+        context('when cache is active', () => {
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should call Model.clearCache() passing the key updated', () => {
+                sinon.spy(ModelInstance, 'clearCache');
+                return ModelInstance.update(123, { name: 'Nuri' }, ['Parent', 'keyNameParent'])
+                    .then((entity) => {
+                        assert.ok(ModelInstance.clearCache.called);
+                        expect(ModelInstance.clearCache.getCall(0).args[0].id).equal(123);
+                        expect(entity.name).equal('Nuri');
+                        ModelInstance.clearCache.restore();
+                    });
+            });
+
+            it('on error when clearing the cache, should add the entityUpdated on the error', (done) => {
+                const err = new Error('Houston something bad happened');
+                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+
+                ModelInstance.update(123, { name: 'Nuri' })
+                    .catch((e) => {
+                        expect(e.__entityUpdated.name).equal('Nuri');
+                        expect(e.__cacheError).equal(err);
+                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        done();
+                    });
+            });
+        });
     });
 
     describe('delete()', () => {
@@ -670,23 +708,21 @@ describe('Model', () => {
             })
         ));
 
-        it(
-            'should call ds.delete with correct Key (string id)',
-            () => ModelInstance.delete('keyName')
+        it('should call ds.delete with correct Key (string id)', () => (
+            ModelInstance.delete('keyName')
                 .then((response) => {
                     expect(ds.delete.called).equal(true);
                     expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
                     expect(response.success).equal(true);
                 })
-        );
+        ));
 
-        it(
-            'not converting string id with mix of number and alpha chars',
-            () => ModelInstance.delete('123:456')
+        it('not converting string id with mix of number and alpha chars', () => (
+            ModelInstance.delete('123:456')
                 .then(() => {
                     expect(ds.delete.getCall(0).args[0].name).equal('123:456');
                 })
-        );
+        ));
 
         it('should allow array of ids', () => ModelInstance.delete([22, 69]).then(() => {
             expect(is.array(ds.delete.getCall(0).args[0])).equal(true);
@@ -709,14 +745,13 @@ describe('Model', () => {
             });
         });
 
-        it(
-            'should delete entity in a transaction',
-            () => ModelInstance.delete(123, null, null, transaction)
+        it('should delete entity in a transaction', () => (
+            ModelInstance.delete(123, null, null, transaction)
                 .then(() => {
                     expect(transaction.delete.called).equal(true);
                     expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
                 })
-        );
+        ));
 
         it('should deal with empty responses', () => {
             ds.delete.restore();
@@ -732,13 +767,12 @@ describe('Model', () => {
             expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
         });
 
-        it(
-            'should throw error if transaction passed is not instance of gcloud Transaction',
-            () => ModelInstance.delete(123, null, null, {})
+        it('should throw error if transaction passed is not instance of gcloud Transaction', () => (
+            ModelInstance.delete(123, null, null, {})
                 .catch((err) => {
                     expect(err.message).equal('Transaction needs to be a gcloud Transaction');
                 })
-        );
+        ));
 
         it('should set "success" to false if no entity deleted', () => {
             ds.delete.restore();
@@ -897,6 +931,43 @@ describe('Model', () => {
                     expect(keyToClear.kind).equal('Blog');
                     expect(keyToClear.id).equal(123);
                 });
+        });
+
+        context('when cache is active', () => {
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should call Model.clearCache() passing the key deleted', () => {
+                sinon.spy(ModelInstance, 'clearCache');
+
+                return ModelInstance.delete(445566)
+                    .then((response) => {
+                        assert.ok(ModelInstance.clearCache.called);
+                        expect(ModelInstance.clearCache.getCall(0).args[0].id).equal(445566);
+                        expect(response.success).equal(true);
+                        ModelInstance.clearCache.restore();
+                    });
+            });
+
+            it('on error when clearing the cache, should add the entityUpdated on the error', (done) => {
+                const err = new Error('Houston something bad happened');
+                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+
+                ModelInstance.delete(1234)
+                    .catch((e) => {
+                        expect(e.__response.success).equal(true);
+                        expect(e.__cacheError).equal(err);
+                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        done();
+                    });
+            });
         });
     });
 
@@ -1116,6 +1187,66 @@ describe('Model', () => {
             return transaction.execPostHooks().then(() => {
                 expect(true).equal(true);
             });
+        });
+    });
+
+    describe('clearCache', () => {
+        beforeEach(() => {
+            gstore.cache = gstoreWithCache.cache;
+        });
+
+        afterEach(() => {
+            // empty the cache
+            gstore.cache.reset();
+
+            if (gstore.cache.queries.clearQueriesEntityKind.restore) {
+                gstore.cache.queries.clearQueriesEntityKind.restore();
+            }
+
+            delete gstore.cache;
+        });
+
+        it('should delete the cache', () => {
+            sinon.spy(gstore.cache.keys, 'del');
+
+            return ModelInstance.clearCache([ModelInstance.key(112233), ModelInstance.key(778899)])
+                .then(() => {
+                    assert.ok(gstore.cache.keys.del.called);
+                    expect(gstore.cache.keys.del.getCall(0).args[0].id).equal(112233);
+                    expect(gstore.cache.keys.del.getCall(0).args[1].id).equal(778899);
+                    gstore.cache.keys.del.restore();
+                });
+        });
+
+        it('should clear all queries linked to its entity kind', () => {
+            sinon.spy(gstore.cache.queries, 'clearQueriesEntityKind');
+            return ModelInstance.clearCache()
+                .then(() => {
+                    assert.ok(gstore.cache.queries.clearQueriesEntityKind.called);
+                    const { args } = gstore.cache.queries.clearQueriesEntityKind.getCall(0);
+                    expect(args[0]).equal(ModelInstance.entityKind);
+                });
+        });
+
+        it('should bubble up errors', (done) => {
+            const err = new Error('Houston something bad happened');
+            sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+            ModelInstance.clearCache(ModelInstance.key(123))
+                .catch((e) => {
+                    expect(e).equal(err);
+                    done();
+                });
+        });
+
+        it('should not throw error if Redis is not present', () => {
+            const err = new Error('Redis store not founc');
+            err.code = 'ERR_NO_REDIS';
+            sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+
+            ModelInstance.clearCache(ModelInstance.key(123))
+                .then((res) => {
+                    expect(res.success).equal(true);
+                });
         });
     });
 
