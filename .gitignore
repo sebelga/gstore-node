@@ -38,7 +38,10 @@ config.json
 .coveralls.yml
 todo.txt
 .vscode/
+.nyc_output
 logo/**
+
+notes.txt
 
 !logo/logo.png
 !logo/logo_small.png
