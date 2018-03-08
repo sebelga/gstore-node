@@ -7,7 +7,7 @@ const is = require('is');
 const Joi = require('joi');
 
 const gstore = require('../')();
-const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: true });
+const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: { ttl: { queries: 600 } } });
 const Entity = require('../lib/entity');
 const Model = require('../lib/model');
 const gstoreErrors = require('../lib/errors');
@@ -989,7 +989,7 @@ describe('Model', () => {
                 return Promise.resolve([{ indexUpdates: 3 }]);
             });
 
-            sinon.spy(ModelInstance, 'query');
+            sinon.spy(ModelInstance, 'initQuery');
         });
 
         afterEach(() => {
@@ -998,15 +998,17 @@ describe('Model', () => {
             if (queryMock.run.restore) {
                 queryMock.run.restore();
             }
-            queryMock.hasAncestor.restore();
+            if (queryMock.hasAncestor.restore) {
+                queryMock.hasAncestor.restore();
+            }
         });
 
-        it('should get all entities through Query', () => ModelInstance.deleteAll().then(() => {
-            // expect(queryMock.run.called).equal(true);
-            // expect(ds.createQuery.getCall(0).args.length).equal(1);
-            expect(ModelInstance.query.called).equal(true);
-            expect(ModelInstance.query.getCall(0).args.length).equal(1);
-        }));
+        it('should get all entities through Query', () => (
+            ModelInstance.deleteAll().then(() => {
+                expect(ModelInstance.initQuery.called).equal(true);
+                expect(ModelInstance.initQuery.getCall(0).args.length).equal(1);
+            })
+        ));
 
         it('should catch error if could not fetch entities', () => {
             const error = { code: 500, message: 'Something went wrong' };
@@ -1062,7 +1064,6 @@ describe('Model', () => {
                 expect(ModelInstance.delete.callCount).equal(1);
 
                 const { args } = ModelInstance.delete.getCall(0);
-                expect(args.length).equal(5);
                 expect(is.array(args[4])).equal(true);
                 expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
 
@@ -1117,6 +1118,45 @@ describe('Model', () => {
             ModelInstance.deleteAll().then(() => {
                 expect(false).equal(false);
                 done();
+            });
+        });
+
+        context('when cache is active', () => {
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should delete all the keys from the cache and clear the Queries', (done) => {
+                ds.createQuery.restore();
+
+                const entities = [];
+                const entity = { name: 'Mick', lastname: 'Jagger' };
+                entity[ds.KEY] = ds.key(['BlogPost', 'keyname']);
+                for (let i = 0; i < 1200; i += 1) {
+                    entities.push(entity);
+                }
+
+                queryMock = new Query(ds, { entities });
+                sinon.stub(ds, 'createQuery').callsFake(() => (
+                    // Check
+                    queryMock));
+                sinon.spy(gstore.cache.keys, 'del');
+                sinon.spy(gstore.cache.queries, 'clearQueriesEntityKind');
+
+                ModelInstance.deleteAll().then(() => {
+                    expect(gstore.cache.keys.del.callCount).equal(3);
+                    expect(gstore.cache.queries.clearQueriesEntityKind.callCount).equal(1);
+
+                    gstore.cache.keys.del.restore();
+                    gstore.cache.queries.clearQueriesEntityKind.restore();
+                    done();
+                });
             });
         });
     });

@@ -248,7 +248,7 @@ describe('gstore-node', () => {
             assert.isUndefined(gstoreCache.init.getCall(0).args[0]);
         });
 
-        it('should create gstoreCache from config passed', () => {
+        it('should create gstoreCache from config passed', (done) => {
             const config = {
                 stores: [{ store: 'memory' }],
                 ttl: {
@@ -259,11 +259,20 @@ describe('gstore-node', () => {
             const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: config });
             const cache = gstoreCache.instance();
 
-            expect(gstoreWithCache.cache).equal(cache);
+            const onReady = () => {
+                cache.removeAllListeners();
+
+                expect(gstoreWithCache.cache).equal(cache);
+                expect(gstoreWithCache.cache.config.ttl.keys).equal(12345);
+
+                done();
+            };
+
+            cache.on('ready', onReady);
         });
 
         it('connect() should pass the datastore instance to the cache', () => {
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache', cache: true });
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-3', cache: true });
             gstoreWithCache.connect(ds);
             expect(gstoreWithCache.cache.ds).to.equal(ds);
         });
