@@ -229,7 +229,7 @@ describe('gstore-node', () => {
         });
     });
 
-    describe('gstore-cache', () => {
+    describe('cache', () => {
         /* eslint-disable global-require  */
         it('should not set any cache by default', () => {
             const gstoreNoCache = require('../lib')({ namespace: 'index-no-cache' });
@@ -248,7 +248,7 @@ describe('gstore-node', () => {
             assert.isUndefined(gstoreCache.init.getCall(0).args[0]);
         });
 
-        it('should create gstoreCache from config passed', () => {
+        it('should create gstoreCache from config passed', (done) => {
             const config = {
                 stores: [{ store: 'memory' }],
                 ttl: {
@@ -259,11 +259,20 @@ describe('gstore-node', () => {
             const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: config });
             const cache = gstoreCache.instance();
 
-            expect(gstoreWithCache.cache).equal(cache);
+            const onReady = () => {
+                cache.removeAllListeners();
+
+                expect(gstoreWithCache.cache).equal(cache);
+                expect(gstoreWithCache.cache.config.ttl.keys).equal(12345);
+
+                done();
+            };
+
+            cache.on('ready', onReady);
         });
 
         it('connect() should pass the datastore instance to the cache', () => {
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache', cache: true });
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-3', cache: true });
             gstoreWithCache.connect(ds);
             expect(gstoreWithCache.cache.ds).to.equal(ds);
         });
@@ -291,6 +300,18 @@ describe('gstore-node', () => {
 
             expect(func1).throw();
             expect(func2).throw();
+        });
+
+        it('should clear all instances', () => {
+            const gs = require('../lib');
+
+            let instance = gs({ cache: true });
+            assert.ok(!instance.cache);
+
+            gs.clear();
+
+            instance = gs({ cache: true });
+            expect(instance.cache.constructor.name).equal('GstoreCache');
         });
     });
 });
