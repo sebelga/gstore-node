@@ -10,7 +10,7 @@
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built **on top** of the **[@google-cloud/datastore](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore)** library.  
 It is not a replacement of @google-cloud/datastore but a layer on top of it to help modeling your entities through Schemas and to help validating the data saved in the Datastore.
 
-Its main features are:
+## Highlight
 
 - explicit **Schema declaration** for entities
 - properties **type validation**
@@ -18,9 +18,11 @@ Its main features are:
 - **shortcuts** queries
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
-- :tada: **NEW** Joi schema definition/validation (since v2.0.0)
+- **[Joi](https://github.com/hapijs/joi)** schema definition and validation
+- :tada: **NEW** Advanced **cache layer** (since v3.0.0)
 
 This library is in active development, please report any issue you might find.  
+
 > Please don’t forget to star this repo if you found it useful :)
 
 # Installation

@@ -1150,8 +1150,12 @@ describe('Model', () => {
                 sinon.spy(gstore.cache.queries, 'clearQueriesEntityKind');
 
                 ModelInstance.deleteAll().then(() => {
-                    expect(gstore.cache.keys.del.callCount).equal(3);
                     expect(gstore.cache.queries.clearQueriesEntityKind.callCount).equal(1);
+                    expect(gstore.cache.keys.del.callCount).equal(3);
+                    const keys1 = gstore.cache.keys.del.getCall(0).args;
+                    const keys2 = gstore.cache.keys.del.getCall(1).args;
+                    const keys3 = gstore.cache.keys.del.getCall(2).args;
+                    expect(keys1.length + keys2.length + keys3.length).equal(1200);
 
                     gstore.cache.keys.del.restore();
                     gstore.cache.queries.clearQueriesEntityKind.restore();
@@ -1580,6 +1584,41 @@ describe('Model', () => {
 
             return entity.save().then(() => {
                 expect(entity.entityData.location.constructor.name).to.equal('GeoPoint');
+            });
+        });
+
+        context('when cache is active', () => {
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should call Model.clearCache()', () => {
+                sinon.spy(ModelInstance, 'clearCache');
+                return model.save().then((entity) => {
+                    assert.ok(ModelInstance.clearCache.called);
+                    expect(typeof ModelInstance.clearCache.getCall(0).args[0]).equal('undefined');
+                    expect(entity.name).equal('John');
+                    ModelInstance.clearCache.restore();
+                });
+            });
+
+            it('on error when clearing the cache, should add the entity saved on the error object', (done) => {
+                const err = new Error('Houston something bad happened');
+                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+
+                model.save()
+                    .catch((e) => {
+                        expect(e.__entity.name).equal('John');
+                        expect(e.__cacheError).equal(err);
+                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        done();
+                    });
             });
         });
     });
