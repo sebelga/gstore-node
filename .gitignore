@@ -13,6 +13,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+.nyc*
 
 # IntelliJ
 .idea
@@ -37,7 +38,10 @@ config.json
 .coveralls.yml
 todo.txt
 .vscode/
+.nyc_output
 logo/**
+
+notes.txt
 
 !logo/logo.png
 !logo/logo_small.png

@@ -13,7 +13,6 @@ const gstore = require('../lib')();
 const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
-gstore.connect(ds);
 
 describe('Entity', () => {
     let schema;
@@ -23,9 +22,10 @@ describe('Entity', () => {
         gstore.models = {};
         gstore.modelSchemas = {};
         gstore.options = {};
+        gstore.connect(ds);
 
         schema = new Schema({
-            name: { type: 'string' },
+            name: { type: 'string', default: 'Mick' },
             lastname: { type: 'string' },
             password: { type: 'string', read: false },
         });
@@ -63,6 +63,11 @@ describe('Entity', () => {
         it('should add data passed to entityData', () => {
             const entity = new ModelInstance({ name: 'John' });
             expect(entity.entityData.name).to.equal('John');
+        });
+
+        it('should have default if no data passed', () => {
+            const entity = new ModelInstance();
+            expect(entity.entityData.name).to.equal('Mick');
         });
 
         it('should not add any data if nothing is passed', () => {
@@ -135,8 +140,6 @@ describe('Entity', () => {
             expect(user.age).equal(77);
             assert.isUndefined(user.entityData.lastname);
         });
-
-        // it('should sanitize')
 
         it('should call handler for default values in gstore.defaultValues constants', () => {
             sinon.spy(gstore.defaultValues, '__handler__');
@@ -294,7 +297,7 @@ describe('Entity', () => {
             beforeEach(() => {
                 spyOn = {
                     fnHookPre: () => Promise.resolve(),
-                    fnHookPost: () => Promise.resolve(1234),
+                    fnHookPost: () => Promise.resolve({ __override: 1234 }),
                 };
 
                 sinon.spy(spyOn, 'fnHookPre');

@@ -1,13 +1,15 @@
 <img title="logo" src="logo/logo.png" width="75%">
 
-# gstore-node
+# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20Google%20Datastore%20entities%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
 
-[![npm version](https://badge.fury.io/js/gstore-node.svg)](https://badge.fury.io/js/gstore-node) [![Build Status](https://travis-ci.org/sebelga/gstore-node.svg?branch=master)](https://travis-ci.org/sebelga/gstore-node)
-[![Coverage Status](https://coveralls.io/repos/github/sebelga/gstore-node/badge.svg?branch=master)](https://coveralls.io/github/sebelga/gstore-node?branch=master)  
+[![NPM Version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
+[![coveralls-image]][coveralls-url]  
+
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built **on top** of the **[@google-cloud/datastore](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore)** library.  
-It is not a replacement of @google-cloud/datastore but a tool built to help modeling Entities through Schemas and to help validating the data saved in the Datastore.
+It is not a replacement of @google-cloud/datastore but a layer on top of it to help modeling your entities through Schemas and to help validating the data saved in the Datastore.
 
-Its main features are:
+## Highlight
 
 - explicit **Schema declaration** for entities
 - properties **type validation**
@@ -15,9 +17,12 @@ Its main features are:
 - **shortcuts** queries
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
-- :tada: **NEW** Joi schema definition/validation (since v2.0.0)
+- **[Joi](https://github.com/hapijs/joi)** schema definition and validation
+- :tada: **NEW** Advanced **cache layer** (since v3.0.0)
 
-This library is in active development, please report any issue you might find.
+This library is in active development, please report any issue you might find.  
+
+> Please don’t forget to star this repo if you found it useful :)
 
 # Installation
 
@@ -25,21 +30,22 @@ This library is in active development, please report any issue you might find.
 npm install gstore-node --save
 ```
 
-IMPORTANT: Since v1.4.0, gstore-node requires Node version **6 or superior**
-INFO: With npm v3+ **you don't need** to install @google-cloud/datastore as a dependency of your project as it is already a dependency of gstore-node.
+Info: gstore-node requires Node version **6+**  
 
 # Getting started
 
 Import gstore-node and @google-cloud/datastore and configure your project.  
-For the information on how to configure @google-cloud/datastore [read the docs here](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore).
+For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/1.3.x/Datastore).
 
 ```js
 const gstore = require('gstore-node')();
-const datastore = require('@google-cloud/datastore')({
+const Datastore = require('@google-cloud/datastore');
+
+const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
 
-// Then connect gstore to the datastore
+// Then connect gstore to the datastore instance
 gstore.connect(datastore);
 ```
 
@@ -51,22 +57,27 @@ The @google/datastore instance. This means that you can access **all the API** o
 - `gstore.transaction`. Alias of the same google-cloud/datastore method
 
 # Documentation
-The [complete documentation of gstore-node](https://sebelga.gitbooks.io/gstore-node/content/) is in gitbook.
+The [complete documentation](https://sebelga.gitbooks.io/gstore-node/content/)  of gstore-node is in gitbook.  
+If you find and mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
 
 # Example
 
 Initialize gstore-node in your server file
 ```js
 // server.js
+
 const gstore = require('gstore-node')();
-const datastore = require('@google-cloud/datastore')({
+const Datastore = require('@google-cloud/datastore');
+
+const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
-gstore.connect(datastore);
 
+gstore.connect(datastore);
 ```
 
 Create your Model
+
 ```js
 // user.model.js
 
@@ -117,6 +128,7 @@ const userSchema = new Schema({
 });
 
 // Or with **Joi** schema definition
+// You need to have joi as a dependency of your project ("npm install joi --save")
 const userSchema = new Schema({
     firstname: { joi: Joi.string().required() },
     email: { joi: Joi.string().email() },
@@ -189,7 +201,6 @@ Use it in your Controller
 ```js
 // user.constroller.js
 
-const gstore = require('gstore-node')();
 const User = require('./user.model');
 
 const getUsers = (req ,res) => {
@@ -241,7 +252,7 @@ const updateUser = (req, res) => {
             // If there are any validation error on the schema
             // they will be in this error object
             res.status(400).json(err);
-        })
+        });
 };
 
 const deleteUser = (req, res) => {
@@ -266,4 +277,12 @@ module.exports = {
 # Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
-Not much could neither have been done without the great work of the guys at [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
+Not much could neither have been done without the great work of the guys at [googleapis](https://github.com/googleapis/nodejs-datastore).
+
+[npm-image]: https://img.shields.io/npm/v/gstore-node.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/gstore-node
+[npm-downloads]: https://img.shields.io/npm/dm/gstore-node.svg?style=flat-square
+[travis-image]: https://img.shields.io/travis/sebelga/gstore-node/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/sebelga/gstore-node
+[coveralls-image]: https://img.shields.io/coveralls/github/sebelga/gstore-node.svg
+[coveralls-url]: https://coveralls.io/github/sebelga/gstore-node?branch=master

@@ -1,8 +1,8 @@
 
 'use strict';
 
-const chai = require('chai');
 const util = require('util');
+const chai = require('chai');
 const errors = require('../lib/errors');
 
 const { GstoreError, TypeError, message } = errors;
@@ -51,12 +51,13 @@ describe('GstoreError', () => {
 
     it('should fall back to generic if no message passed', () => {
         const func = () => {
-            throw new GstoreError('UNKNOWN_CODE');
+            throw new GstoreError();
         };
 
         try {
             func();
         } catch (e) {
+            expect(e.code).equal('ERR_GENERIC');
             expect(e.toString()).equal('GstoreError: An error occured');
         }
     });

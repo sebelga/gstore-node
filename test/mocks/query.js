@@ -5,6 +5,12 @@ class Query {
         this.ds = ds;
         this.mocks = mocks;
         this.info = info;
+        this.kinds = ['MockQuery'];
+        this.filters = [];
+        this.namespace = 'mock.query';
+        this.groupByVal = [];
+        this.orders = [];
+        this.selectVal = [];
     }
     run() {
         const info = this.info || {
