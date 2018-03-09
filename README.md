@@ -18,7 +18,7 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
 - **[Joi](https://github.com/hapijs/joi)** schema definition and validation
-- :tada: **NEW** Advanced **cache layer** (since v3.0.0)
+- :tada: **NEW** Advanced **[cache layer](https://sebelga.gitbooks.io/gstore-node/content/cache.html)** (since v3.0.0)
 
 This library is in active development, please report any issue you might find.  
 
