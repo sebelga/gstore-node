@@ -58,7 +58,7 @@ The @google/datastore instance. This means that you can access **all the API** o
 
 # Documentation
 The [complete documentation](https://sebelga.gitbooks.io/gstore-node/content/)  of gstore-node is in gitbook.  
-If you find and mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
+If you find any mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
 
 # Example
 
