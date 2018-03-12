@@ -483,13 +483,26 @@ describe('Model', () => {
                     })
             ));
 
-            it('should get value from fetchHandler and Dataloader', () => {
+            it('should get key from fetchHandler and Dataloader', () => {
                 const dataloader = createDataLoader(ds);
                 const spy = sinon.stub(dataloader, 'load').resolves(entity);
 
                 return ModelInstance.get(123, null, null, null, { dataloader }).then((res) => {
                     expect(spy.called).equal(true);
                     expect(res.name).equal('John');
+                });
+            });
+
+            it('should get multiple keys from fetchHandler and Dataloader', () => {
+                const entity2 = { name: 'Mick' };
+                entity2[ds.KEY] = ModelInstance.key(456);
+                const dataloader = createDataLoader(ds);
+                const spy = sinon.stub(dataloader, 'loadMany').resolves([entity, entity2]);
+
+                return ModelInstance.get([123, 456], null, null, null, { dataloader }).then((res) => {
+                    expect(spy.called).equal(true);
+                    expect(res[0].name).equal('John');
+                    expect(res[1].name).equal('Mick');
                 });
             });
 
