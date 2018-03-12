@@ -365,20 +365,21 @@ describe('Model', () => {
 
         it('should get data through a Dataloader instance (singe key)', () => {
             const dataloader = createDataLoader(ds);
-            const spy = sinon.stub(dataloader, 'load').resolves([{}]);
+            const spy = sinon.stub(dataloader, 'load').resolves(entity);
 
-            return ModelInstance.get(123, null, null, null, { dataloader }).then(() => {
+            return ModelInstance.get(123, null, null, null, { dataloader }).then((res) => {
                 expect(spy.called).equal(true);
 
                 const args = spy.getCall(0).args[0];
                 const key = ds.key({ path: ['Blog', 123], namespace: 'com.mydomain' });
                 expect(args).deep.equal(key);
+                expect(res.name).equal('John');
             });
         });
 
         it('should get data through a Dataloader instance (multiple key)', () => {
             const dataloader = createDataLoader(ds);
-            const spy = sinon.stub(dataloader, 'loadMany').resolves([[{}, {}]]);
+            const spy = sinon.stub(dataloader, 'loadMany').resolves([{}, {}]);
 
             return ModelInstance.get([123, 456], null, null, null, { dataloader }).then(() => {
                 expect(spy.called).equal(true);
@@ -481,6 +482,16 @@ describe('Model', () => {
                         expect(response.entityData).include(entity);
                     })
             ));
+
+            it('should get value from fetchHandler and Dataloader', () => {
+                const dataloader = createDataLoader(ds);
+                const spy = sinon.stub(dataloader, 'load').resolves(entity);
+
+                return ModelInstance.get(123, null, null, null, { dataloader }).then((res) => {
+                    expect(spy.called).equal(true);
+                    expect(res.name).equal('John');
+                });
+            });
 
             it('should get value from cache and call the fetchHandler **only** with keys not in the cache', () => {
                 const key = ModelInstance.key(456);

@@ -5,6 +5,8 @@ jsconfig.json
 .eslintrc.json
 .babelrc
 **/todo.txt
+**/notes.txt
+release.md
 
 test/
 **/.trash
