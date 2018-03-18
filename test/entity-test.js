@@ -511,7 +511,7 @@ describe('Entity', () => {
             const model = new ModelInstance({});
 
             return model.datastoreEntity().catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 expect(err.message).equal('Entity not found');
                 ds.get.restore();
             });
@@ -523,7 +523,7 @@ describe('Entity', () => {
             const model = new ModelInstance({});
 
             return model.datastoreEntity().catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 ds.get.restore();
             });
         });
