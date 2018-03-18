@@ -10,6 +10,7 @@ const ds = require('@google-cloud/datastore')({
 });
 const datastoreSerializer = require('../lib/serializer').Datastore;
 const gstore = require('../lib')();
+const gstoreWithCache = require('../')({ namespace: 'entity-with-cache', cache: { ttl: { keys: 600 } } });
 const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;
@@ -23,6 +24,7 @@ describe('Entity', () => {
         gstore.modelSchemas = {};
         gstore.options = {};
         gstore.connect(ds);
+        gstoreWithCache.connect(ds);
 
         schema = new Schema({
             name: { type: 'string', default: 'Mick' },
@@ -509,7 +511,7 @@ describe('Entity', () => {
             const model = new ModelInstance({});
 
             return model.datastoreEntity().catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 expect(err.message).equal('Entity not found');
                 ds.get.restore();
             });
@@ -521,12 +523,12 @@ describe('Entity', () => {
             const model = new ModelInstance({});
 
             return model.datastoreEntity().catch((err) => {
-                expect(err.code).equal(404);
+                expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 ds.get.restore();
             });
         });
 
-        it('should deal with error while fetching the entity', () => {
+        it('should bubble up error fetching the entity', () => {
             const error = { code: 500, message: 'Something went bad' };
             sinon.stub(ds, 'get').rejects(error);
 
@@ -552,6 +554,71 @@ describe('Entity', () => {
                 expect(entity.entityData).equal(mockData);
 
                 ds.get.restore();
+            });
+        });
+
+        context('when cache is active', () => {
+            let key;
+            let mockData;
+
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+
+                key = ModelInstance.key(123);
+                mockData = { name: 'John' };
+                mockData[gstore.ds.KEY] = key;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should get value from cache', () => {
+                const value = mockData;
+                const entity = new ModelInstance(mockData);
+                entity.entityKey = key;
+
+                sinon.spy(entity.gstore.cache.keys, 'read');
+                sinon.stub(ds, 'get').resolves([mockData]);
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        entity.datastoreEntity({ ttl: 123456 })
+                            .then((response) => {
+                                assert.ok(!ds.get.called);
+                                expect(response.entityData).include(value);
+                                assert.ok(entity.gstore.cache.keys.read.called);
+                                const { args } = entity.gstore.cache.keys.read.getCall(0);
+                                expect(args[0]).equal(key);
+                                expect(args[1].ttl).equal(123456);
+
+                                entity.gstore.cache.keys.read.restore();
+                                ds.get.restore();
+                            })
+                    ));
+            });
+
+            it('should **not** get value from cache', () => {
+                const value = mockData;
+                const entity = new ModelInstance(mockData);
+                entity.entityKey = key;
+
+                sinon.spy(entity.gstore.cache.keys, 'read');
+                sinon.stub(ds, 'get').resolves([mockData]);
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        entity.datastoreEntity({ cache: false })
+                            .then(() => {
+                                assert.ok(ds.get.called);
+                                assert.ok(!entity.gstore.cache.keys.read.called);
+
+                                entity.gstore.cache.keys.read.restore();
+                                ds.get.restore();
+                            })
+                    ));
             });
         });
     });
