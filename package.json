@@ -10,6 +10,8 @@
         "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
         "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
         "pretest": "npm run lint",
+        "publish": "git push --follow-tags origin master && npm publish",
+        "release": "standard-version",
         "test": "mocha test --recursive"
     },
     "engines": {
@@ -53,7 +55,7 @@
     "license": "ISC",
     "config": {
         "commitizen": {
-            "path": "cz-conventional-changelog"
+            "path": "./node_modules/cz-conventional-changelog"
         }
     },
     "dependencies": {
