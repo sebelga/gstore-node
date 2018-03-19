@@ -5,7 +5,12 @@
 [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![coveralls-image]][coveralls-url]
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)  
+[![Commitizen friendly][commitizen-image]][commitizen-url]  
+
+[**Documentation**](#documentation) |
+[**Example**](#example) |
+[**Support**](../../issues) |
+[**Changelog**](../../releases)
 
 gstore-node is a Google Datastore entities modeling library for Node.js inspired by Mongoose and built **on top** of the **[@google-cloud/datastore](https://googlecloudplatform.github.io/google-cloud-node/#/docs/datastore/master/datastore)** library.  
 It is not a replacement of @google-cloud/datastore but a layer on top of it to help modeling your entities through Schemas and to help validating the data saved in the Datastore.
@@ -57,9 +62,13 @@ The @google/datastore instance. This means that you can access **all the API** o
 
 - `gstore.transaction`. Alias of the same google-cloud/datastore method
 
+<a name="documentation"/>
+
 # Documentation
 The [complete documentation](https://sebelga.gitbooks.io/gstore-node/content/)  of gstore-node is in gitbook.  
 If you find any mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
+
+<a name="example"/>
 
 # Example
 
@@ -287,3 +296,5 @@ Not much could neither have been done without the great work of the guys at [goo
 [travis-url]: https://travis-ci.org/sebelga/gstore-node
 [coveralls-image]: https://img.shields.io/coveralls/github/sebelga/gstore-node.svg
 [coveralls-url]: https://coveralls.io/github/sebelga/gstore-node?branch=master
+[commitizen-image]: https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
+[commitizen-url]: http://commitizen.github.io/cz-cli/
