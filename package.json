@@ -4,12 +4,15 @@
     "description": "gstore-node is a Google Datastore Entity Models tools",
     "main": "index.js",
     "scripts": {
-        "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
-        "pretest": "npm run lint",
-        "test": "mocha test --recursive",
+        "commit": "git-cz",
         "coverage-old": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec --recursive",
         "coverage": "nyc mocha test --recursive",
-        "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage"
+        "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+        "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
+        "pretest": "npm run lint",
+        "publish": "git push --follow-tags origin master && npm publish",
+        "release": "standard-version",
+        "test": "mocha test --recursive"
     },
     "engines": {
         "node": ">=6.0"
@@ -50,6 +53,11 @@
         ]
     },
     "license": "ISC",
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
+    },
     "dependencies": {
         "@google-cloud/datastore": "^1.3.4",
         "arrify": "^1.0.1",
@@ -67,7 +75,9 @@
         "babel-preset-es2015": "^6.24.1",
         "cache-manager-redis-store": "^1.4.0",
         "chai": "^3.5.0",
+        "commitizen": "^2.9.6",
         "coveralls": "^3.0.0",
+        "cz-conventional-changelog": "^2.1.0",
         "dataloader": "^1.4.0",
         "eslint": "^4.18.2",
         "eslint-config-airbnb-base": "^12.1.0",
@@ -80,6 +90,7 @@
         "nconf": "^0.10.0",
         "nyc": "^11.4.1",
         "redis-mock": "^0.21.0",
-        "sinon": "^4.4.2"
+        "sinon": "^4.4.2",
+        "standard-version": "^4.3.0"
     }
 }
