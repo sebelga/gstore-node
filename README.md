@@ -9,6 +9,7 @@
 
 [**Documentation**](#documentation) |
 [**Example**](#example) |
+[**Demo App**](#demo-app) |
 [**Support**](../../issues) |
 [**Changelog**](../../releases)
 
@@ -283,6 +284,11 @@ module.exports = {
 };
 
 ```
+<a name="demo-app"/>
+
+## Demo application
+
+If you want to see how to integrate gstore-node in your Node.js project, check the [demo Blog application repository](https://github.com/sebelga/blog-app-googlecloud).
 
 # Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
