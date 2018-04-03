@@ -8,6 +8,7 @@
     "coverage-old": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec --recursive",
     "coverage": "nyc mocha test --recursive",
     "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+    "local-datastore": "gcloud beta emulators datastore start --data-dir=$PWD/local-datastore",
     "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
     "pretest": "npm run lint",
     "release": "standard-version",
@@ -90,6 +91,7 @@
     "nyc": "^11.4.1",
     "redis-mock": "^0.21.0",
     "sinon": "^4.4.2",
-    "standard-version": "^4.3.0"
+    "standard-version": "^4.3.0",
+    "yargs": "^11.0.0"
   }
 }
