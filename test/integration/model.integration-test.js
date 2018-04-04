@@ -28,7 +28,7 @@ const addKey = (key) => {
     }
 };
 
-describe.only('Integration Tests (Model)', () => {
+describe('Integration Tests (Model)', () => {
     beforeEach(function integrationTest() {
         if (argv.int !== true) {
             // Skip e2e tests suite
