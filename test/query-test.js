@@ -157,16 +157,25 @@ describe('Query', () => {
         ));
 
         it('should accept "readAll" option', () => (
-            query.run(({ readAll: true }))
+            query.run({ readAll: true })
                 .then((response) => {
                     assert.isDefined(response.entities[0].password);
                 })
         ));
 
         it('should accept "showKey" option', () => (
-            query.run(({ showKey: true }))
+            query.run({ showKey: true })
                 .then((response) => {
                     assert.isDefined(response.entities[0].__key);
+                })
+        ));
+
+        it('should forward options to underlying Datastore.Query', () => (
+            query.run({ consistency: 'strong' })
+                .then(() => {
+                    assert(query.__originalRun.called);
+                    const { args } = query.__originalRun.getCall(0);
+                    expect(args[0].consistency).equal('strong');
                 })
         ));
 
