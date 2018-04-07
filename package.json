@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "commit": "git-cz",
-    "coverage-old": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec --recursive",
     "coverage": "nyc mocha test --recursive",
     "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
     "local-datastore": "gcloud beta emulators datastore start --data-dir=$PWD/local-datastore",
@@ -52,7 +51,7 @@
       "text"
     ]
   },
-  "license": "ISC",
+  "license": "MIT",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
