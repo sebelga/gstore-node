@@ -852,14 +852,15 @@ describe('Model', () => {
             });
         });
 
-        it('should set "pre" hook scope to entity being deleted (1)', () => {
+        it('should set "pre" hook scope to entity being deleted (1)', (done) => {
             schema.pre('delete', function preDelete() {
-                expect(this.className).equal('Entity');
+                expect(this instanceof Entity);
+                done();
                 return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);
 
-            return ModelInstance.delete(123);
+            ModelInstance.delete(123);
         });
 
         it('should set "pre" hook scope to entity being deleted (2)', () => {
@@ -896,10 +897,12 @@ describe('Model', () => {
             });
         });
 
-        it('should pass key deleted to post hooks', () => {
-            schema.post('delete', (response) => {
-                expect(response.key.constructor.name).equal('Key');
-                expect(response.key.id).equal(123);
+        it('should pass key deleted to post hooks and set the scope to the entity deleted', () => {
+            schema.post('delete', function postDeleteHook({ key }) {
+                expect(key.constructor.name).equal('Key');
+                expect(key.id).equal(123);
+                expect(this instanceof Entity);
+                expect(this.entityKey).equal(key);
                 return Promise.resolve();
             });
             ModelInstance = Model.compile('Blog', schema, gstore);

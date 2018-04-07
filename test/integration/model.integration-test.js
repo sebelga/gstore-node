@@ -6,6 +6,7 @@ const Datastore = require('@google-cloud/datastore');
 const chai = require('chai');
 const { argv } = require('yargs');
 const gstore = require('../../lib')();
+const Entity = require('../../lib/entity');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
@@ -30,6 +31,9 @@ const addKey = (key) => {
 
 describe('Integration Tests (Model)', () => {
     beforeEach(function integrationTest() {
+        gstore.models = {};
+        gstore.modelSchemas = {};
+
         if (argv.int !== true) {
             // Skip e2e tests suite
             this.skip();
@@ -90,6 +94,22 @@ describe('Integration Tests (Model)', () => {
             const response2 = entity.plain({ readAll: true });
             expect(response2.password).equal('abcd1234');
             expect(response2.state).equal('requested');
+        });
+    });
+
+    describe('hooks', () => {
+        it('post delete hook should set scope on entity instance', (done) => {
+            const schema = new Schema({ name: { type: 'string' } });
+            schema.post('delete', function postDelete({ key }) {
+                expect(key.kind).equal('User');
+                expect(key.id).equal(123);
+                expect(this instanceof Entity);
+                expect(key).equal(this.entityKey);
+                done();
+                return Promise.resolve();
+            });
+            const Model = gstore.model('User', schema);
+            Model.delete(123).then(() => {});
         });
     });
 });
