@@ -9,7 +9,7 @@
 
 [**Documentation**](#documentation) |
 [**Example**](#example) |
-[**Demo App**](#demo-app) |
+[**Demo Application**](#demo-app) |
 [**Support**](../../issues) |
 [**Changelog**](../../releases)
 
