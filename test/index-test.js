@@ -17,8 +17,10 @@ const ds = require('@google-cloud/datastore')({
     apiEndpoint: 'http://localhost:8080',
 });
 
-const gstore = require('../lib')();
-const { Schema } = require('../lib')();
+const Gstore = require('../lib/index');
+
+const gstore = Gstore();
+const { Schema } = gstore;
 const pkg = require('../package.json');
 const Transaction = require('./mocks/transaction');
 
