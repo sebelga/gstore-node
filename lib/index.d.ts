@@ -66,7 +66,7 @@ declare namespace GstoreNode {
          * @param {string} entityKind The Google Entity Kind
          * @returns {Model} A gstore Model
          */
-        model<T = {[propName: string]: any}>(entityKind: string, schema: Schema): Model<T>;
+        model<T = {[propName: string]: any}>(entityKind: string, schema: Schema<T>): Model<T>;
 
         /**
          * Create a DataLoader instance
