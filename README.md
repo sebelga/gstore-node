@@ -25,7 +25,8 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
 - **[Joi](https://github.com/hapijs/joi)** schema definition and validation
-- :tada: **NEW** Advanced **[cache layer](https://sebelga.gitbooks.io/gstore-node/content/cache.html)** (since v3.0.0)
+- **NEW** Advanced **[cache layer](https://sebelga.gitbooks.io/gstore-node/content/cache.html)** (since v3.0.0)
+- :tada: **NEW** **[Typescript support](https://sebelga.gitbooks.io/gstore-node/content/typescript.html)** (since v4.1.0)
 
 This library is in active development, please report any issue you might find.  
 
@@ -117,13 +118,13 @@ const validateAccessList = (value, validator) => {
  * Create the schema for the User Model
 */
 const userSchema = new Schema({
-    firstname: { type: 'string', required: true },
-    lastname: { type: 'string', optional: true  },
-    email: { type: 'string', validate: 'isEmail', required: true },
-    password: { type: 'string', read: false, required: true },
-    createdOn: { type: 'string', default: gstore.defaultValues.NOW, write: false, read: false },
-    dateOfBirth: { type: 'datetime' },
-    bio: { type: 'string', excludeFromIndexes: true },
+    firstname: { type: String, required: true },
+    lastname: { type: String, optional: true  },
+    email: { type: String, validate: 'isEmail', required: true },
+    password: { type: String, read: false, required: true },
+    createdOn: { type: String, default: gstore.defaultValues.NOW, write: false, read: false },
+    dateOfBirth: { type: Date },
+    bio: { type: String, excludeFromIndexes: true },
     website: { validate: 'isURL', optional: true },
     ip: {
         validate: {
