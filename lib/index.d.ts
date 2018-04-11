@@ -100,6 +100,14 @@ declare namespace GstoreNode {
             options?: SchemaOptions);
 
         /**
+         * Custom Schema Types
+         */
+        static Types: {
+            Double: 'double',
+            GeoPoint: 'geoPoint',
+        }
+
+        /**
          * Schema paths
          *
          * @type {{ [propName: string]: SchemaPathDefinition }}
@@ -139,11 +147,6 @@ declare namespace GstoreNode {
             set(cb: (propName: string) => void): void;
         }
 
-        /**
-         * Set global configuration for shortcut Queries
-         * @param shortcutQuery Name of the shortcut Query
-         * @param options Additional configuration
-         */
         queries(shortcutQuery: 'list', options: ShortcutQueryOptions): void;
 
         /**
@@ -607,7 +610,8 @@ declare namespace GstoreNode {
         global?: boolean;
     }
 
-    type PropType = 'string' | 'int' | 'double' | 'boolean' | 'datetime' | 'array' | 'object' | 'geoPoint' | 'buffer';
+    type PropType = 'string' | 'int' | 'double' | 'boolean' | 'datetime' | 'array' | 'object' | 'geoPoint' | 'buffer' |
+        NumberConstructor | StringConstructor | ObjectConstructor | ArrayConstructor | BooleanConstructor | DateConstructor | typeof Buffer;
 
     interface SchemaPath<T = any> {
         [propName: string]: SchemaPathDefinition;
