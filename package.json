@@ -1,7 +1,7 @@
 {
   "name": "gstore-node",
   "version": "4.1.1",
-  "description": "gstore-node is a Google Datastore Entity Models tools",
+  "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
   "main": "index.js",
   "types": "lib/index.d.ts",
   "scripts": {

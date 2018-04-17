@@ -2,6 +2,8 @@
 
 # gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20Google%20Datastore%20entities%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
 
+> Entities modeling for Google's Datastore
+
 [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![coveralls-image]][coveralls-url]
@@ -218,6 +220,7 @@ const User = require('./user.model');
 const getUsers = (req ,res) => {
     const pageCursor = req.query.cursor;
 
+    // List users with the Query settings defined on Schema
     User.list({ start: pageCursor })
         .then((entities) => {
             res.json(entities);
@@ -287,11 +290,28 @@ module.exports = {
 ```
 <a name="demo-app"/>
 
-## Demo application
+# Demo application
 
 If you want to see how to integrate gstore-node in your Node.js project, check the [demo Blog application repository](https://github.com/sebelga/blog-app-googlecloud).
 
-# Credits
+## Meta
+
+Sébastien Loix – [@sebloix](https://twitter.com/sebloix)
+
+Distributed under the MIT license. See `LICENSE` for more information.
+
+[https://github.com/sebelga](https://github.com/sebelga/)  
+
+## Contributing
+
+1. Fork it (<https://github.com/sebelga/gstore-node/fork>)
+2. Create your feature branch (`git checkout -b feature/fooBar`)
+3. Generate a conventional commit message (`npm run commit`)
+4. Push to the branch (`git push origin feature/fooBar`)
+5. Rebase your feature branch and squash (`git rebase -i master`)
+6. Create a new Pull Request
+
+## Credits
 I have been heavily inspired by [Mongoose](https://github.com/Automattic/mongoose) to write gstore. Credits to them for the Schema, Model and Entity
 definitions, as well as 'hooks', custom methods and other similarities found here.
 Not much could neither have been done without the great work of the guys at [googleapis](https://github.com/googleapis/nodejs-datastore).
