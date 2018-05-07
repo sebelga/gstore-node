@@ -7,7 +7,7 @@ const is = require('is');
 const Joi = require('joi');
 
 const gstore = require('../')();
-const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: { ttl: { queries: 600 } } });
+const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: { config: { ttl: { queries: 600 } } } });
 const Entity = require('../lib/entity');
 const Model = require('../lib/model');
 const gstoreErrors = require('../lib/errors');
@@ -28,7 +28,7 @@ describe('Model', () => {
     let mockEntities;
     let transaction;
 
-    beforeEach('Before each Model (global)', (done) => {
+    beforeEach('Before each Model (global)', () => {
         gstore.models = {};
         gstore.modelSchemas = {};
         gstore.options = {};
@@ -69,15 +69,6 @@ describe('Model', () => {
         sinon.stub(transaction, 'run').resolves([transaction, { apiData: 'ok' }]);
 
         ModelInstance = gstore.model('Blog', schema, gstore);
-
-        /**
-         * Make sure we are not using any cache layer.
-         */
-        if (gstore.cache) {
-            gstore.cache.deleteCacheManager(done);
-        } else {
-            done();
-        }
     });
 
     afterEach(() => {
@@ -700,13 +691,13 @@ describe('Model', () => {
 
             it('on error when clearing the cache, should add the entityUpdated on the error', (done) => {
                 const err = new Error('Houston something bad happened');
-                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+                sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
                 ModelInstance.update(123, { name: 'Nuri' })
                     .catch((e) => {
                         expect(e.__entityUpdated.name).equal('Nuri');
                         expect(e.__cacheError).equal(err);
-                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        gstore.cache.queries.clearQueriesByKind.restore();
                         done();
                     });
             });
@@ -985,13 +976,13 @@ describe('Model', () => {
 
             it('on error when clearing the cache, should add the entityUpdated on the error', (done) => {
                 const err = new Error('Houston something bad happened');
-                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+                sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
                 ModelInstance.delete(1234)
                     .catch((e) => {
                         expect(e.__response.success).equal(true);
                         expect(e.__cacheError).equal(err);
-                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        gstore.cache.queries.clearQueriesByKind.restore();
                         done();
                     });
             });
@@ -1174,10 +1165,10 @@ describe('Model', () => {
                     // Check
                     queryMock));
                 sinon.spy(gstore.cache.keys, 'del');
-                sinon.spy(gstore.cache.queries, 'clearQueriesEntityKind');
+                sinon.spy(gstore.cache.queries, 'clearQueriesByKind');
 
                 ModelInstance.deleteAll().then(() => {
-                    expect(gstore.cache.queries.clearQueriesEntityKind.callCount).equal(1);
+                    expect(gstore.cache.queries.clearQueriesByKind.callCount).equal(1);
                     expect(gstore.cache.keys.del.callCount).equal(3);
                     const keys1 = gstore.cache.keys.del.getCall(0).args;
                     const keys2 = gstore.cache.keys.del.getCall(1).args;
@@ -1185,7 +1176,7 @@ describe('Model', () => {
                     expect(keys1.length + keys2.length + keys3.length).equal(1200);
 
                     gstore.cache.keys.del.restore();
-                    gstore.cache.queries.clearQueriesEntityKind.restore();
+                    gstore.cache.queries.clearQueriesByKind.restore();
                     done();
                 });
             });
@@ -1270,8 +1261,8 @@ describe('Model', () => {
             // empty the cache
             gstore.cache.reset();
 
-            if (gstore.cache.queries.clearQueriesEntityKind.restore) {
-                gstore.cache.queries.clearQueriesEntityKind.restore();
+            if (gstore.cache.queries.clearQueriesByKind.restore) {
+                gstore.cache.queries.clearQueriesByKind.restore();
             }
 
             delete gstore.cache;
@@ -1290,18 +1281,18 @@ describe('Model', () => {
         });
 
         it('should clear all queries linked to its entity kind', () => {
-            sinon.spy(gstore.cache.queries, 'clearQueriesEntityKind');
+            sinon.spy(gstore.cache.queries, 'clearQueriesByKind');
             return ModelInstance.clearCache()
                 .then(() => {
-                    assert.ok(gstore.cache.queries.clearQueriesEntityKind.called);
-                    const { args } = gstore.cache.queries.clearQueriesEntityKind.getCall(0);
+                    assert.ok(gstore.cache.queries.clearQueriesByKind.called);
+                    const { args } = gstore.cache.queries.clearQueriesByKind.getCall(0);
                     expect(args[0]).equal(ModelInstance.entityKind);
                 });
         });
 
         it('should bubble up errors', (done) => {
             const err = new Error('Houston something bad happened');
-            sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+            sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
             ModelInstance.clearCache(ModelInstance.key(123))
                 .catch((e) => {
                     expect(e).equal(err);
@@ -1312,7 +1303,7 @@ describe('Model', () => {
         it('should not throw error if Redis is not present', () => {
             const err = new Error('Redis store not founc');
             err.code = 'ERR_NO_REDIS';
-            sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+            sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
             ModelInstance.clearCache(ModelInstance.key(123))
                 .then((res) => {
@@ -1637,13 +1628,13 @@ describe('Model', () => {
 
             it('on error when clearing the cache, should add the entity saved on the error object', (done) => {
                 const err = new Error('Houston something bad happened');
-                sinon.stub(gstore.cache.queries, 'clearQueriesEntityKind').rejects(err);
+                sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
                 model.save()
                     .catch((e) => {
                         expect(e.__entity.name).equal('John');
                         expect(e.__cacheError).equal(err);
-                        gstore.cache.queries.clearQueriesEntityKind.restore();
+                        gstore.cache.queries.clearQueriesByKind.restore();
                         done();
                     });
             });

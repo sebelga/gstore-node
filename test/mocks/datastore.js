@@ -11,6 +11,10 @@ class Datastore {
         return this.googleDatastore.key(options);
     }
 
+    isKey(key) {
+        return this.googleDatastore.isKey(key);
+    }
+
     save() {
         return Promise.resolve(this);
     }

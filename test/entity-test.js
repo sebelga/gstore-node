@@ -9,8 +9,8 @@ const ds = require('@google-cloud/datastore')({
     apiEndpoint: 'http://localhost:8080',
 });
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const gstore = require('../lib')();
-const gstoreWithCache = require('../')({ namespace: 'entity-with-cache', cache: { ttl: { keys: 600 } } });
+const gstore = require('../lib')({ namespace: 'entity-no-cache' });
+const gstoreWithCache = require('../')({ namespace: 'entity-with-cache', cache: { config: { ttl: { keys: 600 } } } });
 const { Schema } = require('../lib')();
 
 const { expect, assert } = chai;

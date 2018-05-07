@@ -8,7 +8,6 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
-const gstoreCache = require('gstore-cache');
 
 const { expect, assert } = chai;
 
@@ -239,44 +238,31 @@ describe('gstore-node', () => {
         });
 
         it('should set the default cache to memory lru-cache', () => {
-            sinon.spy(gstoreCache, 'init');
-
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache', cache: true });
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: true });
+            gstoreWithCache.connect(ds);
 
             const { cache } = gstoreWithCache;
             assert.isDefined(cache);
-            expect(cache.config.stores.length).equal(1);
-            expect(cache.config.stores[0].store).equal('memory');
-            assert.isUndefined(gstoreCache.init.getCall(0).args[0]);
+            expect(cache.stores.length).equal(1);
+            expect(cache.stores[0].store).equal('memory');
         });
 
-        it('should create gstoreCache from config passed', (done) => {
-            const config = {
+        it('should create cache instance from config passed', () => {
+            const cacheSettings = {
                 stores: [{ store: 'memory' }],
-                ttl: {
-                    keys: 12345,
-                    queries: 6789,
+                config: {
+                    ttl: {
+                        keys: 12345,
+                        queries: 6789,
+                    },
                 },
             };
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: config });
-            const cache = gstoreCache.instance();
-
-            const onReady = () => {
-                cache.removeAllListeners();
-
-                expect(gstoreWithCache.cache).equal(cache);
-                expect(gstoreWithCache.cache.config.ttl.keys).equal(12345);
-
-                done();
-            };
-
-            cache.on('ready', onReady);
-        });
-
-        it('connect() should pass the datastore instance to the cache', () => {
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-3', cache: true });
+            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-3', cache: cacheSettings });
             gstoreWithCache.connect(ds);
-            expect(gstoreWithCache.cache.ds).to.equal(ds);
+            const { cache } = gstoreWithCache;
+
+            expect(gstoreWithCache.cache).equal(cache);
+            expect(gstoreWithCache.cache.config.ttl.keys).equal(12345);
         });
     });
 
@@ -313,7 +299,8 @@ describe('gstore-node', () => {
             gs.clear();
 
             instance = gs({ cache: true });
-            expect(instance.cache.constructor.name).equal('GstoreCache');
+            instance.connect(ds);
+            expect(instance.cache.constructor.name).equal('NsqlCache');
         });
     });
 });
