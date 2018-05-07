@@ -173,6 +173,7 @@ describe('gstore-node', () => {
 
     describe('save() alias', () => {
         beforeEach(() => {
+            gstore.connect(ds);
             sinon.stub(ds, 'save').resolves();
         });
 
@@ -227,6 +228,24 @@ describe('gstore-node', () => {
             const func = () => gstore.save();
 
             expect(func).to.throw('No entities passed');
+        });
+
+        it('should validate entity before saving', (done) => {
+            schema = new Schema({ name: { type: String } });
+            const Model = gstore.model('TestValidate', schema);
+            const entity1 = new Model({ name: 'abc' });
+            const entity2 = new Model({ name: 123 });
+            const entity3 = new Model({ name: 'def' });
+            sinon.spy(entity1, 'validate');
+            sinon.spy(entity3, 'validate');
+
+            gstore.save([entity1, entity2, entity3], undefined, { validate: true })
+                .catch((e) => {
+                    expect(e.code).equal('ERR_VALIDATION');
+                    expect(entity1.validate.called).equal(true);
+                    expect(entity3.validate.called).equal(false); // fail fast, exit validation
+                    done();
+                });
         });
     });
 

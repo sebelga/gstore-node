@@ -85,7 +85,8 @@ declare namespace GstoreNode {
          */
         save(
             entity: Entity | Entity[],
-            transaction?: DatastoreTransaction
+            transaction?: DatastoreTransaction,
+            options?: { validate: boolean }
         ): Promise<any>;
     }
 

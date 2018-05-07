@@ -15,4 +15,6 @@ function Transaction() {
     this.runQuery = () => Promise.resolve();
 }
 
+Transaction.prototype.name = 'Transaction';
+
 module.exports = Transaction;
