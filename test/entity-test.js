@@ -480,11 +480,11 @@ describe('Entity', () => {
 
         it('should add virtuals', () => {
             const model = new ModelInstance({ name: 'John' });
-            sinon.spy(model, 'addVirtuals');
+            sinon.spy(model, 'getEntityDataWithVirtuals');
 
             model.plain({ virtuals: true });
 
-            expect(model.addVirtuals.called).equal(true);
+            expect(model.getEntityDataWithVirtuals.called).equal(true);
         });
     });
 
@@ -650,7 +650,7 @@ describe('Entity', () => {
         });
     });
 
-    describe('addVirtuals()', () => {
+    describe('getEntityDataWithVirtuals()', () => {
         let model;
         let User;
 
@@ -671,34 +671,56 @@ describe('Entity', () => {
             model = new User({ firstname: 'John', lastname: 'Snow' });
         });
 
-        it('should create virtual (get) setting scope to entityData', () => {
-            model.addVirtuals();
+        it('should add add virtuals on instance', () => {
+            assert.isDefined(model.fullname);
+        });
 
-            expect(model.entityData.fullname).equal('John Snow');
+        it('setting on instance should modify entityData', () => {
+            expect(model.fullname).equal('John Snow');
+        });
+
+        it('should add virtuals properties on entity instance', () => {
+            expect(model.fullname).equal('John Snow');
+            model.firstname = 'Mick';
+            expect(model.fullname).equal('Mick Snow');
+            model.fullname = 'Andre Agassi';
+            expect(model.firstname).equal('Andre');
+            expect(model.lastname).equal('Agassi');
+            expect(model.entityData).deep.equal({ firstname: 'Andre', lastname: 'Agassi' });
         });
 
         it('should Not override', () => {
             model = new User({ firstname: 'John', lastname: 'Snow', fullname: 'Jooohn' });
-            model.addVirtuals();
+            const entityData = model.getEntityDataWithVirtuals();
 
-            expect(model.entityData.fullname).equal('Jooohn');
+            expect(entityData.fullname).equal('Jooohn');
         });
 
         it('should read and parse virtual (set)', () => {
             model = new User({ fullname: 'John Snow' });
 
-            model.addVirtuals();
+            const entityData = model.getEntityDataWithVirtuals();
 
-            expect(model.entityData.firstname).equal('John');
-            expect(model.entityData.lastname).equal('Snow');
+            expect(entityData.firstname).equal('John');
+            expect(entityData.lastname).equal('Snow');
         });
 
         it('should override existing', () => {
             model = new User({ firstname: 'Peter', fullname: 'John Snow' });
 
-            model.addVirtuals();
+            const entityData = model.getEntityDataWithVirtuals();
 
-            expect(model.entityData.firstname).equal('John');
+            expect(entityData.firstname).equal('John');
+        });
+
+        it('should not allow reserved name for virtuals', () => {
+            const func = () => {
+                schema.virtual('plain').get(function getFullName() {
+                    return `${this.firstname} ${this.lastname}`;
+                });
+            };
+
+            expect(func).throws();
         });
     });
 });

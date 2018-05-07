@@ -172,7 +172,7 @@ describe('Schema', () => {
             entity.plain({ virtuals: true });
 
             function virtualFunc() {
-                expect(this).equal(entity.entityData);
+                expect(this).deep.equal(entity.entityData);
             }
         });
     });
