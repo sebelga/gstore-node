@@ -585,10 +585,10 @@ declare namespace GstoreNode {
      */
     interface CacheConfig {
         stores?: Array<any>;
-        ttl: {
-            keys: number;
-            queries: number;
-            stores?: {
+        config?: {
+            ttl: {
+                keys: number;
+                queries: number;
                 memory?: {
                     keys: number;
                     queries: number;
@@ -600,14 +600,14 @@ declare namespace GstoreNode {
                 [propName: string]: {
                     keys: number;
                     queries: number;
-                } | void
-            }
-        };
-        cachePrefix?: {
-            keys: string;
-            queries: string;
-        };
-        global?: boolean;
+                } | number | void
+            };
+            cachePrefix?: {
+                keys: string;
+                queries: string;
+            };
+            global?: boolean;
+        }
     }
 
     type PropType = 'string' | 'int' | 'double' | 'boolean' | 'datetime' | 'array' | 'object' | 'geoPoint' | 'buffer' |
@@ -860,7 +860,7 @@ declare namespace GstoreCache {
             set(query: GstoreNode.DatastoreQuery, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
             mset(...args: any[]): Promise<any>;
             kset(key: string, data: any, entityKinds: string | string[], options?: { ttl: number } ): Promise<any>;
-            clearQueriesEntityKind(entityKinds: string | string[]): Promise<any>;
+            clearQueriesByKind(entityKinds: string | string[]): Promise<any>;
             del(...queries:GstoreNode.DatastoreQuery[]): Promise<any>;
         };
 
