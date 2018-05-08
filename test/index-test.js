@@ -189,10 +189,10 @@ describe('gstore-node', () => {
         ));
 
         it('should convert entity instances to datastore Format', () => {
-            const model1 = new ModelInstance({ name: 'John' });
-            const model2 = new ModelInstance({ name: 'Mick' });
+            const entity1 = new ModelInstance({ name: 'John' });
+            const entity2 = new ModelInstance({ name: 'Mick' });
 
-            return gstore.save([model1, model2]).then(() => {
+            return gstore.save([entity1, entity2]).then(() => {
                 const { args } = ds.save.getCall(0);
                 const firstEntity = args[0][0];
                 assert.isUndefined(firstEntity.className);
@@ -201,9 +201,9 @@ describe('gstore-node', () => {
         });
 
         it('should work inside a transaction', () => {
-            const model1 = new ModelInstance({ name: 'John' });
+            const entity = new ModelInstance({ name: 'John' });
 
-            gstore.save(model1, transaction);
+            gstore.save(entity, transaction);
 
             expect(transaction.save.called).equal(true);
             expect(ds.save.called).equal(false);
@@ -214,9 +214,9 @@ describe('gstore-node', () => {
 
             sinon.stub(ds, 'save').callsFake((entity, cb) => cb());
 
-            const model = new ModelInstance({ name: 'John' });
+            const entity = new ModelInstance({ name: 'John' });
 
-            return gstore.save(model, () => {
+            return gstore.save(entity, () => {
                 const { args } = ds.save.getCall(0);
                 const firstEntity = args[0];
                 assert.isUndefined(firstEntity.className);
@@ -245,6 +245,16 @@ describe('gstore-node', () => {
                     expect(entity1.validate.called).equal(true);
                     expect(entity3.validate.called).equal(false); // fail fast, exit validation
                     done();
+                });
+        });
+
+        it('should allow to pass a save method ("insert", "update", "upsert")', () => {
+            const entity = new ModelInstance({ name: 'John' });
+
+            return gstore.save(entity, undefined, { method: 'insert' })
+                .then(() => {
+                    const { args } = ds.save.getCall(0);
+                    expect(args[0].method).equal('insert');
                 });
         });
     });
