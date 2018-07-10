@@ -20,6 +20,7 @@ describe('dataloader', () => {
     it('should create a dataloader instance', () => {
         const loader = createDataLoader(ds);
         expect(loader.constructor.name).equal('DataLoader');
+        expect(loader._options.maxBatchSize).equal(1000);
     });
 
     it('should throw an error if no datastore instance passed', () => {

@@ -41,6 +41,7 @@ todo.txt
 .nyc_output
 logo/**
 local-datastore
+**/playground-test.js
 
 notes.txt
 
