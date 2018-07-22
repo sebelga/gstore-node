@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.2.3"></a>
+## [4.2.3](https://github.com/sebelga/gstore-node/compare/v4.2.2...v4.2.3) (2018-07-22)
+
+
+### Bug Fixes
+
+* **delete-hooks:** Wrong argument mapping in getScopeForDeleteHooks() ([5c91046](https://github.com/sebelga/gstore-node/commit/5c91046))
+
+
+
 <a name="4.2.2"></a>
 ## [4.2.2](https://github.com/sebelga/gstore-node/compare/v4.2.1...v4.2.2) (2018-07-10)
 
