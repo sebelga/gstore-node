@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.2.4"></a>
+## [4.2.4](https://github.com/sebelga/gstore-node/compare/v4.2.3...v4.2.4) (2018-07-30)
+
+
+### Bug Fixes
+
+* **transaction-post-hooks:** Add missing scope to post hooks inside a transaction ([3fe059d](https://github.com/sebelga/gstore-node/commit/3fe059d)), closes [#115](https://github.com/sebelga/gstore-node/issues/115)
+
+
+
 <a name="4.2.3"></a>
 ## [4.2.3](https://github.com/sebelga/gstore-node/compare/v4.2.2...v4.2.3) (2018-07-22)
 
