@@ -845,7 +845,7 @@ describe('Model', () => {
 
         it('should set "pre" hook scope to entity being deleted (1)', (done) => {
             schema.pre('delete', function preDelete() {
-                expect(this instanceof Entity);
+                expect(this instanceof Entity).equal(true);
                 done();
                 return Promise.resolve();
             });
@@ -892,7 +892,7 @@ describe('Model', () => {
             schema.post('delete', function postDeleteHook({ key }) {
                 expect(key.constructor.name).equal('Key');
                 expect(key.id).equal(123);
-                expect(this instanceof Entity);
+                expect(this instanceof Entity).equal(true);
                 expect(this.entityKey).equal(key);
                 return Promise.resolve();
             });
@@ -1562,6 +1562,19 @@ describe('Model', () => {
                     expect(spyPost.called).equal(true);
                     expect(spyPost.callCount).equal(1);
                 });
+        });
+
+        it('transaction.execPostHooks() should set scope to entity saved', (done) => {
+            schema.post('save', function preSave() {
+                expect(this instanceof Entity).equal(true);
+                expect(this.name).equal('John Jagger');
+                done();
+            });
+            ModelInstance = Model.compile('Blog', schema, gstore);
+            model = new ModelInstance({ name: 'John Jagger' });
+
+            model.save(transaction)
+                .then(() => transaction.execPostHooks());
         });
 
         it('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
