@@ -13,7 +13,7 @@ gstore.connect(ds);
 const { expect } = chai;
 const {
     k1, k2, k3, k4, entity1, entity2, entity3, entity4,
-} = require('./data');
+} = require('./data')(ds);
 
 const allKeys = [k1, k2, k3, k4];
 

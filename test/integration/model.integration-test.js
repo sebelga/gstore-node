@@ -15,7 +15,7 @@ const { expect } = chai;
 const { Schema } = gstore;
 const {
     k1, k2, k3, k4, user1,
-} = require('./data');
+} = require('./data')(ds);
 
 const allKeys = [k1, k2, k3, k4];
 
