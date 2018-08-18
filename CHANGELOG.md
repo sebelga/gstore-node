@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.2.5"></a>
+## [4.2.5](https://github.com/sebelga/gstore-node/compare/v4.2.4...v4.2.5) (2018-08-18)
+
+
+### Bug Fixes
+
+* **cache:** Support nsql-cache 1.1.3 ([31d9767](https://github.com/sebelga/gstore-node/commit/31d9767))
+* **tests:** Fix integration tests with Redis cache ([0a0838d](https://github.com/sebelga/gstore-node/commit/0a0838d))
+
+
+
 <a name="4.2.4"></a>
 ## [4.2.4](https://github.com/sebelga/gstore-node/compare/v4.2.3...v4.2.4) (2018-07-30)
 
