@@ -508,8 +508,7 @@ describe('Model', () => {
                             .then((response) => {
                                 assert.ok(ds.get.called);
                                 const { args } = ds.get.getCall(0);
-                                assert.ok(!Array.isArray(args[0]));
-                                expect(args[0].id).equal(123);
+                                expect(args[0][0].id).equal(123);
                                 expect(response.length).equal(2);
                             })
                     ));
