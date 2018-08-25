@@ -4,7 +4,7 @@
 
 /// <reference types="node" />
 
-import Datastore = require('@google-cloud/datastore');
+import Datastore from '@google-cloud/datastore';
 import { DatastoreKey } from '@google-cloud/datastore/entity';
 import { Query as DatastoreQuery, QueryFilterOperator } from '@google-cloud/datastore/query';
 import { DatastoreTransaction } from '@google-cloud/datastore/transaction';

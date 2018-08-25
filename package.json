@@ -71,7 +71,6 @@
     "validator": "^10.7.0"
   },
   "devDependencies": {
-    "@types/google-cloud__datastore": "^1.3.3",
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "cache-manager-redis-store": "^1.5.0",
