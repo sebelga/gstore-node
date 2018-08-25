@@ -218,8 +218,8 @@ declare namespace GstoreNode {
      * @returns {Promise<any>} The entity fetched from the Datastore
      * @link https://sebelga.gitbooks.io/gstore-node/content/model/get.html
      */
-    get(
-      id: string | number | (number | string)[],
+    get<U extends string | number | Array<string | number>>(
+      id: U,
       ancestors?: Array<string | number>,
       namespace?: string,
       transaction?: DatastoreTransaction,
@@ -257,7 +257,7 @@ declare namespace GstoreNode {
          */
         ttl?: number | { [propName: string]: number };
       }
-    ): Promise<Entity<T> | Entity<T>[]>;
+    ): Promise<U extends Array<any> ? Entity<T>[] : Entity<T>>;
 
     /**
      * Update an Entity in the Datastore
