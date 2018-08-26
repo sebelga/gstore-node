@@ -425,7 +425,16 @@ describe('Model', () => {
                     ));
             });
 
-            it('should *not* get value from cache', () => {
+            it('should throw an Error if entity not found in cache', (done) => {
+                ds.get.resolves([]);
+                ModelInstance.get(12345, null, null, null, { ttl: 334455 })
+                    .catch((err) => {
+                        expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
+                        done();
+                    });
+            });
+
+            it('should *not* get value from cache when deactivated in options', () => {
                 const key = ModelInstance.key(123);
                 const value = { name: 'Michael' };
 
