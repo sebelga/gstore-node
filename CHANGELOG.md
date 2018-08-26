@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.2.6"></a>
+## [4.2.6](https://github.com/sebelga/gstore-node/compare/v4.2.5...v4.2.6) (2018-08-26)
+
+
+### Bug Fixes
+
+* typescript definitions file ([e99125e](https://github.com/sebelga/gstore-node/commit/e99125e))
+* typescript definitions file ([399087c](https://github.com/sebelga/gstore-node/commit/399087c))
+* **cache:** Throw error when Model.get() returns undefined from cache ([b46758a](https://github.com/sebelga/gstore-node/commit/b46758a)), closes [#119](https://github.com/sebelga/gstore-node/issues/119)
+
+
+
 <a name="4.2.5"></a>
 ## [4.2.5](https://github.com/sebelga/gstore-node/compare/v4.2.4...v4.2.5) (2018-08-18)
 
