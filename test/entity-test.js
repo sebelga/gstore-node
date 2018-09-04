@@ -486,6 +486,51 @@ describe('Entity', () => {
 
             expect(model.getEntityDataWithVirtuals.called).equal(true);
         });
+
+        it('should clear embedded object excluded properties', () => {
+            schema = new Schema({
+                embedded: { excludeFromRead: ['prop1', 'prop2'] },
+            });
+
+            ModelInstance = gstore.model('HasEmbedded', schema);
+
+            const entity = new ModelInstance({ embedded: { prop1: '1', prop2: '2', prop3: '3' } });
+            const plain = entity.plain({});
+
+            expect(typeof plain.embedded.prop1).equal('undefined');
+            expect(typeof plain.embedded.prop2).equal('undefined');
+            expect(plain.embedded.prop3).equal('3');
+        });
+
+        it('should clear nested embedded object excluded properties', () => {
+            schema = new Schema({
+                embedded: { excludeFromRead: ['prop1', 'prop2.p1', 'prop3.p1.p11'] },
+            });
+
+            ModelInstance = gstore.model('HasEmbedded', schema);
+
+            const entity = new ModelInstance({
+                embedded: {
+                    prop1: '1',
+                    prop2: { p1: 'p1', p2: 'p2' },
+                    prop3: { p1: { p11: 'p11', p12: 'p12' }, p2: 'p2' },
+                    prop4: '4',
+                },
+            });
+
+            const plain = entity.plain({});
+
+            expect(typeof plain.embedded.prop1).equal('undefined');
+            expect(typeof plain.embedded.prop2).equal('object');
+            expect(typeof plain.embedded.prop2.p1).equal('undefined');
+            expect(plain.embedded.prop2.p2).equal('p2');
+            expect(typeof plain.embedded.prop3).equal('object');
+            expect(typeof plain.embedded.prop3.p1).equal('object');
+            expect(typeof plain.embedded.prop3.p1.p11).equal('undefined');
+            expect(plain.embedded.prop3.p1.p12).equal('p12');
+            expect(plain.embedded.prop3.p2).equal('p2');
+            expect(plain.embedded.prop4).equal('4');
+        });
     });
 
     describe('datastoreEntity()', () => {
