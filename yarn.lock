@@ -116,12 +116,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/google-cloud__datastore@^1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@types/google-cloud__datastore/-/google-cloud__datastore-1.3.3.tgz#188f6484768e262349d4f5dffea96ef95dd36b97"
-  dependencies:
-    "@types/node" "*"
-
 "@types/long@^3.0.32":
   version "3.0.32"
   resolved "https://registry.yarnpkg.com/@types/long/-/long-3.0.32.tgz#f4e5af31e9e9b196d8e5fca8a5e2e20aa3d60b69"
@@ -3947,15 +3941,15 @@ npmlog@^4.0.2:
     gauge "~2.7.3"
     set-blocking "~2.0.0"
 
-nsql-cache-datastore@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/nsql-cache-datastore/-/nsql-cache-datastore-1.1.3.tgz#7c26786979fefa599e16c686decd6ba42a89aad7"
+nsql-cache-datastore@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/nsql-cache-datastore/-/nsql-cache-datastore-1.1.4.tgz#f83035700b07be83a2fdd5ad95b265c08d3ba2a0"
   dependencies:
     arrify "1.0.1"
 
-nsql-cache@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/nsql-cache/-/nsql-cache-1.1.3.tgz#087107ceed383d55b3e599a1a3585943384dc004"
+nsql-cache@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/nsql-cache/-/nsql-cache-1.1.4.tgz#8f408ce478b2f9338659ba27143435c1371405b9"
   dependencies:
     arrify "^1.0.1"
     cache-manager "^2.9.0"

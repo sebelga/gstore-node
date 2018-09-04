@@ -612,7 +612,8 @@ declare namespace GstoreNode {
    */
   interface GstoreConfig {
     namespace?: string;
-    cache?: Boolean | CacheConfig;
+	cache?: Boolean | CacheConfig;
+	errorOnEntityNotFound?: Boolean;
   }
 
   /**

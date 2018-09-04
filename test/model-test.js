@@ -33,6 +33,7 @@ describe('Model', () => {
         gstore.modelSchemas = {};
         gstore.options = {};
         gstore.cache = undefined;
+        gstore.config.errorOnEntityNotFound = true;
 
         gstore.connect(ds);
         gstoreWithCache.connect(ds);
@@ -322,6 +323,16 @@ describe('Model', () => {
             });
         });
 
+        it('on no entity found, should return a null', () => {
+            ds.get.restore();
+            gstore.config.errorOnEntityNotFound = false;
+            sinon.stub(ds, 'get').resolves([]);
+
+            return ModelInstance.get(123).then((e) => {
+                expect(e).equal(null);
+            });
+        });
+
         it('should get in a transaction', () => ModelInstance.get(123, null, null, transaction).then((_entity) => {
             expect(transaction.get.called).equal(true);
             expect(ds.get.called).equal(false);
@@ -430,6 +441,18 @@ describe('Model', () => {
                 ModelInstance.get(12345, null, null, null, { ttl: 334455 })
                     .catch((err) => {
                         expect(err.code).equal(gstoreErrors.errorCodes.ERR_ENTITY_NOT_FOUND);
+                        done();
+                    });
+            });
+
+            it('should throw an Error if entity not found in cache', (done) => {
+                ds.get.resolves([]);
+
+                gstore.config.errorOnEntityNotFound = false;
+
+                ModelInstance.get(12345, null, null, null, { ttl: 334455 })
+                    .then((en) => {
+                        expect(en).equal(null);
                         done();
                     });
             });
