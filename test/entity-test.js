@@ -604,6 +604,19 @@ describe('Entity', () => {
             });
         });
 
+        it('should return null if no entity returned', () => {
+            gstore.config.errorOnEntityNotFound = false;
+
+            sinon.stub(ds, 'get').resolves([]);
+
+            const model = new ModelInstance({});
+
+            return model.datastoreEntity().then((entity) => {
+                expect(entity).equal(null);
+                ds.get.restore();
+            });
+        });
+
         it('should bubble up error fetching the entity', () => {
             const error = { code: 500, message: 'Something went bad' };
             sinon.stub(ds, 'get').rejects(error);
