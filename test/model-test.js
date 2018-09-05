@@ -445,7 +445,7 @@ describe('Model', () => {
                     });
             });
 
-            it('should throw an Error if entity not found in cache', (done) => {
+            it('should return null if entity not found in cache', (done) => {
                 ds.get.resolves([]);
 
                 gstore.config.errorOnEntityNotFound = false;
