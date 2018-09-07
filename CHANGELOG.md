@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.3.0"></a>
+# [4.3.0](https://github.com/sebelga/gstore-node/compare/v4.2.6...v4.3.0) (2018-09-07)
+
+
+### Bug Fixes
+
+* **entity:** Remove Array wrapping of datastoreEntity() response from cache ([00254d0](https://github.com/sebelga/gstore-node/commit/00254d0))
+
+
+### Features
+
+* Add global gstore config to return null on entity not found ([6b73631](https://github.com/sebelga/gstore-node/commit/6b73631)), closes [#123](https://github.com/sebelga/gstore-node/issues/123)
+* Support "read"-type config for embedded objects ([e3e554f](https://github.com/sebelga/gstore-node/commit/e3e554f)), closes [#122](https://github.com/sebelga/gstore-node/issues/122)
+
+
+
 <a name="4.2.6"></a>
 ## [4.2.6](https://github.com/sebelga/gstore-node/compare/v4.2.5...v4.2.6) (2018-08-26)
 
