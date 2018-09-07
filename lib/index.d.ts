@@ -663,7 +663,7 @@ declare namespace GstoreNode {
     default?: any;
     excludeFromIndexes?: boolean | string | string[];
     read?: boolean;
-    excludeFromRead: string[];
+    excludeFromRead?: string[];
     write?: boolean;
     required?: boolean;
     joi?: any;
