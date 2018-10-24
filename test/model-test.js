@@ -1716,11 +1716,11 @@ describe('Model', () => {
             const ModelInstance2 = gstore.model('TestValidate2', schema2);
             const model2 = new ModelInstance2({ createdOn: 'abc' });
 
-            const { value } = model.validate();
-            const { value: value2 } = model2.validate();
+            model.validate();
+            model2.validate();
 
-            assert.isUndefined(value.createdOn);
-            assert.isUndefined(value2.createdOn);
+            assert.isUndefined(model.createdOn);
+            assert.isUndefined(model2.createdOn);
         });
     });
 });
