@@ -1,98 +1,98 @@
 {
-  "name": "gstore-node",
-  "version": "4.3.0",
-  "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
-  "main": "index.js",
-  "types": "lib/index.d.ts",
-  "scripts": {
-    "commit": "git-cz",
-    "coverage": "nyc mocha test --recursive",
-    "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
-    "local-datastore": "rimraf ./local-datastore && gcloud beta emulators datastore start --data-dir=$PWD/local-datastore",
-    "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
-    "pretest": "npm run lint",
-    "release": "standard-version",
-    "test": "mocha test --recursive"
-  },
-  "engines": {
-    "node": ">=6.0"
-  },
-  "keywords": [
-    "google datastore",
-    "gcloud node",
-    "google app engine",
-    "node.js"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sebelga/gstore-node.git"
-  },
-  "author": "Sébastien Loix",
-  "contributors": [
-    {
-      "name": "Sébastien Loix",
-      "url": "https://github.com/sebelga"
+    "name": "gstore-node",
+    "version": "4.3.0",
+    "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
+    "main": "index.js",
+    "types": "lib/index.d.ts",
+    "scripts": {
+        "commit": "git-cz",
+        "coverage": "nyc mocha test --recursive",
+        "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+        "local-datastore": "rimraf ./local-datastore && gcloud beta emulators datastore start --data-dir=$PWD/local-datastore",
+        "lint": "./node_modules/eslint/bin/eslint.js ./lib && eslint ./test",
+        "pretest": "npm run lint",
+        "release": "standard-version",
+        "test": "mocha test --recursive"
     },
-    {
-      "name": "Micah Allen",
-      "url": "https://github.com/micaww"
+    "engines": {
+        "node": ">=6.0"
     },
-    {
-      "name": "Ricardo Machado",
-      "url": "https://github.com/mAiNiNfEcTiOn"
+    "keywords": [
+        "google datastore",
+        "gcloud node",
+        "google app engine",
+        "node.js"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sebelga/gstore-node.git"
     },
-    {
-      "name": "jfbenckhuijsen",
-      "url": "https://github.com/jfbenckhuijsen"
+    "author": "Sébastien Loix",
+    "contributors": [
+        {
+            "name": "Sébastien Loix",
+            "url": "https://github.com/sebelga"
+        },
+        {
+            "name": "Micah Allen",
+            "url": "https://github.com/micaww"
+        },
+        {
+            "name": "Ricardo Machado",
+            "url": "https://github.com/mAiNiNfEcTiOn"
+        },
+        {
+            "name": "jfbenckhuijsen",
+            "url": "https://github.com/jfbenckhuijsen"
+        }
+    ],
+    "nyc": {
+        "reporter": [
+            "lcov",
+            "text"
+        ]
+    },
+    "license": "MIT",
+    "config": {
+        "commitizen": {
+            "path": "./node_modules/cz-conventional-changelog"
+        }
+    },
+    "dependencies": {
+        "@google-cloud/datastore": "^2.0.0",
+        "arrify": "^1.0.1",
+        "extend": "^3.0.2",
+        "is": "^3.2.1",
+        "moment": "^2.22.1",
+        "nsql-cache": "^1.1.4",
+        "nsql-cache-datastore": "^1.1.6",
+        "optional": "^0.1.4",
+        "promised-hooks": "^3.1.0",
+        "validator": "^10.9.0"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-preset-es2015": "^6.24.1",
+        "cache-manager-redis-store": "^1.5.0",
+        "chai": "^4.2.0",
+        "commitizen": "^3.0.4",
+        "coveralls": "^3.0.2",
+        "cz-conventional-changelog": "^2.1.0",
+        "dataloader": "^1.4.0",
+        "eslint": "^5.9.0",
+        "eslint-config-airbnb-base": "^13.1.0",
+        "eslint-import-resolver-webpack": "^0.10.1",
+        "eslint-plugin-import": "^2.14.0",
+        "eslint-plugin-mocha": "^5.2.0",
+        "joi": "^12.0.0",
+        "mocha": "^5.2.0",
+        "mocha-lcov-reporter": "^1.3.0",
+        "nconf": "^0.10.0",
+        "nyc": "^13.1.0",
+        "redis-mock": "^0.39.0",
+        "rimraf": "2.6.2",
+        "sinon": "^7.1.1",
+        "standard-version": "^4.4.0",
+        "yargs": "^12.0.2"
     }
-  ],
-  "nyc": {
-    "reporter": [
-      "lcov",
-      "text"
-    ]
-  },
-  "license": "MIT",
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
-  },
-  "dependencies": {
-    "@google-cloud/datastore": "^2.0.0",
-    "arrify": "^1.0.1",
-    "extend": "^3.0.1",
-    "is": "^3.2.1",
-    "moment": "^2.22.1",
-    "nsql-cache": "^1.1.4",
-    "nsql-cache-datastore": "^1.1.6",
-    "optional": "^0.1.4",
-    "promised-hooks": "^3.1.0",
-    "validator": "^10.7.0"
-  },
-  "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "cache-manager-redis-store": "^1.5.0",
-    "chai": "^3.5.0",
-    "commitizen": "^2.9.6",
-    "coveralls": "^3.0.1",
-    "cz-conventional-changelog": "^2.1.0",
-    "dataloader": "^1.4.0",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-import-resolver-webpack": "^0.9.0",
-    "eslint-plugin-import": "^2.11.0",
-    "eslint-plugin-mocha": "^4.11.0",
-    "joi": "^12.0.0",
-    "mocha": "^4.0.1",
-    "mocha-lcov-reporter": "^1.3.0",
-    "nconf": "^0.10.0",
-    "nyc": "^11.7.1",
-    "redis-mock": "^0.21.0",
-    "rimraf": "2.6.2",
-    "sinon": "^4.4.2",
-    "standard-version": "^4.3.0",
-    "yargs": "^11.0.0"
-  }
 }

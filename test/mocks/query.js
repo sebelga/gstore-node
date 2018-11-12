@@ -12,6 +12,7 @@ class Query {
         this.orders = [];
         this.selectVal = [];
     }
+
     run() {
         const info = this.info || {
             moreResults: this.ds.MORE_RESULTS_AFTER_LIMIT,

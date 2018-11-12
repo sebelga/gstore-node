@@ -164,4 +164,3 @@ describe('Datastore serializer', () => {
         });
     });
 });
-

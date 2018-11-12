@@ -44,17 +44,16 @@ describe('Integration Tests (Model)', () => {
         cleanUp(() => done());
     });
 
-    it('check that Local Datastore is up and running', () =>
-        ds.get(k1).then((res) => {
-            expect(typeof res[0]).equal('undefined');
+    it('check that Local Datastore is up and running', () => ds.get(k1).then((res) => {
+        expect(typeof res[0]).equal('undefined');
 
-            return ds
-                .save({ key: k1, data: user1 })
-                .then(() => ds.get(k1))
-                .then((res2) => {
-                    expect(res2[0]).deep.equal(user1);
-                });
-        }));
+        return ds
+            .save({ key: k1, data: user1 })
+            .then(() => ds.get(k1))
+            .then((res2) => {
+                expect(res2[0]).deep.equal(user1);
+            });
+    }));
 
     it('Schema.read set to false should work as expected', () => {
         const schema = new Schema({
@@ -109,7 +108,7 @@ describe('Integration Tests (Model)', () => {
                 return Promise.resolve();
             });
             const Model = gstore.model('User', schema);
-            Model.delete(123).then(() => {});
+            Model.delete(123).then(() => { });
         });
     });
 });

@@ -493,27 +493,27 @@ describe('Query', () => {
                 })
             ));
 
-            it('should throw error if not all arguments are passed', () =>
+            it('should throw error if not all arguments are passed', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1')
-                    .catch((err) => {
-                        expect(err.code).equal(400);
-                        expect(err.message).equal('Argument missing');
-                    }));
+            ).catch((err) => {
+                expect(err.code).equal(400);
+                expect(err.message).equal('Argument missing');
+            }));
 
-            it('should validate that options passed is an object', () =>
+            it('should validate that options passed is an object', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
                     expect(err.code).equal(400);
-                }));
+                })));
 
-            it('should validate that options has a "after" or "before" property', () =>
+            it('should validate that options has a "after" or "before" property', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', {}, (err) => {
                     expect(err.code).equal(400);
-                }));
+                })));
 
-            it('should validate that options has not both "after" & "before" properties', () =>
+            it('should validate that options has not both "after" & "before" properties', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }, (err) => {
                     expect(err.code).equal(400);
-                }));
+                })));
 
             it('should add id to entities', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((entities) => {
