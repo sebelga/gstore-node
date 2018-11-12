@@ -1722,5 +1722,16 @@ describe('Model', () => {
             assert.isUndefined(model.createdOn);
             assert.isUndefined(model2.createdOn);
         });
+
+        it('should maintain the Datastore Key on the entityData with Joi Schema', () => {
+            schema = new Schema({ name: { joi: Joi.string() } }, { joi: true });
+            ModelInstance = gstore.model('TestValidate3', schema);
+            const model = new ModelInstance({ name: 'John', createdOn: 'abc' });
+            const key = model.entityData[gstore.ds.KEY];
+
+            model.validate();
+
+            expect(model.entityData[gstore.ds.KEY]).equal(key);
+        });
     });
 });
