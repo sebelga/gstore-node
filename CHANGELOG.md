@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.3.1"></a>
+## [4.3.1](https://github.com/sebelga/gstore-node/compare/v4.3.0...v4.3.1) (2018-11-13)
+
+
+### Bug Fixes
+
+* **Model:** Modify validate() method to update entityData on validation ([98dab4b](https://github.com/sebelga/gstore-node/commit/98dab4b))
+* **Model:** Preserve gstore KEY on entityData when validating Joi Schema ([f86dbcb](https://github.com/sebelga/gstore-node/commit/f86dbcb))
+
+
+
 <a name="4.3.0"></a>
 # [4.3.0](https://github.com/sebelga/gstore-node/compare/v4.2.6...v4.3.0) (2018-09-07)
 
