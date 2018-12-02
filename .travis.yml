@@ -8,6 +8,8 @@ branches:
   only:
   - master
 
+install: yarn install --ignore-engines
+
 script:
   - npm test
 
