@@ -534,7 +534,7 @@ describe('Entity', () => {
 
         it('should ignore incorrectly specified nested embedded object property paths', () => {
             schema = new Schema({
-                embedded: { excludeFromRead: ['prop3.p1.p1', 'prop4', 'prop5.p1'] },
+                embedded: { excludeFromRead: ['prop3.wrong.p1', 'prop4', 'prop4.p1.p2', 'prop5.p1'] },
             });
 
             ModelInstance = gstore.model('HasEmbedded', schema);
@@ -547,7 +547,7 @@ describe('Entity', () => {
                 },
             });
 
-            const plain = entity.plain({});
+            const plain = entity.plain();
 
             expect(plain.embedded.prop1).equal('1');
             expect(plain.embedded.prop2.p1.p2).equal('p2');
