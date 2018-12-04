@@ -33,7 +33,7 @@ describe('Validation (new Types)', () => {
     let schema;
 
     const validate = entityData => (
-        validation.validate(entityData, schema, 'MyEntityKind')
+        validation.validate(entityData, schema, 'MyEntityKind', ds)
     );
 
     beforeEach(() => {
@@ -62,6 +62,7 @@ describe('Validation (new Types)', () => {
                     args: [4, 10],
                 },
             },
+            companyId: { type: Schema.Types.Key },
         });
 
         schema.virtual('fullname').get(() => { });
@@ -171,6 +172,20 @@ describe('Validation (new Types)', () => {
         expect(error).equal(null);
         expect(error2).equal(null);
         expect(error3).equal(null);
+    });
+
+    it('--> Datstore Key ok', () => {
+        const companyId = ds.key(['EntityKind', 123]);
+        const { error } = validate({ companyId });
+
+        expect(error).equal(null);
+    });
+
+    it('--> Datstore Key ko', () => {
+        const { error } = validate({ companyId: 123 });
+
+        expect(error).not.equal(null);
+        expect(error.errors[0].code).equal(gstoreErrors.errorCodes.ERR_PROP_TYPE);
     });
 
     it('--> string', () => {

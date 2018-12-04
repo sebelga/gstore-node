@@ -103,6 +103,7 @@ declare namespace GstoreNode {
     static Types: {
       Double: 'double';
       GeoPoint: 'geoPoint';
+      Key: 'key';
     };
 
     /**
