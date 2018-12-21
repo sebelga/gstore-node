@@ -29,7 +29,7 @@ const addKey = (key) => {
     }
 };
 
-describe('Integration Tests (Model)', () => {
+describe('Model (Integration Tests)', () => {
     beforeEach(function integrationTest() {
         gstore.models = {};
         gstore.modelSchemas = {};
@@ -58,12 +58,12 @@ describe('Integration Tests (Model)', () => {
     it('Schema.read set to false should work as expected', () => {
         const schema = new Schema({
             email: {
-                type: 'string',
+                type: String,
                 validate: 'isEmail',
                 required: true,
             },
             password: {
-                type: 'string',
+                type: String,
                 validate: {
                     rule: 'isLength',
                     args: [{ min: 8, max: undefined }],
@@ -73,7 +73,7 @@ describe('Integration Tests (Model)', () => {
                 excludeFromIndexes: true,
             },
             state: {
-                type: 'string',
+                type: String,
                 default: 'requested',
                 write: false,
                 read: false,
@@ -84,7 +84,7 @@ describe('Integration Tests (Model)', () => {
         const User = gstore.model('User', schema);
         const user = new User({ email: 'test@test.com', password: 'abcd1234' });
 
-        user.save().then((entity) => {
+        return user.save().then((entity) => {
             addKey(entity.entityKey);
             const response = entity.plain();
             expect(response.password).to.not.exist;

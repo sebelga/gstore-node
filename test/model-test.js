@@ -1708,19 +1708,13 @@ describe('Model', () => {
         });
 
         it('should sanitize the entityData', () => {
-            schema = new Schema({ name: { type: 'string' }, createdOn: { write: false } });
+            schema = new Schema({ name: { type: String } });
             ModelInstance = gstore.model('TestValidate', schema);
-            const model = new ModelInstance({ name: 'John', createdOn: 'abc' });
-
-            const schema2 = new Schema({ createdOn: { joi: Joi.string().strip() } }, { joi: true });
-            const ModelInstance2 = gstore.model('TestValidate2', schema2);
-            const model2 = new ModelInstance2({ createdOn: 'abc' });
+            const model = new ModelInstance({ name: 'John', unknown: 'abc' });
 
             model.validate();
-            model2.validate();
 
-            assert.isUndefined(model.createdOn);
-            assert.isUndefined(model2.createdOn);
+            assert.isUndefined(model.entityData.unknown);
         });
 
         it('should maintain the Datastore Key on the entityData with Joi Schema', () => {
