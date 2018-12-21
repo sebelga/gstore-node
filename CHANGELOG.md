@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.3.2"></a>
+## [4.3.2](https://github.com/sebelga/gstore-node/compare/v4.3.1...v4.3.2) (2018-12-21)
+
+
+### Bug Fixes
+
+* Fixes 'exludeFromRead' for nested paths where object does not exist ([f7c336c](https://github.com/sebelga/gstore-node/commit/f7c336c)), closes [#128](https://github.com/sebelga/gstore-node/issues/128)
+* **excludeFromRead:** Make sure segment exist before trying to access it when deserializing ([03bcf53](https://github.com/sebelga/gstore-node/commit/03bcf53))
+* **Model:** Update validate() to not sanitize prop where write is set to false ([#138](https://github.com/sebelga/gstore-node/issues/138)) ([e86a875](https://github.com/sebelga/gstore-node/commit/e86a875))
+
+
+
 <a name="4.3.1"></a>
 ## [4.3.1](https://github.com/sebelga/gstore-node/compare/v4.3.0...v4.3.1) (2018-11-13)
 
