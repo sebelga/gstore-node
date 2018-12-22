@@ -27,8 +27,8 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
 - **[Joi](https://github.com/hapijs/joi)** schema definition and validation
-- **NEW** Advanced **[cache layer](https://sebelga.gitbooks.io/gstore-node/content/cache.html)** (since v3.0.0)
-- :tada: **NEW** **[Typescript support](https://sebelga.gitbooks.io/gstore-node/content/typescript.html)** (since v4.1.0)
+- **NEW** Advanced **[cache layer](https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache)** (since v3.0.0)
+- :tada: **NEW** **[Typescript support](https://sebloix.gitbook.io/gstore-node/typescript)** (since v4.1.0)
 
 This library is in active development, please report any issue you might find.  
 
@@ -45,7 +45,7 @@ Info: gstore-node requires Node version **6+**
 # Getting started
 
 Import gstore-node and @google-cloud/datastore and configure your project.  
-For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/1.3.x/Datastore).
+For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/2.0.x/Datastore).
 
 ```js
 const gstore = require('gstore-node')();
@@ -69,7 +69,7 @@ The @google/datastore instance. This means that you can access **all the API** o
 <a name="documentation"/>
 
 # Documentation
-The [complete documentation](https://sebelga.gitbooks.io/gstore-node/content/)  of gstore-node is in gitbook.  
+The [complete documentation](https://sebloix.gitbook.io/gstore-node/)  of gstore-node is in gitbook.  
 If you find any mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
 
 <a name="example"/>
@@ -292,7 +292,7 @@ module.exports = {
 
 # Demo application
 
-If you want to see how to integrate gstore-node in your Node.js project, check the [demo Blog application repository](https://github.com/sebelga/blog-app-googlecloud).
+If you want to see an example on how to use gstore-node in your Node.js app, check the [demo blog application repository](https://github.com/sebelga/blog-app-googlecloud).
 
 ## Meta
 
