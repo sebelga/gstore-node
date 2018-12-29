@@ -186,15 +186,27 @@ describe('Model', () => {
             expect(data2).not.equal(data);
         });
 
-        it('should sanitize with Joi.strip()', () => {
+        it('should remove not writable & unknown props in Joi schema', () => {
             schema = new Schema({
-                createdOn: { joi: Joi.strip() },
+                createdOn: { joi: Joi.date(), write: false },
             }, { joi: true });
             ModelInstance = gstore.model('BlogJoi', schema, gstore);
 
-            const entityData = ModelInstance.sanitize({ createdOn: 'abc' });
+            const entityData = ModelInstance.sanitize({ createdOn: Date.now(), unknown: 123 });
 
             assert.isUndefined(entityData.createdOn);
+            assert.isUndefined(entityData.unknown);
+        });
+
+        it('should *not* remove unknown props in Joi schema', () => {
+            schema = new Schema({
+                createdOn: { joi: Joi.date(), write: false },
+            }, { joi: { options: { allowUnknown: true } } });
+            ModelInstance = gstore.model('BlogJoi', schema, gstore);
+
+            const entityData = ModelInstance.sanitize({ createdOn: Date.now(), unknown: 123 });
+
+            assert.isDefined(entityData.unknown);
         });
     });
 
