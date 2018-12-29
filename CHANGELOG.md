@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="4.3.3"></a>
+## [4.3.3](https://github.com/sebelga/gstore-node/compare/v4.3.2...v4.3.3) (2018-12-29)
+
+
+### Bug Fixes
+
+* **Sanitize:** Remove non writable property on Joi schema ([#140](https://github.com/sebelga/gstore-node/issues/140)) ([4ba1ce6](https://github.com/sebelga/gstore-node/commit/4ba1ce6)), closes [#139](https://github.com/sebelga/gstore-node/issues/139)
+
+
+
 <a name="4.3.2"></a>
 ## [4.3.2](https://github.com/sebelga/gstore-node/compare/v4.3.1...v4.3.2) (2018-12-21)
 
