@@ -754,9 +754,9 @@ declare namespace GstoreNode {
      */
     start?: string;
     /**
-     * @type {string}
+     * @type {number}
      */
-    offset?: string;
+    offset?: number;
   }
 
   interface Validation {
