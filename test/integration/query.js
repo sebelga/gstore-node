@@ -2,46 +2,40 @@
 
 const Datastore = require('@google-cloud/datastore');
 const chai = require('chai');
+const Chance = require('chance');
 const { argv } = require('yargs');
-const gstore = require('../../lib')();
+const gstore = require('../../lib')({ namespace: 'integration-tests' });
 
 const { Schema } = gstore;
+const chance = new Chance();
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
 
 const { expect } = chai;
-const {
-    k1, k2, k3, k4, entity1, entity2, entity3, entity4,
-} = require('./data')(ds);
+const schema = new Schema({});
 
-const allKeys = [k1, k2, k3, k4];
+const UserModel = gstore.model('QueryTests-User', schema);
+
+const getNewEntity = () => {
+    const data = { name: chance.string(), age: chance.integer({ min: 1 }) };
+    const user = new UserModel(data);
+    return user;
+};
+
+const initialEntities = [getNewEntity(), getNewEntity(), getNewEntity(), getNewEntity()];
 
 const cleanUp = (cb) => {
-    ds.delete(allKeys).then(cb);
+    UserModel.deleteAll().then(cb);
 };
 
 describe('Integration Tests (Queries)', () => {
-    let Model;
-    let query;
-
     before(function integrationTest(done) {
         if (argv.int !== true) {
             this.skip();
         }
-        gstore.models = {};
-        gstore.modelSchemas = {};
 
-        const schema = new Schema({});
-        Model = gstore.model('User', schema);
-        query = Model.query();
-
-        Model.deleteAll()
-            .then(() => (
-                // Add a few entities in the Datastore
-                ds.save([entity1, entity2, entity3, entity4])
-                    .then(() => done())
-            ));
+        gstore.save(initialEntities).then(() => { done(); });
     });
 
     beforeEach(function beforeEachIntTest() {
@@ -58,9 +52,9 @@ describe('Integration Tests (Queries)', () => {
     });
 
     it('should forward options to underlying Datastore.Query', () => (
-        query.run({ consistency: 'strong' })
+        UserModel.query().run()
             .then(({ entities }) => {
-                expect(entities.length).equal(2);
+                expect(entities.length).equal(initialEntities.length);
             })
     ));
 });

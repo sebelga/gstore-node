@@ -8,11 +8,21 @@ const chai = require('chai');
 const { argv } = require('yargs');
 const Gstore = require('../../lib');
 
-const ds = new Datastore({ projectId: 'gstore-cache-integration-tests' });
+const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 
 const { expect } = chai;
 
-const { cleanUp, addKey } = require('./data')(ds);
+const allKeys = [];
+
+const cleanUp = (cb) => {
+    ds.delete(allKeys).then(cb);
+};
+
+const addKey = (key) => {
+    if (key) {
+        allKeys.push(key);
+    }
+};
 
 describe('Integration Tests (Cache)', () => {
     let gstore;
@@ -56,7 +66,7 @@ describe('Integration Tests (Cache)', () => {
             },
         });
 
-        Model = gstore.model('User', schema);
+        Model = gstore.model('CacheTests-User', schema);
     });
 
     afterEach((done) => {

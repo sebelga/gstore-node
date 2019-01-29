@@ -39,8 +39,8 @@ describe('Model', () => {
         gstoreWithCache.connect(ds);
 
         schema = new Schema({
-            name: { type: 'string' },
-            lastname: { type: 'string', excludeFromIndexes: true },
+            name: { type: String },
+            lastname: { type: String, excludeFromIndexes: true },
             password: { read: false },
             age: { type: 'int', excludeFromIndexes: true },
             birthday: { type: 'datetime' },
@@ -258,7 +258,7 @@ describe('Model', () => {
             return ModelInstance.get(123).then(onEntity);
 
             function onEntity(_entity) {
-                expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+                expect(ds.get.getCall(0).args[0][0].constructor.name).equal('Key');
                 expect(_entity instanceof Entity).equal(true);
             }
         });
@@ -278,31 +278,35 @@ describe('Model', () => {
 
             sinon.stub(ds, 'get').resolves([[entity2, entity1]]); // not sorted
 
-            return ModelInstance.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult);
+            return ModelInstance.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult, onError);
 
             function onResult(_entity) {
                 expect(is.array(ds.get.getCall(0).args[0])).equal(true);
                 expect(is.array(_entity)).equal(true);
                 expect(_entity[0].entityKey.id).equal(22); // sorted
             }
+
+            function onError(err) {
+                throw (err);
+            }
         });
 
         it('converting a string integer to real integer', () => ModelInstance.get('123').then(() => {
             assert.isUndefined(ds.get.getCall(0).args[0].name);
-            expect(ds.get.getCall(0).args[0].id).equal(123);
+            expect(ds.get.getCall(0).args[0][0].id).equal(123);
         }));
 
         it('not converting string with mix of number and non number', () => ModelInstance.get('123:456').then(() => {
-            expect(ds.get.getCall(0).args[0].name).equal('123:456');
+            expect(ds.get.getCall(0).args[0][0].name).equal('123:456');
         }));
 
         it('passing an ancestor path array', () => {
             const ancestors = ['Parent', 'keyname'];
 
             return ModelInstance.get(123, ancestors).then(() => {
-                expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-                expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
-                expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
+                expect(ds.get.getCall(0).args[0][0].constructor.name).equal('Key');
+                expect(ds.get.getCall(0).args[0][0].parent.kind).equal(ancestors[0]);
+                expect(ds.get.getCall(0).args[0][0].parent.name).equal(ancestors[1]);
             });
         });
 
@@ -310,18 +314,20 @@ describe('Model', () => {
             const namespace = 'com.mydomain-dev';
 
             return ModelInstance.get(123, null, namespace).then(() => {
-                expect(ds.get.getCall(0).args[0].namespace).equal(namespace);
+                expect(ds.get.getCall(0).args[0][0].namespace).equal(namespace);
             });
         });
 
-        it('on datastore get error, should reject error', () => {
+        it('on datastore get error, should reject error', (done) => {
             ds.get.restore();
             const error = { code: 500, message: 'Something went really bad' };
             sinon.stub(ds, 'get').rejects(error);
 
-            return ModelInstance.get(123)
+            ModelInstance.get(123)
+                .populate('test')
                 .catch((err) => {
                     expect(err).equal(error);
+                    done();
                 });
         });
 
@@ -417,6 +423,23 @@ describe('Model', () => {
             });
         });
 
+        it('should allow to chain populate() calls and then call the Model.populate() method', () => {
+            const spy = sinon.spy(ModelInstance, 'populate');
+            const options = { dataLoader: { foo: 'bar' } };
+
+            return ModelInstance
+                .get(123, null, null, null, options)
+                .populate('company', ['name', 'phone-number'])
+                .then(() => {
+                    expect(spy.called).equal(true);
+                    const { args } = spy.getCall(0);
+                    expect(args[0][0]).deep.equal([{ path: 'company', select: ['name', 'phone-number'] }]);
+                    expect(args[1]).deep.equal({ ...options, transaction: null });
+
+                    ModelInstance.populate.restore();
+                });
+        });
+
         context('when cache is active', () => {
             beforeEach(() => {
                 gstore.cache = gstoreWithCache.cache;
@@ -465,6 +488,7 @@ describe('Model', () => {
                 ModelInstance.get(12345, null, null, null, { ttl: 334455 })
                     .then((en) => {
                         expect(en).equal(null);
+                        gstore.config.errorOnEntityNotFound = true;
                         done();
                     });
             });
@@ -513,7 +537,7 @@ describe('Model', () => {
                     .then((response) => {
                         assert.ok(ds.get.called);
                         const { args } = ds.get.getCall(0);
-                        expect(args[0].id).equal(123);
+                        expect(args[0][0].id).equal(123);
                         expect(response.entityData).include(entity);
                     })
             ));
@@ -554,6 +578,26 @@ describe('Model', () => {
                                 const { args } = ds.get.getCall(0);
                                 expect(args[0][0].id).equal(123);
                                 expect(response.length).equal(2);
+                            })
+                    ));
+            });
+
+            it('should allow to chain populate() calls and then call the Model.populate() method', () => {
+                const spy = sinon.spy(ModelInstance, 'populate');
+
+                const key = ModelInstance.key(123);
+                const value = { foo: 'bar' };
+
+                return gstore.cache.keys.set(key, value)
+                    .then(() => (
+                        ModelInstance.get(123)
+                            .populate('company', ['name', 'phone-number'])
+                            .then(() => {
+                                expect(spy.called).equal(true);
+                                const { args } = spy.getCall(0);
+                                expect(args[0][0]).deep.equal([
+                                    { path: 'company', select: ['name', 'phone-number'] },
+                                ]);
                             })
                     ));
             });
@@ -961,7 +1005,7 @@ describe('Model', () => {
                 afterDelete: () => Promise.resolve(),
             };
             sinon.spy(spy, 'afterDelete');
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.post('delete', spy.afterDelete);
 
             ModelInstance = Model.compile('Blog', schema, gstore);
@@ -1355,6 +1399,86 @@ describe('Model', () => {
         });
     });
 
+    describe('populate()', () => {
+        let entity;
+        let key0;
+        let key1;
+        let key2;
+        let fetchData1;
+        let fetchData2;
+        let refs;
+        let entities;
+
+        beforeEach(() => {
+            gstore.connect(ds);
+            schema = new Schema({
+                name: { type: String },
+                ref: { type: Schema.Types.Key },
+            });
+            ModelInstance = gstore.model('ModelTests-populate', schema, gstore);
+
+            key0 = ModelInstance.key(123);
+            key1 = ModelInstance.key(456);
+            key2 = ModelInstance.key(789);
+
+            entity = new ModelInstance({ name: 'Level0', ref: key1 }, null, null, null, key0);
+
+            fetchData1 = { name: 'Level1', ref: key2 };
+            fetchData1[ds.KEY] = key1;
+
+            fetchData2 = { name: 'Level2' };
+            fetchData2[ds.KEY] = key2;
+
+            refs = [
+                [{ path: 'ref', select: ['*'] }], // level 0
+                [{ path: 'ref.ref', select: ['*'] }], // level 1
+            ];
+            entities = [entity];
+
+            const stub = sinon.stub(ds, 'get');
+            stub.onCall(0).returns(Promise.resolve([fetchData1]));
+            stub.onCall(1).returns(Promise.resolve([fetchData2]));
+        });
+
+        afterEach(() => {
+            ds.get.restore();
+        });
+
+        it('should recursively fetch the keys at each level of the entityData tree', () => (
+            ModelInstance.populate(refs)(entities)
+                .then(({ 0: { entityData } }) => {
+                    expect(entityData.ref.id).equal(456);
+                    expect(entityData.ref.name).equal('Level1');
+                    expect(entityData.ref.ref.id).equal(789);
+                    expect(entityData.ref.ref.name).equal('Level2');
+                    expect(ds.get.getCalls().length).equal(2);
+                })
+        ));
+
+        context('when cache is active', () => {
+            beforeEach(() => {
+                gstore.cache = gstoreWithCache.cache;
+            });
+
+            afterEach(() => {
+                // empty the cache
+                gstore.cache.reset();
+                delete gstore.cache;
+            });
+
+            it('should get the keys from the cache and not fetch from the Datastore', () => (
+                gstore.cache.keys.mset(key1, fetchData1, key2, fetchData2)
+                    .then(() => (
+                        ModelInstance.populate(refs)(entities)
+                            .then(() => {
+                                expect(ds.get.getCalls().length).equal(0);
+                            })
+                    ))
+            ));
+        });
+    });
+
+
     describe('save()', () => {
         let model;
         const data = { name: 'John', lastname: 'Snow' };
@@ -1513,7 +1637,7 @@ describe('Model', () => {
         });
 
         it('should save entity in a transaction synchronous when validateBeforeSave desactivated', () => {
-            schema = new Schema({ name: { type: 'string' } }, { validateBeforeSave: false });
+            schema = new Schema({ name: { type: String } }, { validateBeforeSave: false });
 
             const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
             model = new ModelInstanceTemp({});
@@ -1524,7 +1648,7 @@ describe('Model', () => {
 
         it('should save entity in a transaction synchronous when disabling hook', () => {
             schema = new Schema({
-                name: { type: 'string' },
+                name: { type: String },
             });
 
             schema.pre('save', () => Promise.resolve());
@@ -1554,7 +1678,7 @@ describe('Model', () => {
         it('should call pre hooks', () => {
             const spyPre = sinon.stub().resolves();
 
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.pre('save', () => spyPre());
             ModelInstance = Model.compile('Blog', schema, gstore);
             model = new ModelInstance({ name: 'John' });
@@ -1566,7 +1690,7 @@ describe('Model', () => {
 
         it('should call post hooks', () => {
             const spyPost = sinon.stub().resolves(123);
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.post('save', () => spyPost());
             ModelInstance = Model.compile('Blog', schema, gstore);
             model = new ModelInstance({ name: 'John' });
@@ -1580,7 +1704,7 @@ describe('Model', () => {
         it('error in post hooks should be added to response', () => {
             const error = { code: 500 };
             const spyPost = sinon.stub().rejects(error);
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.post('save', spyPost);
             ModelInstance = Model.compile('Blog', schema, gstore);
             model = new ModelInstance({ name: 'John' });
@@ -1593,7 +1717,7 @@ describe('Model', () => {
 
         it('transaction.execPostHooks() should call post hooks', () => {
             const spyPost = sinon.stub().resolves(123);
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.post('save', spyPost);
 
             ModelInstance = Model.compile('Blog', schema, gstore);
@@ -1622,7 +1746,7 @@ describe('Model', () => {
 
         it('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
             const spyPost = sinon.stub().resolves(123);
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             schema.post('save', spyPost);
 
             ModelInstance = Model.compile('Blog', schema, gstore);
@@ -1707,7 +1831,7 @@ describe('Model', () => {
         });
 
         it('should call "Validation" helper passing entityData, Schema & entityKind', () => {
-            schema = new Schema({ name: { type: 'string' } });
+            schema = new Schema({ name: { type: String } });
             ModelInstance = gstore.model('TestValidate', schema);
             const model = new ModelInstance({ name: 'John' });
 
