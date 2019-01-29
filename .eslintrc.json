@@ -43,7 +43,7 @@
             "error",
             120
         ],
-        "mocha/no-exclusive-tests": "off",
+        "mocha/no-exclusive-tests": "error",
         "comma-dangle": [
             "error",
             {
