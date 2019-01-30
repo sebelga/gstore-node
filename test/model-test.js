@@ -652,7 +652,7 @@ describe('Model', () => {
         it('should return error if any while saving', () => {
             transaction.run.restore();
             const error = { code: 500, message: 'Houston wee need you.' };
-            sinon.stub(transaction, 'run').rejects(error);
+            sinon.stub(transaction, 'run').rejects([error]);
 
             return ModelInstance.update(123).catch((err) => {
                 expect(err).equal(error);
@@ -749,10 +749,6 @@ describe('Model', () => {
                     expect(err.message).equal('Transaction needs to be a gcloud Transaction');
                 })
         ));
-
-        it('should still work passing a callback', () => ModelInstance.update(123, (err, entity) => {
-            expect(entity.className).equal('Entity');
-        }));
 
         context('when cache is active', () => {
             beforeEach(() => {
@@ -1477,7 +1473,6 @@ describe('Model', () => {
             ));
         });
     });
-
 
     describe('save()', () => {
         let model;
