@@ -46,13 +46,11 @@ const getAddress = () => {
 const getUser = (address) => {
     const key = UserModel.key(getId());
     allKeys.push(key);
-    const createdAt = new Date('2019-01-20');
     const data = {
         name: chance.string(),
         age: chance.integer({ min: 1 }),
         address: address.entityKey,
-        // createdAt: new Date('2019-01-20'),
-        createdAt,
+        createdAt: new Date('2019-01-20'),
     };
     const user = new UserModel(data, null, null, null, key);
     return user;
@@ -88,12 +86,6 @@ describe('Integration Tests (Queries)', () => {
             this.skip();
         }
         return gstore.save([...users, ...addresses]);
-    });
-
-    beforeEach(function beforeEachIntTest() {
-        if (argv.int !== true) {
-            this.skip();
-        }
     });
 
     after(function afterAllIntTest() {
@@ -289,6 +281,7 @@ describe('Integration Tests (Queries)', () => {
                     .filter('createdAt', '>', new Date('2019-01-01'))
                     .run()
                     .populate('address', 'country')
+                    .populate('unknown')
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
@@ -297,6 +290,7 @@ describe('Integration Tests (Queries)', () => {
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
                             expect(entity.address.country).equal(address.country);
+                            expect(entity.unknown).equal(null);
                             assert.isUndefined(entity.address.city);
                         });
                     })
