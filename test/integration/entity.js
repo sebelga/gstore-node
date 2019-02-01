@@ -70,16 +70,16 @@ const cleanUp = () => ds.delete(allKeys).then(() => Promise.all([
                 console.log(err); // eslint-disable-line
     });
 
-describe('entity', () => {
+describe('Entity (Integration Tests)', () => {
     const addressBook = getAddressBook();
     const address = getAddress(addressBook);
     let user;
 
     before(function integrationTest() {
-        generatedIds = [];
         if (argv.int !== true) {
             this.skip();
         }
+        generatedIds = [];
         // return gstore.save([...users, ...addresses]);
         return gstore.save([addressBook, address]);
     });
@@ -91,7 +91,11 @@ describe('entity', () => {
         return cleanUp();
     });
 
-    beforeEach(() => {
+    beforeEach(function integrationTest() {
+        if (argv.int !== true) {
+            // Skip e2e tests suite
+            this.skip();
+        }
         user = getUser(address);
     });
 

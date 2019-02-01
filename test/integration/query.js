@@ -79,7 +79,7 @@ const cleanUp = () => ds.delete(allKeys).then(() => Promise.all([UserModel.delet
         console.log(err); // eslint-disable-line
     });
 
-describe('Integration Tests (Queries)', () => {
+describe('Queries (Integration Tests)', () => {
     before(function integrationTest() {
         generatedIds = [];
         if (argv.int !== true) {
@@ -93,6 +93,13 @@ describe('Integration Tests (Queries)', () => {
             this.skip();
         }
         return cleanUp();
+    });
+
+    beforeEach(function integrationTest() {
+        if (argv.int !== true) {
+            // Skip e2e tests suite
+            this.skip();
+        }
     });
 
     describe('Setup', () => {
