@@ -8,10 +8,11 @@ delete require.cache[require.resolve('../lib')];
 
 const chai = require('chai');
 const sinon = require('sinon');
+const { Datastore } = require('@google-cloud/datastore');
 
 const { expect, assert } = chai;
 
-const ds = require('@google-cloud/datastore')({
+const ds = new Datastore({
     namespace: 'com.mydomain',
     apiEndpoint: 'http://localhost:8080',
 });

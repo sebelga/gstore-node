@@ -3,8 +3,9 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const Joi = require('joi');
+const { Datastore } = require('@google-cloud/datastore');
 
-const ds = require('@google-cloud/datastore')({
+const ds = new Datastore({
     namespace: 'com.mydomain',
     apiEndpoint: 'http://localhost:8080',
 });

@@ -1,6 +1,6 @@
 'use strict';
 
-const GoogleDatastore = require('@google-cloud/datastore');
+const { Datastore: GoogleDatastore } = require('@google-cloud/datastore');
 
 class Datastore {
     constructor(options) {
