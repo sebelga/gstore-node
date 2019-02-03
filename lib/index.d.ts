@@ -86,7 +86,7 @@ declare namespace GstoreNode {
      * @param {DatastoreTransaction} [transaction] An Optional transaction to save the entities into
      * @returns {Promise<any>}
      */
-    save(entity: Entity | Entity[], transaction?: DatastoreTransaction, options?: { validate: boolean }): Promise<any>;
+    save(entity: Entity | Entity[], transaction?: DatastoreTransaction, options?: { validate?: boolean, method?: 'insert' | 'update' | 'upsert' }): Promise<any>;
   }
 
   /**
@@ -625,6 +625,10 @@ declare namespace GstoreNode {
   interface GstoreConfig {
     namespace?: string;
     cache?: Boolean | CacheConfig;
+    /**
+     * If set to "true" (defaut), when fetching an entity by key and the entity is not found in the Datastore,
+      gstore will throw a "ERR_ENTITY_NOT_FOUND" error. If set to "false", "null" will be returned.
+     */
     errorOnEntityNotFound?: Boolean;
   }
 
