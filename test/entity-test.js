@@ -652,22 +652,6 @@ describe('Entity', () => {
             });
         });
 
-        it('should still work with a callback', () => {
-            const mockData = { name: 'John' };
-            sinon.stub(ds, 'get').resolves([mockData]);
-
-            const model = new ModelInstance({});
-
-            return model.datastoreEntity((err, entity) => {
-                expect(ds.get.called).equal(true);
-                expect(ds.get.getCall(0).args[0]).equal(model.entityKey);
-                expect(entity.className).equal('Entity');
-                expect(entity.entityData).equal(mockData);
-
-                ds.get.restore();
-            });
-        });
-
         context('when cache is active', () => {
             let key;
             let mockData;

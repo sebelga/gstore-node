@@ -420,12 +420,6 @@ describe('Query', () => {
                 });
             });
 
-            it('should still work with a callback', () => ModelInstance.list((err, response) => {
-                expect(response.entities.length).equal(2);
-                expect(response.nextPageCursor).equal('abcdef');
-                assert.isUndefined(response.entities[0].password);
-            }));
-
             it('should call Model.query() to create Datastore Query', () => {
                 const namespace = 'com.mydomain-dev';
                 sinon.spy(ModelInstance, 'query');
@@ -493,27 +487,38 @@ describe('Query', () => {
                 })
             ));
 
-            it('should throw error if not all arguments are passed', () => (
+            it('should throw error if not all arguments are passed', (done) => {
                 ModelInstance.findAround('createdOn', '2016-1-1')
-            ).catch((err) => {
-                expect(err.code).equal(400);
-                expect(err.message).equal('Argument missing');
-            }));
+                    .catch((err) => {
+                        expect(err.message).equal('[gstore.findAround()]: Not all the arguments were provided.');
+                        done();
+                    });
+            });
 
-            it('should validate that options passed is an object', () => (
-                ModelInstance.findAround('createdOn', '2016-1-1', 'string', (err) => {
-                    expect(err.code).equal(400);
-                })));
+            it('should validate that options passed is an object', (done) => {
+                ModelInstance.findAround('createdOn', '2016-1-1', 'string')
+                    .catch((err) => {
+                        expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
+                        done();
+                    });
+            });
 
-            it('should validate that options has a "after" or "before" property', () => (
-                ModelInstance.findAround('createdOn', '2016-1-1', {}, (err) => {
-                    expect(err.code).equal(400);
-                })));
+            it('should validate that options has an "after" or "before" property', (done) => {
+                ModelInstance.findAround('createdOn', '2016-1-1', {})
+                    .catch((err) => {
+                        expect(err.message)
+                            .equal('[gstore.findAround()]: You must set "after" or "before" in options.');
+                        done();
+                    });
+            });
 
-            it('should validate that options has not both "after" & "before" properties', () => (
-                ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }, (err) => {
-                    expect(err.code).equal(400);
-                })));
+            it('should validate that options has not both "after" & "before" properties', (done) => {
+                ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 })
+                    .catch((err) => {
+                        expect(err.message).equal('[gstore.findAround()]: You can\'t set both "after" and "before".');
+                        done();
+                    });
+            });
 
             it('should add id to entities', () => (
                 ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((entities) => {
@@ -557,20 +562,6 @@ describe('Query', () => {
                     expect(err).equal(error);
                 });
             });
-
-            it(
-                'should still work passing a callback',
-                () => ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }, (err, entities) => {
-                    expect(queryMock.filter.getCall(0).args)
-                        .deep.equal(['createdOn', '>', '2016-1-1']);
-                    expect(queryMock.order.getCall(0).args)
-                        .deep.equal(['createdOn', { descending: true }]);
-                    expect(queryMock.limit.getCall(0).args[0]).equal(3);
-
-                    // Make sure to not show properties where read is set to false
-                    assert.isUndefined(entities[0].password);
-                })
-            );
 
             context('when cache is active', () => {
                 beforeEach(() => {
@@ -646,11 +637,13 @@ describe('Query', () => {
                 })
             ));
 
-            it('should validate that params passed are object', () => (
-                ModelInstance.findOne('some string').catch((err) => {
-                    expect(err.code).equal(400);
-                })
-            ));
+            it('should validate that params passed are object', (done) => {
+                ModelInstance.findOne('some string')
+                    .catch((err) => {
+                        expect(err.message).equal('[gstore.findOne()]: "Params" has to be an object.');
+                        done();
+                    });
+            });
 
             it('should accept ancestors', () => {
                 const ancestors = ['Parent', 'keyname'];
@@ -664,9 +657,10 @@ describe('Query', () => {
             it('should accept a namespace', () => {
                 const namespace = 'com.new-domain.dev';
 
-                return ModelInstance.findOne({ name: 'John' }, null, namespace, () => {
-                    expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
-                });
+                return ModelInstance.findOne({ name: 'John' }, null, namespace)
+                    .then(() => {
+                        expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
+                    });
             });
 
             it('should deal with err response', () => {
@@ -693,13 +687,6 @@ describe('Query', () => {
                     expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 });
             });
-
-            it('should still work with a callback', () => (
-                ModelInstance.findOne({ name: 'John' }, (err, entity) => {
-                    expect(entity.entityKind).equal('Blog');
-                    expect(entity instanceof Model).equal(true);
-                })
-            ));
 
             it('should call pre hooks and override parameters', () => {
                 const spyPre = sinon.stub().callsFake((...args) => {

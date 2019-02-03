@@ -181,13 +181,6 @@ describe('gstore-node', () => {
             ds.save.restore();
         });
 
-        it('should call datastore save passing the arguments', () => (
-            gstore.save([1, 2, 3]).then(() => {
-                expect(ds.save.called).equal(true);
-                expect(ds.save.getCall(0).args).deep.equal([[1, 2, 3]]);
-            })
-        ));
-
         it('should convert entity instances to datastore Format', () => {
             const entity1 = new ModelInstance({ name: 'John' });
             const entity2 = new ModelInstance({ name: 'Mick' });
@@ -207,21 +200,6 @@ describe('gstore-node', () => {
 
             expect(transaction.save.called).equal(true);
             expect(ds.save.called).equal(false);
-        });
-
-        it('should also work with a callback', () => {
-            ds.save.restore();
-
-            sinon.stub(ds, 'save').callsFake((entity, cb) => cb());
-
-            const entity = new ModelInstance({ name: 'John' });
-
-            return gstore.save(entity, () => {
-                const { args } = ds.save.getCall(0);
-                const firstEntity = args[0];
-                assert.isUndefined(firstEntity.className);
-                expect(Object.keys(firstEntity)).deep.equal(['key', 'data']);
-            });
         });
 
         it('should throw an error if no entities passed', () => {
