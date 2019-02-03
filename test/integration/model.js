@@ -5,6 +5,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const Chance = require('chance');
+const Joi = require('joi');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 
@@ -290,6 +291,73 @@ describe('Model (Integration Tests)', () => {
             });
         });
     });
+
+    describe('update()', () => {
+        describe('transaction()', () => {
+            it('should update entity inside a transaction', () => {
+                const userSchema = new Schema({
+                    name: { joi: Joi.string().required() },
+                    lastname: { joi: Joi.string() },
+                    password: { joi: Joi.string() },
+                    coins: { joi: Joi.number().integer().min(0) },
+                    email: { joi: Joi.string().email() },
+                    createdAt: { joi: Joi.date() },
+                    access_token: { joi: [Joi.string(), Joi.number()] },
+                    birthyear: { joi: Joi.number().integer().min(1900).max(2013) },
+                }, { joi: true });
+
+                const User = gstore.model('ModelTestsTransaction-User', userSchema);
+
+                function transferCoins(fromUser, toUser, amount) {
+                    return new Promise((resolve, reject) => {
+                        const transaction = gstore.transaction();
+                        return transaction.run()
+                            .then(async () => {
+                                await User.update(fromUser.entityKey.id, {
+                                    coins: fromUser.coins - amount,
+                                }, null, null, transaction);
+
+                                await User.update(toUser.entityKey.id, {
+                                    coins: toUser.coins + amount,
+                                }, null, null, transaction);
+
+                                transaction.commit()
+                                    .then(async () => {
+                                        const [user1, user2] = await User.get([
+                                            fromUser.entityKey.id,
+                                            toUser.entityKey.id,
+                                        ], null, null, null, { preserveOrder: true });
+                                        expect(user1.name).equal('User1');
+                                        expect(user1.coins).equal(0);
+                                        expect(user2.name).equal('User2');
+                                        expect(user2.coins).equal(1050);
+                                        resolve();
+                                    }).catch((err) => {
+                                        reject(err);
+                                    });
+                            }).catch((err) => {
+                                transaction.rollback();
+                                reject(err);
+                            });
+                    });
+                }
+
+                const fromUser = new User({ name: 'User1', coins: 1000 });
+                const toUser = new User({ name: 'User2', coins: 50 });
+
+                return fromUser.save()
+                    .then(({ entityKey }) => {
+                        addKey(entityKey);
+                        return toUser.save();
+                    })
+                    .then(({ entityKey }) => {
+                        addKey(entityKey);
+                        return transferCoins(fromUser, toUser, 1000);
+                    });
+            });
+        });
+    });
+
 
     describe('hooks', () => {
         it('post delete hook should set scope on entity instance', () => {

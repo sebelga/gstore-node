@@ -52,7 +52,7 @@ describe('Schema (Integration Tests)', () => {
             },
         });
 
-        const User = gstore.model('User', schema);
+        const User = gstore.model('ModelTestsSchema-User', schema);
 
         const email = chance.email();
         const password = chance.string();
