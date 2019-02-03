@@ -62,7 +62,8 @@ describe('Validation', () => {
                     args: [4, 10],
                 },
             },
-            companyId: { type: Schema.Types.Key },
+            company: { type: Schema.Types.Key },
+            address: { type: Schema.Types.Key, ref: 'Address' },
         });
 
         schema.virtual('fullname').get(() => { });
@@ -175,17 +176,25 @@ describe('Validation', () => {
     });
 
     it('--> Datstore Key ok', () => {
-        const companyId = ds.key(['EntityKind', 123]);
-        const { error } = validate({ companyId });
+        const company = ds.key(['EntityKind', 123]);
+        const { error } = validate({ company });
 
         expect(error).equal(null);
     });
 
     it('--> Datstore Key ko', () => {
-        const { error } = validate({ companyId: 123 });
+        const { error } = validate({ company: 123 });
 
-        expect(error).not.equal(null);
         expect(error.errors[0].code).equal(gstoreErrors.errorCodes.ERR_PROP_TYPE);
+        expect(error.errors[0].ref).equal('key.base');
+    });
+
+    it('--> Datstore Key ko', () => {
+        const address = ds.key(['WrongReference', 123]);
+        const { error } = validate({ address });
+
+        expect(error.errors[0].code).equal(gstoreErrors.errorCodes.ERR_PROP_TYPE);
+        expect(error.errors[0].ref).equal('key.entityKind');
     });
 
     it('--> string', () => {
