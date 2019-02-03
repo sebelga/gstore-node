@@ -5,9 +5,14 @@ const chai = require('chai');
 const Chance = require('chance');
 const { argv } = require('yargs');
 const gstore = require('../../lib')({ namespace: 'integration-tests' });
+const gstoreWithCache = require('../../lib')({
+    namespace: 'integration-tests-cahe',
+    cache: { config: { ttl: { queries: 600 } } },
+});
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
+gstoreWithCache.connect(ds);
 
 const { Schema } = gstore;
 const { expect, assert } = chai;
@@ -164,6 +169,34 @@ describe('Queries (Integration Tests)', () => {
                         });
                     })
             ));
+
+            context('when cache is active', () => {
+                before(() => {
+                    gstore.cache = gstoreWithCache.cache;
+                });
+                after(() => {
+                    delete gstore.cache;
+                });
+                afterEach(() => {
+                    gstore.cache.reset();
+                });
+
+                it('should also populate() fields', () => (
+                    UserModel.list()
+                        .populate()
+                        .then(({ entities }) => {
+                            expect(entities.length).equal(users.length);
+
+                            entities.forEach((entity) => {
+                                const entityKey = entity[gstore.ds.KEY];
+                                const addressId = mapUserToId[entityKey.name].address.name;
+                                const address = mapAddressToId[addressId];
+                                expect(entity.address.city).equal(address.city);
+                                expect(entity.address.country).equal(address.country);
+                            });
+                        })
+                ));
+            });
         });
     });
 
