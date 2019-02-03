@@ -1,4 +1,4 @@
-// Type definitions for [gstore-node] [1.0.1]
+// Type definitions for [gstore-node] [1.1.0]
 // Project: [gstore-node]
 // Definitions by: [Sébastien Loix] <[http://s.loix.me]>
 
@@ -6,10 +6,10 @@
 
 import Datastore from '@google-cloud/datastore';
 import { DatastoreKey } from '@google-cloud/datastore/entity';
-import { Query as DatastoreQuery, QueryFilterOperator } from '@google-cloud/datastore/query';
+import { Query as GoogleDatastoreQuery, QueryFilterOperator } from '@google-cloud/datastore/query';
 import { DatastoreTransaction } from '@google-cloud/datastore/transaction';
 
-export = GstoreNode;
+export default GstoreNode;
 
 declare function GstoreNode(config?: GstoreNode.GstoreConfig): GstoreNode.Gstore;
 
@@ -148,7 +148,7 @@ declare namespace GstoreNode {
       set(cb: (propName: string) => void): void;
     };
 
-    queries(shortcutQuery: 'list', options: ShortcutQueryOptions): void;
+    queries(shortcutQuery: 'list', options: QueryListOptions): void;
 
     /**
      * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method. The callback will receive the original argument(s) passed to the target method. You can modify them in your resolve passing an object with an __override property containing the new parameter(s) for the target method.
@@ -258,7 +258,7 @@ declare namespace GstoreNode {
          */
         ttl?: number | { [propName: string]: number };
       }
-    ): Promise<U extends Array<any> ? Entity<T>[] : Entity<T>>;
+    ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
 
     /**
      * Update an Entity in the Datastore
@@ -365,7 +365,7 @@ declare namespace GstoreNode {
      * @static
      * @param {string} [namespace] Optional namespace for the Query
      * @param {DatastoreTransaction} [transaction] Optional Transaction to run the query into
-     * @returns {DatastoreQuery} A Datastore Query instance
+     * @returns {GoogleDatastoreQuery} A Datastore Query instance
      * @link https://sebelga.gitbooks.io/gstore-node/content/queries/google-cloud-queries.html
      */
     query(namespace?: string, transaction?: DatastoreTransaction): Query<T>;
@@ -378,7 +378,7 @@ declare namespace GstoreNode {
      * @returns {Promise<any>}
      * @link https://sebelga.gitbooks.io/gstore-node/content/queries/list.html
      */
-    list(options?: QueryListOptions): Promise<QueryResult<T>>;
+    list<U extends QueryListOptions>(options?: U): PromiseWithPopulate<QueryResult<T, U>>;
 
     /**
      * Quickly find an entity by passing key/value pairs.
@@ -403,7 +403,7 @@ declare namespace GstoreNode {
         cache?: boolean;
         ttl?: number | { [propName: string]: number };
       }
-    ): Promise<Entity<T>>;
+    ): PromiseWithPopulate<Entity<T>>;
 
     /**
      * Delete all the entities of a Model. It queries the entitites by batches of 500 (maximum set by the Datastore) and delete them. It then repeat the operation until no more entities are found.
@@ -431,13 +431,11 @@ declare namespace GstoreNode {
         ```
      * @link https://sebelga.gitbooks.io/gstore-node/content/queries/findaround.html
      */
-    findAround(
+    findAround<U extends QueryFindAroundOptions>(
       propName: string,
       value: any,
-      options:
-        | { before: number; readAll?: boolean; format?: 'JSON' | 'ENTITY'; showKey?: boolean }
-        | { after: number; readAll?: boolean; format?: 'JSON' | 'ENTITY'; showKey?: boolean } & QueryOptions
-    ): Promise<{ entities: Array<Entity<T> | T> }>;
+      options: U
+    ): PromiseWithPopulate<{ entities: U["format"] extends EntityFormatType ? Array<Entity<T>> : Array<T> }>;
   }
 
   class EntityKlass<T> {
@@ -570,23 +568,36 @@ declare namespace GstoreNode {
      * @returns {({ error: ValidationError, value: any } | Promise<any>)}
      */
     validate(): Validation | Promise<any>;
+
+    /**
+     * Populate entity references (whose properties are an entity Key) and merge them on the entity
+     *
+     * @param refs The entity references to fetch from the Datastore. Can be one or multiple (Array)
+     * @param properties The properties to return from the reference entities. If not specified, all properties will be returned
+     */
+    populate<U extends string | string[]>(refs?: U, properties?: U extends Array<string> ? undefined : string | string[]): PromiseWithPopulate<EntityKlass<T>>
   }
 
   // -----------------------------------------------------------------------
   // -- INTERFACES
   // -----------------------------------------------------------------------
 
+  type EntityFormatType = 'ENTITY';
+  type JSONFormatType = 'JSON';
+
   type Entity<T = { [propName: string]: any }> = EntityKlass<T> & T;
 
-  type Query<T> = DatastoreQueryCustom<T> & DatastoreQuery;
-
   type funcReturningPromise = (...args: any[]) => Promise<any>;
+  interface PromiseWithPopulate<T> extends Promise<T> {
+    populate: <U extends string | string[]>(refs?: U, properties?: U extends Array<string> ? undefined : string | string[]) => PromiseWithPopulate<T>
+  }
 
-  type QueryResult<T> = { entities: Array<Entity<T> | T & { id: string | number }>; nextPageCursor?: string };
+  interface QueryResult<T, U extends QueryOptions> {
+      entities: U["format"] extends EntityFormatType ? Array<Entity<T>> : Array<T & { id: string | number }>;
+      nextPageCursor?: string;
+    }
 
   type DeleteResult = { key: DatastoreKey; success?: boolean; apiResponse?: any };
-
-  type QueryListOptions = QueryOptions & ShortcutQueryOptions;
 
   type PropType =
     | 'string'
@@ -625,32 +636,34 @@ declare namespace GstoreNode {
    */
   interface CacheConfig {
     stores?: Array<any>;
-    config?: {
-      ttl: {
+    config?: CacheConfigOptions;
+  }
+
+  interface CacheConfigOptions {
+    ttl: {
+      keys: number;
+      queries: number;
+      memory?: {
         keys: number;
         queries: number;
-        memory?: {
-          keys: number;
-          queries: number;
-        };
-        redis?: {
-          keys: number;
-          queries: number;
-        };
-        [propName: string]:
-          | {
-              keys: number;
-              queries: number;
-            }
-          | number
-          | void;
       };
-      cachePrefix?: {
-        keys: string;
-        queries: string;
+      redis?: {
+        keys: number;
+        queries: number;
       };
-      global?: boolean;
+      [key: string]:
+        | {
+            keys: number;
+            queries: number;
+          }
+        | number
+        | void;
     };
+    cachePrefix?: {
+      keys: string;
+      queries: string;
+    };
+    global?: boolean;
   }
 
   interface SchemaPath<T = any> {
@@ -675,7 +688,7 @@ declare namespace GstoreNode {
     explicitOnly?: boolean;
     queries?: {
       readAll?: boolean;
-      format?: 'JSON' | 'ENTITY';
+      format?: JSONFormatType | EntityFormatType;
       showKey?: string;
     };
     keyType?: 'id' | 'name' | 'auto';
@@ -683,6 +696,13 @@ declare namespace GstoreNode {
   }
 
   interface QueryOptions {
+    /**
+     * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation. Learn more about strong and eventual consistency in the link below
+     *
+     * @type {('strong' | 'eventual')}
+     * @link https://cloud.google.com/datastore/docs/articles/balancing-strong-and-eventual-consistency-with-google-cloud-datastore
+     */
+    consistency?: 'strong' | 'eventual';
     /**
      * If set to true will return all the properties of the entity, regardless of the *read* parameter defined in the Schema
      *
@@ -696,7 +716,7 @@ declare namespace GstoreNode {
      * @type {string}
      * @default 'JSON'
      */
-    format?: 'JSON' | 'ENTITY';
+    format?: JSONFormatType | EntityFormatType;
     /**
      * Add a "__key" property to the entity data with the complete Key from the Datastore.
      *
@@ -720,7 +740,7 @@ declare namespace GstoreNode {
     ttl?: number | { [propName: string]: number };
   }
 
-  interface ShortcutQueryOptions {
+  interface QueryListOptions extends QueryOptions{
     /**
      * Optional namespace for the Query
      *
@@ -760,6 +780,14 @@ declare namespace GstoreNode {
     offset?: number;
   }
 
+  interface QueryFindAroundOptions extends QueryOptions {
+    before?: number;
+    after?: number;
+    readAll?: boolean;
+    format?: JSONFormatType | EntityFormatType;
+    showKey?: boolean
+  }
+
   interface Validation {
     error: ValidationError;
     value: any;
@@ -789,18 +817,34 @@ declare namespace GstoreNode {
     ERR_PROP_IN_RANGE: 'ERR_PROP_IN_RANGE';
   }
 
-  interface DatastoreQueryCustom<T> {
-    run(
-      options?: {
-        /**
-         * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation. Learn more about strong and eventual consistency in the link below
-         *
-         * @type {('strong' | 'eventual')}
-         * @link https://cloud.google.com/datastore/docs/articles/balancing-strong-and-eventual-consistency-with-google-cloud-datastore
-         */
-        consistency?: 'strong' | 'eventual';
-      } & QueryOptions
-    ): Promise<QueryResult<T>>;
+  type FunctionPropertiesNames<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T];
+  type FunctionProperties<T> = Pick<T, FunctionPropertiesNames<T>>;
+
+  interface GoogleDatastoreQueryMethods<T> {
+    filter(property: string, operator: QueryFilterOperator, value: any): Query<T>;
+    filter(property: string, value: any): Query<T>;
+
+    hasAncestor(key: DatastoreKey): Query<T>;
+
+    order(property: string, options?: { descending: boolean; }): Query<T>;
+
+    groupBy(properties: string | ReadonlyArray<string>): Query<T>;
+
+    select(properties: string | ReadonlyArray<string>): Query<T>;
+
+    start(cursorToken: string): Query<T>;
+
+    end(cursorToken: string): Query<T>;
+
+    limit(n: number): Query<T>;
+
+    offset(n: number): Query<T>;
+
+    runStream(): NodeJS.ReadableStream;
+  }
+
+  interface Query<T> extends GoogleDatastoreQueryMethods<T>{
+    run<U extends QueryOptions>( options?: U ): PromiseWithPopulate<QueryResult<T, U>>;
   }
 
   interface DataLoader {}
@@ -828,17 +872,17 @@ declare namespace GstoreCache {
 
     queries: {
       read(
-        query: DatastoreQuery,
+        query: GoogleDatastoreQuery,
         options?: { ttl: number | { [propName: string]: number } },
-        fetchHandler?: (query: DatastoreQuery) => Promise<any>
+        fetchHandler?: (query: GoogleDatastoreQuery) => Promise<any>
       ): Promise<any>;
-      get(query: DatastoreQuery): Promise<any>;
-      mget(...queries: DatastoreQuery[]): Promise<any>;
-      set(query: DatastoreQuery, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
+      get(query: GoogleDatastoreQuery): Promise<any>;
+      mget(...queries: GoogleDatastoreQuery[]): Promise<any>;
+      set(query: GoogleDatastoreQuery, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
       mset(...args: any[]): Promise<any>;
       kset(key: string, data: any, entityKinds: string | string[], options?: { ttl: number }): Promise<any>;
       clearQueriesByKind(entityKinds: string | string[]): Promise<any>;
-      del(...queries: DatastoreQuery[]): Promise<any>;
+      del(...queries: GoogleDatastoreQuery[]): Promise<any>;
     };
 
     /**
