@@ -4,10 +4,10 @@
 
 /// <reference types="node" />
 
-import Datastore from '@google-cloud/datastore';
-import { DatastoreKey } from '@google-cloud/datastore/entity';
-import { Query as GoogleDatastoreQuery, QueryFilterOperator } from '@google-cloud/datastore/query';
-import { DatastoreTransaction } from '@google-cloud/datastore/transaction';
+import { Datastore } from '@google-cloud/datastore';
+import { entity } from '@google-cloud/datastore/build/src/entity';
+import { Query as GoogleDatastoreQuery, Operator } from '@google-cloud/datastore/build/src/query';
+import { Transaction } from '@google-cloud/datastore/build/src/transaction';
 
 export default GstoreNode;
 
@@ -83,10 +83,10 @@ declare namespace GstoreNode {
      * This method is an alias of the underlying @google-cloud/datastore save() method, with the exception that you can pass it an Entity instance or an Array of entities instances and this method will first convert the instances to the correct Datastore format before saving.
      *
      * @param {(Entity | Entity[])} entity The entity(ies) to delete (any Entity Kind). Can be one or many (Array).
-     * @param {DatastoreTransaction} [transaction] An Optional transaction to save the entities into
+     * @param {Transaction} [transaction] An Optional transaction to save the entities into
      * @returns {Promise<any>}
      */
-    save(entity: Entity | Entity[], transaction?: DatastoreTransaction, options?: { validate?: boolean, method?: 'insert' | 'update' | 'upsert' }): Promise<any>;
+    save(entity: Entity | Entity[], transaction?: Transaction, options?: { validate?: boolean, method?: 'insert' | 'update' | 'upsert' }): Promise<any>;
   }
 
   /**
@@ -223,7 +223,7 @@ declare namespace GstoreNode {
       id: U,
       ancestors?: Array<string | number>,
       namespace?: string,
-      transaction?: DatastoreTransaction,
+      transaction?: Transaction,
       options?: {
         /**
          * If you have provided an Array of ids, the order returned by the Datastore is not guaranteed. If you need the entities back in the same order of the IDs provided, then set `preserveOrder: true`
@@ -278,7 +278,7 @@ declare namespace GstoreNode {
       data: any,
       ancestors?: Array<string | number>,
       namespace?: string,
-      transaction?: DatastoreTransaction,
+      transaction?: Transaction,
       options?: {
         /**
          * An optional Dataloader instance.
@@ -306,16 +306,16 @@ declare namespace GstoreNode {
      * @param {(Array<string | number>)} [ancestors] The entity Ancestors
      * @param {string} [namespace] The entity Namespace
      * @param {*} [transaction] The current transaction (if any)
-     * @param {(DatastoreKey | DatastoreKey[])} [keys] If you already know the Key, you can provide it instead of passing an id/ancestors/namespace. You might then as well just call "gstore.ds.delete(Key)" but then you would not have the "hooks" triggered in case you have added some in your Schema.
-     * @returns {Promise<{ success: boolean, key: DatastoreKey, apiResponse: any }>}
+     * @param {(entity.Key | entity.Key[])} [keys] If you already know the Key, you can provide it instead of passing an id/ancestors/namespace. You might then as well just call "gstore.ds.delete(Key)" but then you would not have the "hooks" triggered in case you have added some in your Schema.
+     * @returns {Promise<{ success: boolean, key: entity.Key, apiResponse: any }>}
      * @link https://sebelga.gitbooks.io/gstore-node/content/model/delete.html
      */
     delete(
       id?: string | number | (number | string)[],
       ancestors?: Array<string | number>,
       namespace?: string,
-      transaction?: DatastoreTransaction,
-      keys?: DatastoreKey | DatastoreKey[]
+      transaction?: Transaction,
+      keys?: entity.Key | entity.Key[]
     ): Promise<DeleteResult>;
 
     /**
@@ -334,10 +334,10 @@ declare namespace GstoreNode {
      * @param {(string | number)} id Entity id or name
      * @param {(Array<string | number>)} [ancestors] The entity Ancestors
      * @param {string} [namespace] The entity Namespace
-     * @returns {DatastoreKey}
+     * @returns {entity.Key}
      * @link https://sebelga.gitbooks.io/gstore-node/content/model/key.html
      */
-    key(id: string | number, ancestors?: Array<string | number>, namespace?: string): DatastoreKey;
+    key(id: string | number, ancestors?: Array<string | number>, namespace?: string): entity.Key;
 
     /**
      * Sanitize the data. It will remove all the properties marked as "write: false" and convert "null" (string) to Null.
@@ -353,22 +353,22 @@ declare namespace GstoreNode {
      * You normally don't have to call this method as gstore-node does it for you automatically each time you add/edit or delete an entity.
      *
      * @static
-     * @param {(DatastoreKey | DatastoreKey[])} [keys] Optional entity Keys to remove from the cache with the Queries
+     * @param {(entity.Key | entity.Key[])} [keys] Optional entity Keys to remove from the cache with the Queries
      * @returns {Promise<void>}
      * @link https://sebelga.gitbooks.io/gstore-node/content/model/clearcache.html
      */
-    clearCache(keys?: DatastoreKey | DatastoreKey[]): Promise<void>;
+    clearCache(keys?: entity.Key | entity.Key[]): Promise<void>;
 
     /**
      * Initialize a Datastore Query for the Model's entity Kind
      *
      * @static
      * @param {string} [namespace] Optional namespace for the Query
-     * @param {DatastoreTransaction} [transaction] Optional Transaction to run the query into
+     * @param {Transaction} [transaction] Optional Transaction to run the query into
      * @returns {GoogleDatastoreQuery} A Datastore Query instance
      * @link https://sebelga.gitbooks.io/gstore-node/content/queries/google-cloud-queries.html
      */
-    query(namespace?: string, transaction?: DatastoreTransaction): Query<T>;
+    query(namespace?: string, transaction?: Transaction): Query<T>;
 
     /**
      * Shortcut for listing entities from a Model. List queries are meant to quickly list entities with predefined settings without having to create Query instances.
@@ -463,9 +463,9 @@ declare namespace GstoreNode {
     /**
      * The entity KEY
      *
-     * @type {DatastoreKey}
+     * @type {entity.Key}
      */
-    entityKey: DatastoreKey;
+    entityKey: entity.Key;
 
     /**
      * The entity data
@@ -491,13 +491,13 @@ declare namespace GstoreNode {
     /**
      * Save the entity in the Datastore
      *
-     * @param {DatastoreTransaction} [transaction] The current Transaction (if any)
+     * @param {Transaction} [transaction] The current Transaction (if any)
      * @param {({ method?: 'upsert' | 'insert' | 'update' })} [options] Additional configuration
      * @returns {Promise<any>}
      * @link https://sebelga.gitbooks.io/gstore-node/content/entity/methods/save.html
      */
     save(
-      transaction?: DatastoreTransaction,
+      transaction?: Transaction,
       options?: {
         /**
          * The saving method. "upsert" will update the entity *or* create it if it does not exist. "insert" will only save the entity if it *does not* exist. "update" will only save the entity if it *does* exist.
@@ -597,7 +597,7 @@ declare namespace GstoreNode {
       nextPageCursor?: string;
     }
 
-  type DeleteResult = { key: DatastoreKey; success?: boolean; apiResponse?: any };
+  type DeleteResult = { key: entity.Key; success?: boolean; apiResponse?: any };
 
   type PropType =
     | 'string'
@@ -769,7 +769,7 @@ declare namespace GstoreNode {
     /**
      * @type {([string, any] | [string, string, any] | (any)[][])}
      */
-    filters?: [string, any] | [string, QueryFilterOperator, any] | (any)[][];
+    filters?: [string, any] | [string, Operator, any] | (any)[][];
     /**
      * @type {Array<any>}
      */
@@ -825,10 +825,10 @@ declare namespace GstoreNode {
   type FunctionProperties<T> = Pick<T, FunctionPropertiesNames<T>>;
 
   interface GoogleDatastoreQueryMethods<T> {
-    filter(property: string, operator: QueryFilterOperator, value: any): Query<T>;
+    filter(property: string, operator: Operator, value: any): Query<T>;
     filter(property: string, value: any): Query<T>;
 
-    hasAncestor(key: DatastoreKey): Query<T>;
+    hasAncestor(key: entity.Key): Query<T>;
 
     order(property: string, options?: { descending: boolean; }): Query<T>;
 
@@ -863,15 +863,15 @@ declare namespace GstoreCache {
   class Cache {
     keys: {
       read(
-        keys: DatastoreKey | DatastoreKey[],
+        keys: entity.Key | entity.Key[],
         options?: { ttl: number | { [propName: string]: number } },
-        fetchHandler?: (keys: DatastoreKey | DatastoreKey[]) => Promise<any>
+        fetchHandler?: (keys: entity.Key | entity.Key[]) => Promise<any>
       ): Promise<any>;
-      get(key: DatastoreKey): Promise<any>;
-      mget(...keys: DatastoreKey[]): Promise<any>;
-      set(key: DatastoreKey, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
+      get(key: entity.Key): Promise<any>;
+      mget(...keys: entity.Key[]): Promise<any>;
+      set(key: entity.Key, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
       mset(...args: any[]): Promise<any>;
-      del(...keys: DatastoreKey[]): Promise<any>;
+      del(...keys: entity.Key[]): Promise<any>;
     };
 
     queries: {

@@ -2,10 +2,11 @@
 
 'use strict';
 
-const Datastore = require('@google-cloud/datastore');
 const redisStore = require('cache-manager-redis-store');
 const chai = require('chai');
+const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
+
 const Gstore = require('../../lib');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });

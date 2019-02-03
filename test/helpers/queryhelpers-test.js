@@ -2,7 +2,9 @@
 
 const chai = require('chai');
 const sinon = require('sinon');
-const ds = require('@google-cloud/datastore')();
+const { Datastore } = require('@google-cloud/datastore');
+
+const ds = new Datastore();
 const { queryHelpers } = require('../../lib/helpers');
 
 const { expect } = chai;

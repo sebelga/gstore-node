@@ -2,14 +2,13 @@
 
 'use strict';
 
-const Datastore = require('@google-cloud/datastore');
 const chai = require('chai');
 const Chance = require('chance');
+const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 const gstore = require('../../lib')({ namespace: 'integration-tests' });
 
 const chance = new Chance();
-
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
 
