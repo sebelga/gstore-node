@@ -3,8 +3,12 @@
 const chai = require('chai');
 const Joi = require('joi');
 
-const gstore = require('../')();
-const { Schema } = require('../lib')();
+const { Gstore } = require('../lib');
+const ds = require('./mocks/datastore')();
+
+const gstore = new Gstore();
+const { Schema } = gstore;
+gstore.connect(ds);
 
 const { expect, assert } = chai;
 

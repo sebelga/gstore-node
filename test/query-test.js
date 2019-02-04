@@ -3,8 +3,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 
-const gstore = require('../')();
-const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: true });
+const { Gstore } = require('../');
 const ds = require('./mocks/datastore')({
     namespace: 'com.mydomain',
 });
@@ -14,6 +13,8 @@ const { generateEntities } = require('./mocks/entities');
 const { queryHelpers } = require('../lib/helpers');
 const Model = require('../lib/model');
 
+const gstore = new Gstore();
+const gstoreWithCache = new Gstore({ cache: true });
 const { Schema } = gstore;
 const { expect, assert } = chai;
 

@@ -4,8 +4,10 @@ const { Datastore } = require('@google-cloud/datastore');
 const chai = require('chai');
 const sinon = require('sinon');
 
-const gstore = require('../lib/index')();
+const { Gstore } = require('../lib');
 const { createDataLoader } = require('../lib/dataloader');
+
+const gstore = new Gstore();
 
 const { expect, assert } = chai;
 const ds = new Datastore();

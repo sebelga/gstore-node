@@ -4,9 +4,10 @@ const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
-const gstore = require('../../lib')({ namespace: 'integration-tests' });
+const { Gstore } = require('../../lib');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
+const gstore = new Gstore();
 gstore.connect(ds);
 
 const { Schema } = gstore;

@@ -9,10 +9,12 @@ const ds = new Datastore({
     namespace: 'com.mydomain',
     apiEndpoint: 'http://localhost:8080',
 });
+const { Gstore } = require('../lib');
 const datastoreSerializer = require('../lib/serializer').Datastore;
-const gstore = require('../lib')({ namespace: 'entity-no-cache' });
-const gstoreWithCache = require('../')({ namespace: 'entity-with-cache', cache: { config: { ttl: { keys: 600 } } } });
-const { Schema } = require('../lib')();
+
+const gstore = new Gstore();
+const gstoreWithCache = new Gstore({ cache: { config: { ttl: { keys: 600 } } } });
+const { Schema } = gstore;
 
 const { expect, assert } = chai;
 

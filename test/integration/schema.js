@@ -6,8 +6,9 @@ const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
-const gstore = require('../../lib')({ namespace: 'integration-tests' });
+const { Gstore } = require('../../lib');
 
+const gstore = new Gstore();
 const chance = new Chance();
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
@@ -30,7 +31,6 @@ describe('Schema (Integration Tests)', () => {
         const schema = new Schema({
             email: {
                 type: String,
-                validate: 'isEmail',
                 required: true,
             },
             password: {
@@ -55,7 +55,7 @@ describe('Schema (Integration Tests)', () => {
         const User = gstore.model('ModelTestsSchema-User', schema);
 
         const email = chance.email();
-        const password = chance.string();
+        const password = chance.string({ length: 10 });
         const user = new User({ email, password });
 
         return user.save().then((entity) => {
@@ -66,6 +66,8 @@ describe('Schema (Integration Tests)', () => {
             const response2 = entity.plain({ readAll: true });
             expect(response2.password).equal(password);
             expect(response2.state).equal('requested');
+        }).catch((err) => {
+            throw (err);
         });
     });
 });

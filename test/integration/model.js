@@ -9,9 +9,10 @@ const Joi = require('joi');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 
-const gstore = require('../../lib')({ namespace: 'integration-tests' });
+const { Gstore } = require('../../lib');
 const Entity = require('../../lib/entity');
 
+const gstore = new Gstore();
 const chance = new Chance();
 
 const ds = new Datastore({ projectId: 'gstore-integration-testsx' });

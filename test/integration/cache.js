@@ -7,7 +7,7 @@ const chai = require('chai');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 
-const Gstore = require('../../lib');
+const { Gstore } = require('../../lib');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 
@@ -37,8 +37,7 @@ describe('Integration Tests (Cache)', () => {
             this.skip();
         }
         if (!gstore) {
-            gstore = Gstore({
-                namespace: 'gstore-with-redis-cache',
+            gstore = new Gstore({
                 cache: {
                     stores: [{
                         store: redisStore,

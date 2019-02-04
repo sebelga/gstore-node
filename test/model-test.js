@@ -6,8 +6,7 @@ const sinon = require('sinon');
 const is = require('is');
 const Joi = require('joi');
 
-const gstore = require('../')();
-const gstoreWithCache = require('../')({ namespace: 'model-with-cache', cache: { config: { ttl: { queries: 600 } } } });
+const { Gstore } = require('../lib');
 const Entity = require('../lib/entity');
 const Model = require('../lib/model');
 const gstoreErrors = require('../lib/errors');
@@ -18,6 +17,8 @@ const Transaction = require('./mocks/transaction');
 const { generateEntities } = require('./mocks/entities');
 const Query = require('./mocks/query');
 
+const gstore = new Gstore();
+const gstoreWithCache = new Gstore({ cache: { config: { ttl: { queries: 600 } } } });
 const { expect, assert } = chai;
 const { Schema, createDataLoader } = gstore;
 
