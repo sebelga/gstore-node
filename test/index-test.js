@@ -17,9 +17,9 @@ const ds = new Datastore({
     apiEndpoint: 'http://localhost:8080',
 });
 
-const Gstore = require('../lib/index');
+const { Gstore, instances } = require('../lib');
 
-const gstore = Gstore();
+const gstore = new Gstore();
 const { Schema } = gstore;
 const pkg = require('../package.json');
 const Transaction = require('./mocks/transaction');
@@ -241,12 +241,12 @@ describe('gstore-node', () => {
     describe('cache', () => {
         /* eslint-disable global-require  */
         it('should not set any cache by default', () => {
-            const gstoreNoCache = require('../lib')({ namespace: 'index-no-cache' });
+            const gstoreNoCache = new Gstore();
             assert.isUndefined(gstoreNoCache.cache);
         });
 
         it('should set the default cache to memory lru-cache', () => {
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-2', cache: true });
+            const gstoreWithCache = new Gstore({ cache: true });
             gstoreWithCache.connect(ds);
 
             const { cache } = gstoreWithCache;
@@ -265,7 +265,7 @@ describe('gstore-node', () => {
                     },
                 },
             };
-            const gstoreWithCache = require('../lib')({ namespace: 'index-with-cache-3', cache: cacheSettings });
+            const gstoreWithCache = new Gstore({ cache: cacheSettings });
             gstoreWithCache.connect(ds);
             const { cache } = gstoreWithCache;
 
@@ -276,39 +276,24 @@ describe('gstore-node', () => {
 
     describe('multi instances', () => {
         it('should cache instances', () => {
-            /* eslint-disable global-require  */
-            const cached = require('../lib')();
-            const gstore2 = require('../lib')({ namespace: 'com.mydomain2' });
-            const cached2 = require('../lib')({ namespace: 'com.mydomain2' });
+            const gstore1 = new Gstore();
+            const gstore2 = new Gstore({ cache: true });
 
-            expect(cached).equal(gstore);
-            expect(gstore2).not.equal(gstore);
+            instances.set('instance-1', gstore1);
+            instances.set('instance-2', gstore2);
+
+            const cached1 = instances.get('instance-1');
+            const cached2 = instances.get('instance-2');
+            expect(cached1).equal(gstore1);
             expect(cached2).equal(gstore2);
         });
 
         it('should throw Error if wrong config', () => {
-            const func1 = () => {
-                require('../lib')(0);
-            };
-            const func2 = () => {
-                require('../lib')('namespace');
-            };
+            const func1 = () => new Gstore(0);
+            const func2 = () => new Gstore('some-string');
 
             expect(func1).throw();
             expect(func2).throw();
-        });
-
-        it('should clear all instances', () => {
-            const gs = require('../lib');
-
-            let instance = gs({ cache: true });
-            assert.ok(!instance.cache);
-
-            gs.clear();
-
-            instance = gs({ cache: true });
-            instance.connect(ds);
-            expect(instance.cache.constructor.name).equal('NsqlCache');
         });
     });
 });

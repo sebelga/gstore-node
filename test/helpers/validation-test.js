@@ -3,14 +3,13 @@
 const chai = require('chai');
 const Joi = require('joi');
 
+const Schema = require('../../lib/schema');
 const gstoreErrors = require('../../lib/errors');
 const { validation } = require('../../lib/helpers');
 
 const ds = require('../mocks/datastore')({
     namespace: 'com.mydomain',
 });
-
-const { Schema } = require('../../lib')();
 
 const { expect, assert } = chai;
 const { errorCodes } = gstoreErrors;

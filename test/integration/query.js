@@ -4,12 +4,10 @@ const chai = require('chai');
 const Chance = require('chance');
 const { argv } = require('yargs');
 const { Datastore } = require('@google-cloud/datastore');
-const gstore = require('../../lib')({ namespace: 'integration-tests' });
-const gstoreWithCache = require('../../lib')({
-    namespace: 'integration-tests-cahe',
-    cache: { config: { ttl: { queries: 600 } } },
-});
+const { Gstore } = require('../../lib');
 
+const gstore = new Gstore();
+const gstoreWithCache = new Gstore({ cache: { config: { ttl: { queries: 600 } } } });
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
 gstoreWithCache.connect(ds);

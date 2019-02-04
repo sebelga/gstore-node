@@ -2,13 +2,15 @@
 
 const chai = require('chai');
 const Joi = require('joi');
+
+const { Gstore } = require('../../lib');
 const ds = require('../mocks/datastore')({
     namespace: 'com.mydomain',
 });
-
-const gstore = require('../../lib')();
-const { Schema } = require('../../lib')();
 const datastoreSerializer = require('../../lib/serializer').Datastore;
+
+const gstore = new Gstore();
+const { Schema } = gstore;
 
 const { expect, assert } = chai;
 gstore.connect(ds);
