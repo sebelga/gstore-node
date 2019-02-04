@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="5.0.0"></a>
+# [5.0.0](https://github.com/sebelga/gstore-node/compare/v4.3.3...v5.0.0) (2019-02-04)
+
+
+### Bug Fixes
+
+* **Model.update():** Fix bug in Model.update() inside a transaction ([#148](https://github.com/sebelga/gstore-node/issues/148)) ([e4cfaa6](https://github.com/sebelga/gstore-node/commit/e4cfaa6)), closes [#144](https://github.com/sebelga/gstore-node/issues/144)
+
+
+### Code Refactoring
+
+* Change gstore instantiation to be consistent with es modules ([#149](https://github.com/sebelga/gstore-node/issues/149)) ([3f27d4c](https://github.com/sebelga/gstore-node/commit/3f27d4c))
+
+
+### Features
+
+* **Populate:** Fetch entities references in Model.get() and queries ([72fff67](https://github.com/sebelga/gstore-node/commit/72fff67))
+
+
+### BREAKING CHANGES
+
+* The new way to create gstore instances is with "new Gstore(<config>)". Refer to the
+documentation.
+* **Populate:** Callback (hell) are not supported anymore as the last argument of gstore methods. Only Promises are returned.
+* **Populate:** Node runtime must be version 8 or superior
+* **Populate:** The old Schema property types "datetime" and "int" have been removed. Date and Number types should be used instead.
+
+
+
 <a name="4.3.3"></a>
 ## [4.3.3](https://github.com/sebelga/gstore-node/compare/v4.3.2...v4.3.3) (2018-12-29)
 
