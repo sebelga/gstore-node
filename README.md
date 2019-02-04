@@ -27,8 +27,9 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - pre & post **middleware** (hooks)
 - **custom methods** on entity instances
 - **[Joi](https://github.com/hapijs/joi)** schema definition and validation
-- **NEW** Advanced **[cache layer](https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache)** (since v3.0.0)
-- :tada: **NEW** **[Typescript support](https://sebloix.gitbook.io/gstore-node/typescript)** (since v4.1.0)
+- Advanced **[cache layer](https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache)**
+- **[Typescript support](https://sebloix.gitbook.io/gstore-node/typescript)**
+- :tada: **NEW** [**populate()**](https://sebloix.gitbook.io/gstore-node/populate) support to fetch reference entities and do cross Entity Type "joins" in single or multiple entities fetch (since v5.0.0)
 
 This library is in active development, please report any issue you might find.  
 
@@ -36,11 +37,13 @@ This library is in active development, please report any issue you might find.
 
 # Installation
 
-```js
+```shell
 npm install gstore-node --save
+# or
+yarn add gstore-node
 ```
 
-Info: gstore-node requires Node version **6+**  
+Info: gstore-node requires Node version **8+**  
 
 # Getting started
 
@@ -48,9 +51,10 @@ Import gstore-node and @google-cloud/datastore and configure your project.
 For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/2.0.x/Datastore).
 
 ```js
-const gstore = require('gstore-node')();
-const Datastore = require('@google-cloud/datastore');
+const { Gstore } = require('gstore-node');
+const { Datastore } = require('@google-cloud/datastore');
 
+const gstore = new Gstore();
 const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
@@ -70,7 +74,7 @@ The @google/datastore instance. This means that you can access **all the API** o
 
 # Documentation
 The [complete documentation](https://sebloix.gitbook.io/gstore-node/)  of gstore-node is in gitbook.  
-If you find any mistake or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
+If you find any mistake in the docs or would like to improve it, [feel free to open a PR](https://github.com/sebelga/gstore-node-docs/pulls).
 
 <a name="example"/>
 
@@ -80,14 +84,18 @@ Initialize gstore-node in your server file
 ```js
 // server.js
 
-const gstore = require('gstore-node')();
-const Datastore = require('@google-cloud/datastore');
+const { Gstore, instances } = require('gstore-node');
+const { Datastore } = require('@google-cloud/datastore');
 
+const gstore = new Gstore();
 const datastore = new Datastore({
     projectId: 'my-google-project-id',
 });
 
 gstore.connect(datastore);
+
+// Save the gstore instance
+instances.set('unique-id', gstore);
 ```
 
 Create your Model
@@ -95,9 +103,11 @@ Create your Model
 ```js
 // user.model.js
 
-const gstore = require('gstore-node')();
+const { instances }  = require('gstore-node');
 const bscrypt = require('bcrypt-nodejs');
 
+// Retrieve the gstore instance
+const gstore = instances.get('unique-id');
 const { Schema } = gstore;
 
 /**
@@ -125,6 +135,7 @@ const userSchema = new Schema({
     email: { type: String, validate: 'isEmail', required: true },
     password: { type: String, read: false, required: true },
     createdOn: { type: String, default: gstore.defaultValues.NOW, write: false, read: false },
+    address: { type: Schema.Types.Key, ref: 'Address' }, // Entity reference
     dateOfBirth: { type: Date },
     bio: { type: String, excludeFromIndexes: true },
     website: { validate: 'isURL', optional: true },
@@ -231,6 +242,7 @@ const getUsers = (req ,res) => {
 const getUser = (req, res) => {
     const userId = +req.params.id;
     User.get(userId)
+        .populate('address') // Retrieve the reference entity
         .then((entity) => {
             res.json(entity.plain());
         })
