@@ -1,6 +1,6 @@
 {
   "name": "gstore-node",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
   "main": "index.js",
   "types": "lib/index.d.ts",
