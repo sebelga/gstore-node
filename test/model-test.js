@@ -207,6 +207,28 @@ describe('Model', () => {
 
             assert.isDefined(entityData.unknown);
         });
+
+        it('should preserve the datastore.KEY', () => {
+            const key = ModelInstance.key(123);
+            let data = { foo: 'bar' };
+            data[ModelInstance.gstore.ds.KEY] = key;
+
+            data = ModelInstance.sanitize(data);
+
+            expect(data[ModelInstance.gstore.ds.KEY]).to.equal(key);
+        });
+
+        it('should preserve the datastore.KEY with Joi Schemas', () => {
+            schema = new Schema({}, { joi: true });
+            ModelInstance = gstore.model('SanitizeJoiSchemaPreserveKEY', schema, gstore);
+            const key = ModelInstance.key(123);
+            let data = { foo: 'bar' };
+            data[ModelInstance.gstore.ds.KEY] = key;
+
+            data = ModelInstance.sanitize(data);
+
+            expect(data[ModelInstance.gstore.ds.KEY]).to.equal(key);
+        });
     });
 
     describe('key()', () => {
