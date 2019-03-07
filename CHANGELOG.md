@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="5.0.2"></a>
+## [5.0.2](https://github.com/sebelga/gstore-node/compare/v5.0.1...v5.0.2) (2019-03-07)
+
+
+### Bug Fixes
+
+* **Entity:** Allow saving an entity that has been populated ([a24c75a](https://github.com/sebelga/gstore-node/commit/a24c75a))
+* **model.get():** handle null when entity does not exist ([#152](https://github.com/sebelga/gstore-node/issues/152)) ([21d258f](https://github.com/sebelga/gstore-node/commit/21d258f))
+* **Model.update():** fix onUpdateError throwing empty object instead of error ([#153](https://github.com/sebelga/gstore-node/issues/153)) ([b1929c7](https://github.com/sebelga/gstore-node/commit/b1929c7))
+
+
+
 <a name="5.0.1"></a>
 ## [5.0.1](https://github.com/sebelga/gstore-node/compare/v5.0.0...v5.0.1) (2019-02-05)
 
