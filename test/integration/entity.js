@@ -45,18 +45,18 @@ const getAddressBook = () => {
     return addressBook;
 };
 
-const getAddress = (addressBook = null) => {
+const getAddress = (addressBookEntity = null) => {
     const key = AddressModel.key(getId());
     allKeys.push(key);
-    const data = { city: chance.city(), country: chance.country(), addressBook: addressBook.entityKey };
+    const data = { city: chance.city(), country: chance.country(), addressBook: addressBookEntity.entityKey };
     const address = new AddressModel(data, null, null, null, key);
     return address;
 };
 
-const getUser = (address) => {
+const getUser = (addressEntity) => {
     const key = UserModel.key(getId());
     allKeys.push(key);
-    const data = { address: address.entityKey };
+    const data = { address: addressEntity.entityKey };
     const user = new UserModel(data, null, null, null, key);
     return user;
 };
@@ -98,6 +98,17 @@ describe('Entity (Integration Tests)', () => {
             this.skip();
         }
         user = getUser(address);
+    });
+
+    describe('save()', () => {
+        it('should replace a populated ref to its key before saving', () => (
+            user.populate()
+                .then(() => user.save())
+                .then(() => UserModel.get(user.entityKey.name))
+                .then((entityFetched) => {
+                    expect(entityFetched.entityData.address).deep.equal(address.entityKey);
+                })
+        ));
     });
 
     describe('populate()', () => {
