@@ -222,12 +222,43 @@ describe('Model', () => {
             schema = new Schema({}, { joi: true });
             GstoreModel = gstore.model('SanitizeJoiSchemaPreserveKEY', schema, gstore);
             const key = GstoreModel.key(123);
-            let data = { foo: 'bar' };
+            const data = { foo: 'bar' };
             data[GstoreModel.gstore.ds.KEY] = key;
 
-            data = GstoreModel.sanitize(data);
+            const sanitized = GstoreModel.sanitize(data);
 
-            expect(data[GstoreModel.gstore.ds.KEY]).to.equal(key);
+            expect(sanitized[gstore.ds.KEY]).to.equal(key);
+        });
+
+        describe('populated entities', () => {
+            beforeEach(() => {
+                schema = new Schema({ ref: { type: Schema.Types.Key } });
+                GstoreModel = gstore.model('SanitizeReplacePopulatedEntity', schema, gstore);
+            });
+
+            it('should replace a populated entity ref with its entity key', () => {
+                const key = GstoreModel.key('abc');
+                const data = {
+                    ref: {
+                        title: 'Entity title populated',
+                        [gstore.ds.KEY]: key,
+                    },
+                };
+
+                const sanitized = GstoreModel.sanitize(data);
+
+                assert.isTrue(gstore.ds.isKey(sanitized.ref));
+                expect(sanitized.ref).to.equal(key);
+            });
+
+            it('should not replace a ref that is not an object', () => {
+                const data = { ref: null };
+
+                const sanitized = GstoreModel.sanitize(data);
+
+                assert.isFalse(gstore.ds.isKey(sanitized.ref));
+                expect(sanitized.ref).to.equal(null);
+            });
         });
     });
 
