@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="6.0.0"></a>
+# [6.0.0](https://github.com/sebelga/gstore-node/compare/v5.0.2...v6.0.0) (2019-03-07)
+
+
+### Bug Fixes
+
+* **Model.get():** Consistently return an Array when providing an array of ids ([#155](https://github.com/sebelga/gstore-node/issues/155)) ([45e68fc](https://github.com/sebelga/gstore-node/commit/45e68fc)), closes [#134](https://github.com/sebelga/gstore-node/issues/134)
+
+
+### BREAKING CHANGES
+
+* **Model.get():** When an Array of ids is provided to Model.get(), gstore will now consistently return an Array. In earlier versions, if an array of one id was provided, gstore would return a single entity instead of an array containing the entity.
+
+
+
 <a name="5.0.2"></a>
 ## [5.0.2](https://github.com/sebelga/gstore-node/compare/v5.0.1...v5.0.2) (2019-03-07)
 
