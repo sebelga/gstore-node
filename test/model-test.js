@@ -330,18 +330,20 @@ describe('Model', () => {
 
             sinon.stub(ds, 'get').resolves([[entity2, entity1]]); // not sorted
 
-            return GstoreModel.get([22, 69], null, null, null, { preserveOrder: true }).then(onResult, onError);
-
-            function onResult(_entity) {
-                expect(is.array(ds.get.getCall(0).args[0])).equal(true);
-                expect(is.array(_entity)).equal(true);
-                expect(_entity[0].entityKey.id).equal(22); // sorted
-            }
-
-            function onError(err) {
-                throw (err);
-            }
+            return GstoreModel
+                .get([22, 69], null, null, null, { preserveOrder: true })
+                .then((_entity) => {
+                    expect(is.array(ds.get.getCall(0).args[0])).equal(true);
+                    expect(is.array(_entity)).equal(true);
+                    expect(_entity[0].entityKey.id).equal(22); // sorted
+                });
         });
+
+        it('should consistently return an array when providing id as an Array', () => GstoreModel
+            .get(['abc'])
+            .then((_entity) => {
+                assert.isTrue(is.array(_entity));
+            }));
 
         it('converting a string integer to real integer', () => GstoreModel.get('123').then(() => {
             assert.isUndefined(ds.get.getCall(0).args[0].name);
