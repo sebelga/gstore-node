@@ -656,6 +656,7 @@ type PropType =
     | "object"
     | "geoPoint"
     | "buffer"
+    | "key"
     | NumberConstructor
     | StringConstructor
     | ObjectConstructor
