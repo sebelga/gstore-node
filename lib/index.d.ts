@@ -114,7 +114,7 @@ declare class Schema<T = SchemaPath> {
     static Types: {
         Double: "double";
         GeoPoint: "geoPoint";
-        Key: "key";
+        Key: "entityKey";
     };
 
     /**
@@ -656,7 +656,7 @@ type PropType =
     | "object"
     | "geoPoint"
     | "buffer"
-    | "key"
+    | "entityKey"
     | NumberConstructor
     | StringConstructor
     | ObjectConstructor
