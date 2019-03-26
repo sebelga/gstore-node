@@ -17,7 +17,7 @@ import { Transaction } from "@google-cloud/datastore/build/src/transaction";
  *
  * @class Gstore
  */
-declare class Gstore {
+export class Gstore {
     constructor(config?: GstoreConfig);
 
     /**
@@ -102,7 +102,7 @@ declare class Gstore {
  *
  * @class Schema
  */
-declare class Schema<T = SchemaPath> {
+export class Schema<T = SchemaPath> {
     constructor(
         properties: { [P in keyof T]: SchemaPathDefinition },
         options?: SchemaOptions
@@ -186,7 +186,7 @@ declare class Schema<T = SchemaPath> {
     ): void;
 }
 
-interface Model<T = { [propName: string]: any }> {
+export interface Model<T = { [propName: string]: any }> {
     /**
      * gstore-node instance
      *
@@ -613,7 +613,7 @@ declare class EntityKlass<T> {
     ): PromiseWithPopulate<EntityKlass<T>>;
 }
 
-declare const instances: InstancesManager;
+export const instances: InstancesManager;
 
 // -----------------------------------------------------------------------
 // -- INTERFACES
@@ -622,7 +622,7 @@ declare const instances: InstancesManager;
 type EntityFormatType = "ENTITY";
 type JSONFormatType = "JSON";
 
-type Entity<T = { [propName: string]: any }> = EntityKlass<T> & T;
+export type Entity<T = { [propName: string]: any }> = EntityKlass<T> & T;
 
 type funcReturningPromise = (...args: any[]) => Promise<any>;
 interface PromiseWithPopulate<T> extends Promise<T> {
@@ -637,16 +637,16 @@ interface InstancesManager {
   get(id: string): Gstore
 }
 
-interface QueryResult<T, U extends QueryOptions> {
+export interface QueryResult<T, U extends QueryOptions> {
     entities: U["format"] extends EntityFormatType
         ? Array<Entity<T>>
         : Array<T & { id: string | number }>;
     nextPageCursor?: string;
 }
 
-type DeleteResult = { key: entity.Key; success?: boolean; apiResponse?: any };
+export type DeleteResult = { key: entity.Key; success?: boolean; apiResponse?: any };
 
-type PropType =
+export type PropType =
     | "string"
     | "int"
     | "double"
@@ -670,7 +670,7 @@ type PropType =
  *
  * @interface GstoreConfig
  */
-interface GstoreConfig {
+export interface GstoreConfig {
     namespace?: string;
     cache?: Boolean | CacheConfig;
     /**
@@ -686,12 +686,12 @@ interface GstoreConfig {
  *
  * @interface CacheConfig
  */
-interface CacheConfig {
+export interface CacheConfig {
     stores?: Array<any>;
     config?: CacheConfigOptions;
 }
 
-interface CacheConfigOptions {
+export interface CacheConfigOptions {
     ttl: {
         keys: number;
         queries: number;
@@ -722,7 +722,7 @@ interface SchemaPath<T = any> {
     [propName: string]: SchemaPathDefinition;
 }
 
-interface SchemaPathDefinition {
+export interface SchemaPathDefinition {
     type?: PropType;
     validate?:
         | string
@@ -737,7 +737,7 @@ interface SchemaPathDefinition {
     joi?: any;
 }
 
-interface SchemaOptions {
+export interface SchemaOptions {
     validateBeforeSave?: boolean;
     explicitOnly?: boolean;
     queries?: {
@@ -749,7 +749,7 @@ interface SchemaOptions {
     joi?: boolean | { extra?: any; options?: any };
 }
 
-interface QueryOptions {
+export interface QueryOptions {
     /**
      * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation. Learn more about strong and eventual consistency in the link below
      *
@@ -794,7 +794,7 @@ interface QueryOptions {
     ttl?: number | { [propName: string]: number };
 }
 
-interface QueryListOptions extends QueryOptions {
+export interface QueryListOptions extends QueryOptions {
     /**
      * Optional namespace for the Query
      *
@@ -836,7 +836,7 @@ interface QueryListOptions extends QueryOptions {
     offset?: number;
 }
 
-interface QueryFindAroundOptions extends QueryOptions {
+export interface QueryFindAroundOptions extends QueryOptions {
     before?: number;
     after?: number;
     readAll?: boolean;
@@ -844,7 +844,7 @@ interface QueryFindAroundOptions extends QueryOptions {
     showKey?: boolean;
 }
 
-interface Validation {
+export interface Validation {
     error: ValidationError;
     value: any;
 }
@@ -901,25 +901,13 @@ interface GoogleDatastoreQueryMethods<T> {
     runStream(): NodeJS.ReadableStream;
 }
 
-interface Query<T> extends GoogleDatastoreQueryMethods<T> {
+export interface Query<T> extends GoogleDatastoreQueryMethods<T> {
     run<U extends QueryOptions>(
         options?: U
     ): PromiseWithPopulate<QueryResult<T, U>>;
 }
 
 interface DataLoader {}
-
-export {
-    Gstore,
-    instances,
-    Schema,
-    Entity,
-    Model,
-    Query,
-    GstoreConfig,
-    CacheConfigOptions,
-    Validation
-};
 
 declare namespace GstoreCache {
     /**
