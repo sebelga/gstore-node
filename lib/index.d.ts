@@ -102,7 +102,7 @@ export class Gstore {
  *
  * @class Schema
  */
-export class Schema<T = SchemaPath> {
+export class Schema<T = { [key: string]: any }> {
     constructor(
         properties: { [P in keyof T]: SchemaPathDefinition },
         options?: SchemaOptions
@@ -716,10 +716,6 @@ export interface CacheConfigOptions {
         queries: string;
     };
     global?: boolean;
-}
-
-interface SchemaPath<T = any> {
-    [propName: string]: SchemaPathDefinition;
 }
 
 export interface SchemaPathDefinition {
