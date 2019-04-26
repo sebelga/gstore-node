@@ -196,7 +196,7 @@ export class Schema<T = SchemaPath> {
     /**
      * Checks if the schema has a joi config object.
      */
-    get isJoi(): boolean;
+    readonly isJoi: boolean;
 }
 
 export interface Model<T = { [propName: string]: any }> {
