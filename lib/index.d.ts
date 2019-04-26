@@ -184,6 +184,19 @@ export class Schema<T = SchemaPath> {
         method: string,
         callback: funcReturningPromise | funcReturningPromise[]
     ): void;
+
+    /**
+     * Executes joi.validate on given data. If schema does not have a joi config object data is returned
+     * 
+     * @param {*} data The data to sanitize
+     * @returns {*} The data sanitized
+     */
+    validateJoi(data: { [propName: string]: any }): Validation<{ [P in keyof T]: T[P] }>;
+
+    /**
+     * Checks if the schema has a joi config object.
+     */
+    readonly isJoi: boolean;
 }
 
 export interface Model<T = { [propName: string]: any }> {
@@ -844,9 +857,9 @@ export interface QueryFindAroundOptions extends QueryOptions {
     showKey?: boolean;
 }
 
-export interface Validation {
+export interface Validation<T = any> {
     error: ValidationError;
-    value: any;
+    value: T;
 }
 
 declare class GstoreError extends Error {

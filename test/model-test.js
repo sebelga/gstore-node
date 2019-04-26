@@ -208,6 +208,22 @@ describe('Model', () => {
             assert.isDefined(entityData.unknown);
         });
 
+        it('should return the same value object from Model.sanitize and Entity.validate in Joi schema', () => {
+            schema = new Schema({
+                foo: { joi: Joi.object({ bar: Joi.any() }).required() },
+                createdOn: { joi: Joi.date().default(() => new Date('01-01-2019'), 'static createdOn date') },
+            }, { joi: true });
+            GstoreModel = gstore.model('BlogJoi', schema, gstore);
+
+            const data = { foo: { unknown: 123 } };
+            const entityData = GstoreModel.sanitize(data);
+            const { value: validationData, error: validationError } = new GstoreModel(data).validate();
+
+            assert.isUndefined(entityData.foo.unknown);
+            assert.isNull(validationError);
+            assert.deepEqual(entityData, validationData);
+        });
+
         it('should preserve the datastore.KEY', () => {
             const key = GstoreModel.key(123);
             let data = { foo: 'bar' };
