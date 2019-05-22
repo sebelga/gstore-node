@@ -5,7 +5,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const Chance = require('chance');
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 
