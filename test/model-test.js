@@ -4,7 +4,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const is = require('is');
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 
 const { Gstore } = require('../lib');
 const Entity = require('../lib/entity');

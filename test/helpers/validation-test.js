@@ -1,7 +1,7 @@
 'use strict';
 
 const chai = require('chai');
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 
 const Schema = require('../../lib/schema');
 const gstoreErrors = require('../../lib/errors');

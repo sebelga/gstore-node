@@ -2,7 +2,7 @@
 
 const chai = require('chai');
 const sinon = require('sinon');
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const { Datastore } = require('@google-cloud/datastore');
 
 const ds = new Datastore({
