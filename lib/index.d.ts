@@ -744,6 +744,7 @@ export interface SchemaPathDefinition {
     write?: boolean;
     required?: boolean;
     joi?: any;
+    ref?: string;
 }
 
 export interface SchemaOptions {
