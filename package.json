@@ -59,7 +59,7 @@
     }
   },
   "dependencies": {
-    "@google-cloud/datastore": "^3.0.0",
+    "@google-cloud/datastore": "^4.0.0",
     "arrify": "^1.0.1",
     "dataloader": "^1.4.0",
     "extend": "^3.0.2",
