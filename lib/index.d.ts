@@ -134,7 +134,7 @@ export class Schema<T = { [key: string]: any }> {
     * }
     * ```
     */
-    readonly methods: { [propName: string]: () => any };
+    readonly methods: { [propName: string]: (...args: any[]) => any };
 
     /**
      * Getter / Setter for Schema paths.
