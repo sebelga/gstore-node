@@ -59,7 +59,6 @@
     }
   },
   "dependencies": {
-    "@google-cloud/datastore": "^3.0.0",
     "arrify": "^1.0.1",
     "dataloader": "^1.4.0",
     "extend": "^3.0.2",
@@ -74,6 +73,7 @@
     "validator": "^10.11.0"
   },
   "devDependencies": {
+    "@google-cloud/datastore": "^4.0.0",
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "cache-manager-redis-store": "^1.5.0",
@@ -97,5 +97,8 @@
     "sinon": "^7.2.3",
     "standard-version": "^4.4.0",
     "yargs": "^12.0.5"
+  },
+  "peerDependencies": {
+    "@google-cloud/datastore": ">= 3.0.0 < 5"
   }
 }
