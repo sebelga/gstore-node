@@ -7,12 +7,12 @@
   "scripts": {
     "commit": "git-cz",
     "coverage": "nyc mocha test --recursive",
-    "coveralls": "nyc mocha test --recursive && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "lint": "./node_modules/eslint/bin/eslint.js ./lib ./test",
     "pretest": "npm run lint",
     "release": "standard-version",
-    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test --recursive --colors"
+    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 nyc mocha test --recursive --colors"
   },
   "engines": {
     "node": ">=10.0"
