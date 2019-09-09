@@ -26,14 +26,14 @@ const allKeys = [];
 /**
  * We save all saved key so we can delete them after our tests have ran
  */
-const addKey = (key) => {
+const addKey = key => {
     allKeys.push(key);
 };
 
-const cleanUp = (cb) => {
+const cleanUp = cb => {
     ds.delete(allKeys)
         .then(cb)
-        .catch((err) => {
+        .catch(err => {
             console.log('Error cleaning up'); // eslint-disable-line
             console.log(err); // eslint-disable-line
             cb();
@@ -125,39 +125,27 @@ describe('Model (Integration Tests)', () => {
                 const { name: userName, entityKey: userKey } = await addUser();
                 const { entityKey: postKey } = await addPost(userKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate('user');
-                    expect(entityData.user.id).equal(userKey.id);
-                    expect(entityData.user.name).equal(userName);
-                    assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate('user');
+                expect(entityData.user.id).equal(userKey.id);
+                expect(entityData.user.name).equal(userName);
+                assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
             });
 
             it('should return "null" if trying to populate a prop that does not exist', async () => {
                 const { entityKey: postKey } = await addPost();
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate('unknown');
-                    expect(entityData.unknown).equal(null);
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate('unknown');
+                expect(entityData.unknown).equal(null);
             });
 
             it('should populate multiple props', async () => {
                 const { name: userName, entityKey: userKey } = await addUser();
                 const { entityKey: postKey } = await addPost(userKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate(['user', 'publication', 'unknown']);
-                    expect(entityData.user.name).equal(userName);
-                    expect(entityData.publication).equal(null);
-                    expect(entityData.unknown).equal(null);
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate(['user', 'publication', 'unknown']);
+                expect(entityData.user.name).equal(userName);
+                expect(entityData.publication).equal(null);
+                expect(entityData.unknown).equal(null);
             });
 
             it('should populate multiple props (2)', async () => {
@@ -165,13 +153,9 @@ describe('Model (Integration Tests)', () => {
                 const { title: publicationTitle, entityKey: publicationKey } = await addPublication(userKey);
                 const { entityKey: postKey } = await addPost(userKey, publicationKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate(['user', 'publication']);
-                    expect(entityData.user.name).equal(userName);
-                    expect(entityData.publication.title).equal(publicationTitle);
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate(['user', 'publication']);
+                expect(entityData.user.name).equal(userName);
+                expect(entityData.publication.title).equal(publicationTitle);
             });
 
             it('should populate multiple props by **chaining** populate() calls', async () => {
@@ -179,29 +163,21 @@ describe('Model (Integration Tests)', () => {
                 const { title: publicationTitle, entityKey: publicationKey } = await addPublication(userKey);
                 const { entityKey: postKey } = await addPost(userKey, publicationKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id)
-                        .populate('user')
-                        .populate('publication');
-                    expect(entityData.user.name).equal(userName);
-                    expect(entityData.publication.title).equal(publicationTitle);
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id)
+                    .populate('user')
+                    .populate('publication');
+                expect(entityData.user.name).equal(userName);
+                expect(entityData.publication.title).equal(publicationTitle);
             });
 
             it('should allow to select the properties to retrieve', async () => {
                 const { entityKey: userKey } = await addUser();
                 const { entityKey: postKey } = await addPost(userKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate('user', ['email', 'private']);
-                    assert.isDefined(entityData.user.email);
-                    assert.isUndefined(entityData.user.name);
-                    assert.isDefined(entityData.user.private); // force get private fields
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate('user', ['email', 'private']);
+                assert.isDefined(entityData.user.email);
+                assert.isUndefined(entityData.user.name);
+                assert.isDefined(entityData.user.private); // force get private fields
             });
 
             it('should throw an error when providing multiple properties to populate + fields to select', async () => {
@@ -222,15 +198,11 @@ describe('Model (Integration Tests)', () => {
                 const { entityKey: postKey1 } = await addPost(userKey1);
                 const { entityKey: postKey2 } = await addPost(userKey2);
 
-                try {
-                    const [post1, post2] = await PostModel.get([postKey1.id, postKey2.id]).populate('user');
-                    expect(post1.entityData.user.id).equal(userKey1.id);
-                    expect(post1.entityData.user.name).equal(userName1);
-                    expect(post2.entityData.user.id).equal(userKey2.id);
-                    expect(post2.entityData.user.name).equal(userName2);
-                } catch (err) {
-                    throw (err);
-                }
+                const [post1, post2] = await PostModel.get([postKey1.id, postKey2.id]).populate('user');
+                expect(post1.entityData.user.id).equal(userKey1.id);
+                expect(post1.entityData.user.name).equal(userName1);
+                expect(post2.entityData.user.id).equal(userKey2.id);
+                expect(post2.entityData.user.name).equal(userName2);
             });
 
             it('should allow nested embedded entities', async () => {
@@ -239,37 +211,29 @@ describe('Model (Integration Tests)', () => {
                 const { title: publicationTitle, entityKey: publicationKey } = await addPublication(userKey);
                 const { entityKey: postKey } = await addPost(userKey, publicationKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id)
-                        .populate(['user', 'user.company'])
-                        .populate('publication')
-                        .populate('publication.user')
-                        .populate('publication.user.company')
-                        .populate('path.that.does.not.exist');
+                const { entityData } = await PostModel.get(postKey.id)
+                    .populate(['user', 'user.company'])
+                    .populate('publication')
+                    .populate('publication.user')
+                    .populate('publication.user.company')
+                    .populate('path.that.does.not.exist');
 
-                    expect(entityData.user.id).equal(userKey.id);
-                    expect(entityData.user.name).equal(userName);
-                    expect(entityData.user.company.name).equal(companyName);
-                    expect(entityData.publication.title).equal(publicationTitle);
-                    expect(entityData.user).deep.equal(entityData.publication.user);
-                    expect(entityData.path.that.does.not.exist).equal(null);
-                } catch (err) {
-                    throw (err);
-                }
+                expect(entityData.user.id).equal(userKey.id);
+                expect(entityData.user.name).equal(userName);
+                expect(entityData.user.company.name).equal(companyName);
+                expect(entityData.publication.title).equal(publicationTitle);
+                expect(entityData.user).deep.equal(entityData.publication.user);
+                expect(entityData.path.that.does.not.exist).equal(null);
             });
 
             it('should fetch all key references when no path is specified', async () => {
                 const { name: userName, entityKey: userKey } = await addUser();
                 const { entityKey: postKey } = await addPost(userKey);
 
-                try {
-                    const { entityData } = await PostModel.get(postKey.id).populate();
-                    expect(entityData.user.name).equal(userName);
-                    expect(entityData.publication).equal(null);
-                    assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
-                } catch (err) {
-                    throw (err);
-                }
+                const { entityData } = await PostModel.get(postKey.id).populate();
+                expect(entityData.user.name).equal(userName);
+                expect(entityData.publication).equal(null);
+                assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
             });
 
             it('should fetch the keys inside a Transaction', async () => {
@@ -279,16 +243,12 @@ describe('Model (Integration Tests)', () => {
                 const { name: userName, entityKey: userKey } = await addUser();
                 const { entityKey: postKey } = await addPost(userKey);
 
-                try {
-                    await transaction.run();
-                    const { entityData } = await PostModel.get(postKey.id, null, null, transaction).populate('user');
-                    await transaction.commit();
-                    expect(transaction.get.called).equal(true);
-                    expect(transaction.get.callCount).equal(2);
-                    expect(entityData.user.name).equal(userName);
-                } catch (err) {
-                    throw (err);
-                }
+                await transaction.run();
+                const { entityData } = await PostModel.get(postKey.id, null, null, transaction).populate('user');
+                await transaction.commit();
+                expect(transaction.get.called).equal(true);
+                expect(transaction.get.callCount).equal(2);
+                expect(entityData.user.name).equal(userName);
             });
         });
     });
@@ -333,10 +293,10 @@ describe('Model (Integration Tests)', () => {
                                         expect(user2.name).equal('User2');
                                         expect(user2.coins).equal(1050);
                                         resolve();
-                                    }).catch((err) => {
+                                    }).catch(err => {
                                         reject(err);
                                     });
-                            }).catch((err) => {
+                            }).catch(err => {
                                 transaction.rollback();
                                 reject(err);
                             });

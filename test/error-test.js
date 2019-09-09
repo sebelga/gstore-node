@@ -8,7 +8,7 @@ const errors = require('../lib/errors');
 const { GstoreError, TypeError, message } = errors;
 const { expect, assert } = chai;
 
-const doSomethingBad = (code) => {
+const doSomethingBad = code => {
     code = code || 'ERR_GENERIC';
     throw new GstoreError(code);
 };
@@ -71,7 +71,7 @@ describe('GstoreError', () => {
 
 describe('TypeError', () => {
     it('should create a TypeError', () => {
-        const throwTypeError = (code) => {
+        const throwTypeError = code => {
             code = code || 'ERR_GENERIC';
             throw new TypeError(code);
         };

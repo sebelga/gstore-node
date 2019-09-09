@@ -1,7 +1,7 @@
 language: node_js
 node_js:
   - "lts/*"
-  - "8"
+  - "10"
 
 branches:
   only:
@@ -15,22 +15,6 @@ script:
 after_success:
   - npm run coveralls
 
-sudo: required
-before_install:
-  - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.14.0
-  - export PATH=$HOME/.yarn/bin:$PATH
-  - yarn global add node-gyp node-pre-gyp
-
-env:
-  - CXX=g++-5
-
-# https://stackoverflow.com/a/40802733/5642633
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - g++-5
 cache:
   yarn: true
 

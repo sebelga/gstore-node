@@ -13,6 +13,7 @@
         "mocha"
     ],
     "rules": {
+        "arrow-parens": ["error", "as-needed"],
         "indent": [
             "error",
             4,
@@ -51,6 +52,7 @@
                 "objects": "always-multiline",
                 "functions": "ignore"
             }
-        ]
+        ],
+        "strict": ["error", "global"]
     }
 }

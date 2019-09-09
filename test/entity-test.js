@@ -348,7 +348,7 @@ describe('Entity', () => {
                 GstoreModel = gstore.model('BlogPost', schema);
                 entity = new GstoreModel({});
 
-                return entity.save().then((result) => {
+                return entity.save().then(result => {
                     expect(spyOn.fnHookPost.called).equal(true);
                     expect(result).equal(1234);
                 });
@@ -602,7 +602,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.datastoreEntity().then((_entity) => {
+            return entity.datastoreEntity().then(_entity => {
                 expect(ds.get.called).equal(true);
                 expect(ds.get.getCall(0).args[0]).equal(entity.entityKey);
                 expect(_entity.className).equal('Entity');
@@ -617,7 +617,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.datastoreEntity().catch((err) => {
+            return entity.datastoreEntity().catch(err => {
                 expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 expect(err.message).equal('Entity not found');
                 ds.get.restore();
@@ -629,7 +629,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.datastoreEntity().catch((err) => {
+            return entity.datastoreEntity().catch(err => {
                 expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
                 ds.get.restore();
             });
@@ -642,7 +642,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.datastoreEntity().then((_entity) => {
+            return entity.datastoreEntity().then(_entity => {
                 expect(_entity).equal(null);
                 ds.get.restore();
             });
@@ -654,7 +654,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.datastoreEntity().catch((err) => {
+            return entity.datastoreEntity().catch(err => {
                 expect(err).equal(error);
 
                 ds.get.restore();
@@ -690,7 +690,7 @@ describe('Entity', () => {
                 return gstore.cache.keys.set(key, value)
                     .then(() => (
                         entity.datastoreEntity({ ttl: 123456 })
-                            .then((response) => {
+                            .then(response => {
                                 assert.ok(!ds.get.called);
                                 expect(response.entityData).include(value);
                                 assert.ok(entity.gstore.cache.keys.read.called);
@@ -748,7 +748,7 @@ describe('Entity', () => {
 
             return blog.model('Image')
                 .get()
-                .then((_entity) => {
+                .then(_entity => {
                     expect(_entity).equal(mockEntities[0]);
                 });
         });
@@ -836,7 +836,7 @@ describe('Entity', () => {
         });
 
         it('should return the entity saved', () => (
-            entity.save().then((_entity) => {
+            entity.save().then(_entity => {
                 expect(_entity.className).equal('Entity');
             })
         ));
@@ -860,7 +860,7 @@ describe('Entity', () => {
             });
         });
 
-        it('should NOT save to Datastore if it didn\'t pass property validation', (done) => {
+        it('should NOT save to Datastore if it didn\'t pass property validation', done => {
             entity = new GstoreModel({ unknown: 'John' });
 
             entity
@@ -868,7 +868,7 @@ describe('Entity', () => {
                 .then(() => {
                     throw new Error('Should not enter here.');
                 })
-                .catch((err) => {
+                .catch(err => {
                     assert.isDefined(err);
                     expect(err.message).not.equal('Should not enter here.');
                     expect(ds.save.called).equal(false);
@@ -877,10 +877,10 @@ describe('Entity', () => {
                 });
         });
 
-        it('should NOT save to Datastore if it didn\'t pass value validation', (done) => {
+        it('should NOT save to Datastore if it didn\'t pass value validation', done => {
             entity = new GstoreModel({ website: 'mydomain' });
 
-            entity.save().catch((err) => {
+            entity.save().catch(err => {
                 assert.isDefined(err);
                 expect(ds.save.called).equal(false);
                 done();
@@ -917,8 +917,8 @@ describe('Entity', () => {
                 })
             ));
 
-            it('should only allow "update", "insert", "upsert" as method', (done) => {
-                entity.save(null, { method: 'something' }).catch((e) => {
+            it('should only allow "update", "insert", "upsert" as method', done => {
+                entity.save(null, { method: 'something' }).catch(e => {
                     expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
 
                     entity.save(null, { method: 'update' })
@@ -941,7 +941,7 @@ describe('Entity', () => {
 
             entity = new GstoreModel({});
 
-            return entity.save().catch((err) => {
+            return entity.save().catch(err => {
                 expect(err).equal(error);
             });
         });
@@ -958,7 +958,7 @@ describe('Entity', () => {
             entity = new OtherModel({});
 
             return entity.save(transaction)
-                .then((_entity) => {
+                .then(_entity => {
                     expect(spyPreHook.called).equal(true);
                     expect(transaction.save.called).equal(true);
                     expect(spyPreHook.calledBefore(transaction.save)).equal(true);
@@ -982,7 +982,7 @@ describe('Entity', () => {
             expect(transaction.save.called).equal(false);
         });
 
-        it('should save entity in a transaction in sync', (done) => {
+        it('should save entity in a transaction in sync', done => {
             const schema2 = new Schema({}, { validateBeforeSave: false });
             const ModelInstance2 = gstore.model('NewType', schema2, gstore);
             entity = new ModelInstance2({});
@@ -1024,7 +1024,7 @@ describe('Entity', () => {
 
         it('should throw error if transaction not instance of Transaction', () => (
             entity.save({ id: 0 }, {})
-                .catch((err) => {
+                .catch(err => {
                     assert.isDefined(err);
                     expect(err.message).equal('Transaction needs to be a gcloud Transaction');
                 })
@@ -1050,7 +1050,7 @@ describe('Entity', () => {
             GstoreModel = gstore.model('Blog', schema);
             entity = new GstoreModel({ name: 'John' });
 
-            return entity.save().then((result) => {
+            return entity.save().then(result => {
                 expect(spyPost.called).equal(true);
                 expect(result.name).equal('John');
             });
@@ -1064,7 +1064,7 @@ describe('Entity', () => {
             GstoreModel = gstore.model('Blog', schema);
             entity = new GstoreModel({ name: 'John' });
 
-            return entity.save().then((_entity) => {
+            return entity.save().then(_entity => {
                 assert.isDefined(_entity[gstore.ERR_HOOKS]);
                 expect(_entity[gstore.ERR_HOOKS][0]).equal(error);
             });
@@ -1086,7 +1086,7 @@ describe('Entity', () => {
                 });
         });
 
-        it('transaction.execPostHooks() should set scope to entity saved', (done) => {
+        it('transaction.execPostHooks() should set scope to entity saved', done => {
             schema.post('save', function preSave() {
                 expect(this instanceof Entity).equal(true);
                 expect(this.name).equal('John Jagger');
@@ -1163,7 +1163,7 @@ describe('Entity', () => {
 
             it('should call GstoreModel.clearCache()', () => {
                 sinon.spy(GstoreModel, 'clearCache');
-                return entity.save().then((_entity) => {
+                return entity.save().then(_entity => {
                     assert.ok(GstoreModel.clearCache.called);
                     expect(typeof GstoreModel.clearCache.getCall(0).args[0]).equal('undefined');
                     expect(_entity.name).equal('John');
@@ -1171,12 +1171,12 @@ describe('Entity', () => {
                 });
             });
 
-            it('on error when clearing the cache, should add the entity saved on the error object', (done) => {
+            it('on error when clearing the cache, should add the entity saved on the error object', done => {
                 const err = new Error('Houston something bad happened');
                 sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
                 entity.save()
-                    .catch((e) => {
+                    .catch(e => {
                         expect(e.__entity.name).equal('John');
                         expect(e.__cacheError).equal(err);
                         gstore.cache.queries.clearQueriesByKind.restore();

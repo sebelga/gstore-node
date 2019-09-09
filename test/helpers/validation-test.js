@@ -80,12 +80,12 @@ describe('Validation', () => {
     it('should return a Promise and resolve with the entityData', () => {
         const entityData = { name: 'John' };
 
-        return validate(entityData).then((value) => {
+        return validate(entityData).then(value => {
             expect(value).equal(entityData);
             return Promise.resolve('test');
         })
             .catch(() => { })
-            .then((response) => {
+            .then(response => {
                 expect(response).equal('test');
             });
     });
@@ -94,7 +94,7 @@ describe('Validation', () => {
         const entityData = { name: 123 };
 
         return validate(entityData).then(() => {
-        }, (error) => {
+        }, error => {
             expect(error.name).equal('ValidationError');
             expect(error.errors[0].code).equal(errorCodes.ERR_PROP_TYPE);
         });
@@ -103,11 +103,11 @@ describe('Validation', () => {
     it('should return a Promise catch with the error', () => {
         const entityData = { name: 123 };
 
-        return validate(entityData).catch((error) => {
+        return validate(entityData).catch(error => {
             expect(error.name).equal('ValidationError');
             expect(error.errors[0].code).equal(errorCodes.ERR_PROP_TYPE);
             return Promise.resolve('test');
-        }).then((response) => {
+        }).then(response => {
             // Just to make sure we can chain Promises
             expect(response).equal('test');
         });
@@ -424,7 +424,7 @@ describe('Validation', () => {
     });
 
     it('--> is custom function (array containing objectsj)', () => {
-        const validateFn = (obj) => {
+        const validateFn = obj => {
             if (!Array.isArray(obj)) {
                 return false;
             }
