@@ -58,7 +58,7 @@ describe('Schema (Integration Tests)', () => {
         const password = chance.string({ length: 10 });
         const user = new User({ email, password });
 
-        return user.save().then((entity) => {
+        return user.save().then(entity => {
             const response = entity.plain();
             expect(response.password).to.not.exist;
             expect(response.requested).to.not.exist;
@@ -66,7 +66,7 @@ describe('Schema (Integration Tests)', () => {
             const response2 = entity.plain({ readAll: true });
             expect(response2.password).equal(password);
             expect(response2.state).equal('requested');
-        }).catch((err) => {
+        }).catch(err => {
             throw (err);
         });
     });

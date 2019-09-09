@@ -15,11 +15,11 @@ const { expect } = chai;
 
 const allKeys = [];
 
-const cleanUp = (cb) => {
+const cleanUp = cb => {
     ds.delete(allKeys).then(cb);
 };
 
-const addKey = (key) => {
+const addKey = key => {
     if (key) {
         allKeys.push(key);
     }
@@ -69,17 +69,17 @@ describe('Integration Tests (Cache)', () => {
         Model = gstore.model('CacheTests-User', schema);
     });
 
-    afterEach((done) => {
+    afterEach(done => {
         cleanUp(() => done());
     });
 
     it('should set KEY symbol on query result', () => {
         const user = new Model({ email: 'test@test.com' });
 
-        return user.save().then((entity) => {
+        return user.save().then(entity => {
             addKey(entity.entityKey);
             return Model.get(entity.entityKey.id)
-                .then((e) => {
+                .then(e => {
                     expect(e.email).equal('test@test.com');
                 });
         });

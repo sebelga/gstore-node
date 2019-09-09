@@ -38,7 +38,7 @@ const getUser = () => {
 };
 
 const cleanUp = () => ds.delete(allKeys).then(() => UserModel.deleteAll())
-    .catch((err) => {
+    .catch(err => {
                 console.log('Error cleaning up'); // eslint-disable-line
                 console.log(err); // eslint-disable-line
     });
