@@ -209,7 +209,7 @@ describe('gstore-node', () => {
             expect(func).to.throw('No entities passed');
         });
 
-        it('should validate entity before saving', (done) => {
+        it('should validate entity before saving', done => {
             schema = new Schema({ name: { type: String } });
             const Model = gstore.model('TestValidate', schema);
             const entity1 = new Model({ name: 'abc' });
@@ -219,7 +219,7 @@ describe('gstore-node', () => {
             sinon.spy(entity3, 'validate');
 
             gstore.save([entity1, entity2, entity3], undefined, { validate: true })
-                .catch((e) => {
+                .catch(e => {
                     expect(e.code).equal('ERR_VALIDATION');
                     expect(entity1.validate.called).equal(true);
                     expect(entity3.validate.called).equal(false); // fail fast, exit validation

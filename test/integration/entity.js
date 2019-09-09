@@ -53,7 +53,7 @@ const getAddress = (addressBookEntity = null) => {
     return address;
 };
 
-const getUser = (addressEntity) => {
+const getUser = addressEntity => {
     const key = UserModel.key(getId());
     allKeys.push(key);
     const data = { address: addressEntity.entityKey };
@@ -66,7 +66,7 @@ const cleanUp = () => ds.delete(allKeys).then(() => Promise.all([
     AddressModel.deleteAll(),
     AddressBookModel.deleteAll(),
 ]))
-    .catch((err) => {
+    .catch(err => {
                 console.log('Error cleaning up'); // eslint-disable-line
                 console.log(err); // eslint-disable-line
     });
@@ -105,7 +105,7 @@ describe('Entity (Integration Tests)', () => {
             user.populate()
                 .then(() => user.save())
                 .then(() => UserModel.get(user.entityKey.name))
-                .then((entityFetched) => {
+                .then(entityFetched => {
                     expect(entityFetched.entityData.address).deep.equal(address.entityKey);
                 })
         ));

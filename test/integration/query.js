@@ -46,7 +46,7 @@ const getAddress = () => {
     return address;
 };
 
-const getUser = (address) => {
+const getUser = address => {
     const key = UserModel.key(getId());
     allKeys.push(key);
     const data = {
@@ -77,7 +77,7 @@ const mapUserToId = users.reduce((acc, user) => ({
 }), {});
 
 const cleanUp = () => ds.delete(allKeys).then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll()]))
-    .catch((err) => {
+    .catch(err => {
         console.log('Error cleaning up'); // eslint-disable-line
         console.log(err); // eslint-disable-line
     });
@@ -126,7 +126,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -142,7 +142,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const { entityKey } = entity;
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -158,7 +158,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -185,7 +185,7 @@ describe('Queries (Integration Tests)', () => {
                         .then(({ entities }) => {
                             expect(entities.length).equal(users.length);
 
-                            entities.forEach((entity) => {
+                            entities.forEach(entity => {
                                 const entityKey = entity[gstore.ds.KEY];
                                 const addressId = mapUserToId[entityKey.name].address.name;
                                 const address = mapAddressToId[addressId];
@@ -203,7 +203,7 @@ describe('Queries (Integration Tests)', () => {
             it('should populate the address of all users', () => (
                 UserModel.findOne({ name: users[0].name })
                     .populate()
-                    .then((entity) => {
+                    .then(entity => {
                         const addressId = mapUserToId[entity.entityKey.name].address.name;
                         const address = mapAddressToId[addressId];
                         expect(entity.address.city).equal(address.city);
@@ -214,7 +214,7 @@ describe('Queries (Integration Tests)', () => {
             it('should allow to select specific reference entity fields', () => (
                 UserModel.findOne({ name: users[0].name })
                     .populate('address', 'country')
-                    .then((entity) => {
+                    .then(entity => {
                         const addressId = mapUserToId[entity.entityKey.name].address.name;
                         const address = mapAddressToId[addressId];
                         expect(entity.address.country).equal(address.country);
@@ -229,10 +229,10 @@ describe('Queries (Integration Tests)', () => {
             it('should populate the address of all users', () => (
                 UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10 })
                     .populate()
-                    .then((entities) => {
+                    .then(entities => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -245,10 +245,10 @@ describe('Queries (Integration Tests)', () => {
             it('should also work with ENTITY format', () => (
                 UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10, format: 'ENTITY' })
                     .populate()
-                    .then((entities) => {
+                    .then(entities => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const { entityKey } = entity;
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -261,10 +261,10 @@ describe('Queries (Integration Tests)', () => {
             it('should allow to select specific reference entity fields', () => (
                 UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10 })
                     .populate('address', 'country')
-                    .then((entities) => {
+                    .then(entities => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -286,7 +286,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -304,7 +304,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const { entityKey } = entity;
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];
@@ -323,7 +323,7 @@ describe('Queries (Integration Tests)', () => {
                     .then(({ entities }) => {
                         expect(entities.length).equal(users.length);
 
-                        entities.forEach((entity) => {
+                        entities.forEach(entity => {
                             const entityKey = entity[gstore.ds.KEY];
                             const addressId = mapUserToId[entityKey.name].address.name;
                             const address = mapAddressToId[addressId];

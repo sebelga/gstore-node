@@ -31,7 +31,7 @@ describe('Query Helpers', () => {
 
         it('and not modify query if no options passed', () => {
             const originalQuery = {};
-            Object.keys(query).forEach((k) => {
+            Object.keys(query).forEach(k => {
                 originalQuery[k] = query[k];
             });
 
