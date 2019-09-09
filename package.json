@@ -15,7 +15,7 @@
     "test": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test --recursive --colors"
   },
   "engines": {
-    "node": ">=8.0"
+    "node": ">=10.0"
   },
   "keywords": [
     "google datastore",
