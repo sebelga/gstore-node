@@ -4,9 +4,16 @@ jsconfig.json
 .jshintrc
 .eslintrc.json
 .babelrc
+.editorconfig
 **/todo.txt
 **/notes.txt
-release.md
+CHANGELOG.md
+README.md
+yarn.lock
 
 test/
 **/.trash
+.nyc_output/
+.vscode/
+coverage/
+logo/
