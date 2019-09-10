@@ -709,13 +709,14 @@ describe('Model', () => {
             });
         });
 
-        it('should return error if any while saving', () => {
+        it('should return error if any while saving', done => {
             transaction.run.restore();
             const error = { code: 500, message: 'Houston wee need you.' };
             sinon.stub(transaction, 'run').rejects([error]);
 
-            return GstoreModel.update(123).catch(err => {
+            GstoreModel.update(123).catch(err => {
                 expect(err).equal(error);
+                done();
             });
         });
 
