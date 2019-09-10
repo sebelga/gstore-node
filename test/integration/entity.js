@@ -53,8 +53,8 @@ const getAddress = (addressBookEntity = null) => {
     return address;
 };
 
-const getUser = addressEntity => {
-    const key = UserModel.key(getId());
+const getUser = (addressEntity, id = getId()) => {
+    const key = UserModel.key(id);
     allKeys.push(key);
     const data = { address: addressEntity.entityKey };
     const user = new UserModel(data, null, null, null, key);
@@ -81,7 +81,6 @@ describe('Entity (Integration Tests)', () => {
             this.skip();
         }
         generatedIds = [];
-        // return gstore.save([...users, ...addresses]);
         return gstore.save([addressBook, address]);
     });
 
@@ -109,6 +108,16 @@ describe('Entity (Integration Tests)', () => {
                     expect(entityFetched.entityData.address).deep.equal(address.entityKey);
                 })
         ));
+
+        it('should add the id or name to the entity', async () => {
+            const entity1 = await user.save();
+            expect(entity1.id).equal(entity1.entityKey.name);
+
+            const user2 = getUser(address, 1234);
+            const entity2 = await user2.save();
+
+            expect(entity2.id).equal(entity2.entityKey.id);
+        });
     });
 
     describe('populate()', () => {
