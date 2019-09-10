@@ -187,7 +187,7 @@ export class Schema<T = { [key: string]: any }> {
 
     /**
      * Executes joi.validate on given data. If schema does not have a joi config object data is returned
-     * 
+     *
      * @param {*} data The data to sanitize
      * @returns {*} The data sanitized
      */
@@ -755,7 +755,6 @@ export interface SchemaOptions {
         format?: JSONFormatType | EntityFormatType;
         showKey?: string;
     };
-    keyType?: "id" | "name" | "auto";
     joi?: boolean | { extra?: any; options?: any };
 }
 

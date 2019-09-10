@@ -286,11 +286,6 @@ describe('Model', () => {
             assert.isUndefined(key.path[1]);
         });
 
-        it('should parse string id "123" to integer', () => {
-            const key = GstoreModel.key('123');
-            expect(key.path[1]).equal(123);
-        });
-
         it('should create array of ids', () => {
             const keys = GstoreModel.key([22, 69]);
 
@@ -360,11 +355,6 @@ describe('Model', () => {
             .then(_entity => {
                 assert.isTrue(is.array(_entity));
             }));
-
-        it('converting a string integer to real integer', () => GstoreModel.get('123').then(() => {
-            assert.isUndefined(ds.get.getCall(0).args[0].name);
-            expect(ds.get.getCall(0).args[0][0].id).equal(123);
-        }));
 
         it('not converting string with mix of number and non number', () => GstoreModel.get('123:456').then(() => {
             expect(ds.get.getCall(0).args[0][0].name).equal('123:456');
