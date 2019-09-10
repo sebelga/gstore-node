@@ -4,13 +4,14 @@
 
 const redisStore = require('cache-manager-redis-store');
 const chai = require('chai');
+const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
 const { argv } = require('yargs');
 
 const { Gstore } = require('../../lib');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
-
+const chance = new Chance();
 const { expect } = chai;
 
 const allKeys = [];
@@ -74,11 +75,11 @@ describe('Integration Tests (Cache)', () => {
     });
 
     it('should set KEY symbol on query result', () => {
-        const user = new Model({ email: 'test@test.com' });
-
+        const id = chance.string({ pool: 'abcdefghijklmnopqrstuvwxyz0123456789' });
+        const user = new Model({ email: 'test@test.com' }, id);
         return user.save().then(entity => {
             addKey(entity.entityKey);
-            return Model.get(entity.entityKey.id)
+            return Model.get(entity.entityKey.name)
                 .then(e => {
                     expect(e.email).equal('test@test.com');
                 });

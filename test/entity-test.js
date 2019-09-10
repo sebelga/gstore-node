@@ -231,18 +231,6 @@ describe('Entity', () => {
 
             it('---> with a full Key ("string" Integer keyname passed)', () => {
                 entity = new GstoreModel({}, '123');
-
-                expect(entity.entityKey.id).equal('123');
-            });
-
-            it('---> with a full Key ("string" Integer **not** converted)', () => {
-                schema = new Schema({
-                    name: { type: 'string' },
-                }, { keyType: 'name' });
-                GstoreModel = gstore.model('EntityKind', schema);
-
-                entity = new GstoreModel({}, '123');
-
                 expect(entity.entityKey.name).equal('123');
             });
 
