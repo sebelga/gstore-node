@@ -1,6 +1,28 @@
-# Change Log
+# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [7.0.0](https://github.com/sebelga/gstore-node/compare/v6.0.2...v7.0.0) (2019-09-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **entitykey:** The "keyType" Schema option has been removed as it is no longer needed. Also, as gstore does not parse the id anymore, running your project against the Datastore emulator locally might break as the emulator treats differently User.get(123) than User.get("123"). Auto-allocated ids are integers and need to be provided as integers for the Emulator.
+* **Dependencies:** Node version 8.x not supported anymore. Upgrade to v10.x or superior.
+* **Dependencies:** The @google-cloud/datastore package is not defined  anymore as a dependency of gstore-node. You will need to manually install it in your project.
+
+* **Dependencies:** Set google-cloud datastore as peerDependency ([#177](https://github.com/sebelga/gstore-node/issues/177)) ([ac52ffb](https://github.com/sebelga/gstore-node/commit/ac52ffb))
+* **Dependencies:** Update lib dependencies ([#178](https://github.com/sebelga/gstore-node/issues/178)) ([7fa94b1](https://github.com/sebelga/gstore-node/commit/7fa94b1))
+
+
+### Bug Fixes
+
+* call execPostHooks on internalTransaction ([#161](https://github.com/sebelga/gstore-node/issues/161)) ([7b132cf](https://github.com/sebelga/gstore-node/commit/7b132cf))
+* **entity:** add "id" property to entity after it has been saved ([#180](https://github.com/sebelga/gstore-node/issues/180)) ([15a713a](https://github.com/sebelga/gstore-node/commit/15a713a)), closes [#172](https://github.com/sebelga/gstore-node/issues/172)
+* **entitykey:** remove convertion of string number to integer for entity key id ([#179](https://github.com/sebelga/gstore-node/issues/179)) ([75dc869](https://github.com/sebelga/gstore-node/commit/75dc869)), closes [#168](https://github.com/sebelga/gstore-node/issues/168)
+* **excludefromindexes:** update logic to add all properties of Array embedded entities ([#182](https://github.com/sebelga/gstore-node/issues/182)) ([c9da35b](https://github.com/sebelga/gstore-node/commit/c9da35b)), closes [#132](https://github.com/sebelga/gstore-node/issues/132)
+* **model:** throw NOT_FOUND error when trying to update a Model that does not exist ([#181](https://github.com/sebelga/gstore-node/issues/181)) ([cc11e02](https://github.com/sebelga/gstore-node/commit/cc11e02)), closes [#164](https://github.com/sebelga/gstore-node/issues/164)
+* **Types:** Schema methods() signature ([#171](https://github.com/sebelga/gstore-node/issues/171)) ([4a144ce](https://github.com/sebelga/gstore-node/commit/4a144ce))
 
 <a name="6.0.2"></a>
 ## [6.0.2](https://github.com/sebelga/gstore-node/compare/v6.0.1...v6.0.2) (2019-04-26)
