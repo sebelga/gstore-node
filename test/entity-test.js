@@ -72,7 +72,7 @@ describe('Entity', () => {
             assert.isDefined(entity.schema);
             assert.isDefined(entity.pre);
             assert.isDefined(entity.post);
-            expect(entity.excludeFromIndexes).deep.equal([]);
+            expect(entity.excludeFromIndexes).deep.equal({});
         });
 
         it('should add data passed to entityData', () => {
@@ -87,7 +87,7 @@ describe('Entity', () => {
 
         it('should not add any data if nothing is passed', () => {
             schema = new Schema({
-                name: { type: 'string', optional: true },
+                name: { type: String, optional: true },
             });
             GstoreModel = gstore.model('BlogPost', schema);
 
@@ -102,10 +102,10 @@ describe('Entity', () => {
             }
 
             schema = new Schema({
-                name: { type: 'string', default: 'John' },
-                lastname: { type: 'string' },
+                name: { type: String, default: 'John' },
+                lastname: { type: String },
                 email: { optional: true },
-                generatedValue: { type: 'string', default: fn },
+                generatedValue: { type: String, default: fn },
                 availableValues: { values: ['a', 'b', 'c'] },
                 availableValuesRequired: { values: ['a', 'b', 'c'], required: true },
             });
@@ -159,7 +159,7 @@ describe('Entity', () => {
         it('should call handler for default values in gstore.defaultValues constants', () => {
             sinon.spy(gstore.defaultValues, '__handler__');
             schema = new Schema({
-                createdOn: { type: 'dateTime', default: gstore.defaultValues.NOW },
+                createdOn: { type: Date, default: gstore.defaultValues.NOW },
             });
             GstoreModel = gstore.model('BlogPost', schema);
             entity = new GstoreModel({});
@@ -170,7 +170,7 @@ describe('Entity', () => {
 
         it('should not add default to optional properties', () => {
             schema = new Schema({
-                name: { type: 'string' },
+                name: { type: String },
                 email: { optional: true },
             });
             GstoreModel = gstore.model('BlogPost', schema);
@@ -183,20 +183,27 @@ describe('Entity', () => {
         it('should create its array of excludeFromIndexes', () => {
             schema = new Schema({
                 name: { excludeFromIndexes: true },
-                age: { excludeFromIndexes: true, type: 'int' },
-                embedded: { excludeFromIndexes: ['prop1', 'prop2'] },
-                arrayValue: { excludeFromIndexes: 'property', type: 'array' },
+                age: { excludeFromIndexes: true, type: Number },
+                embedded: { type: Object, excludeFromIndexes: ['prop1', 'prop2'] },
+                embedded2: { type: Object, excludeFromIndexes: true },
+                arrayValue: { excludeFromIndexes: 'property', type: Array },
                 // Array in @google-cloud have to be set on the data value
-                arrayValue2: { excludeFromIndexes: true, type: 'array' },
+                arrayValue2: { excludeFromIndexes: true, type: Array },
                 arrayValue3: { excludeFromIndexes: true, joi: Joi.array() },
             });
             GstoreModel = gstore.model('BlogPost', schema);
 
             entity = new GstoreModel({ name: 'John' });
 
-            expect(entity.excludeFromIndexes).deep.equal([
-                'name', 'age', 'embedded.prop1', 'embedded.prop2', 'arrayValue[].property',
-            ]);
+            expect(entity.excludeFromIndexes).deep.equal({
+                name: ['name'],
+                age: ['age'],
+                embedded: ['embedded.prop1', 'embedded.prop2'],
+                embedded2: ['embedded2', 'embedded2.*'],
+                arrayValue: ['arrayValue[].property'],
+                arrayValue2: ['arrayValue2[]', 'arrayValue2[].*'],
+                arrayValue3: ['arrayValue3[]', 'arrayValue3[].*'],
+            });
         });
 
         describe('should create Datastore Key', () => {
@@ -1102,7 +1109,7 @@ describe('Entity', () => {
         });
 
         it('should update modifiedOn to new Date if property in Schema', () => {
-            schema = new Schema({ modifiedOn: { type: 'datetime' } });
+            schema = new Schema({ modifiedOn: { type: Date } });
             GstoreModel = gstore.model('BlogPost', schema);
             entity = new GstoreModel({});
 
@@ -1114,7 +1121,7 @@ describe('Entity', () => {
         });
 
         it('should convert plain geo object (latitude, longitude) to datastore GeoPoint', () => {
-            schema = new Schema({ location: { type: 'geoPoint' } });
+            schema = new Schema({ location: { type: Schema.Types.GeoPoint } });
             GstoreModel = gstore.model('Car', schema);
             entity = new GstoreModel({
                 location: {

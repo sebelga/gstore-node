@@ -21,13 +21,6 @@ describe('Datastore serializer', () => {
     beforeEach(() => {
         gstore.models = {};
         gstore.modelSchemas = {};
-
-        const schema = new Schema({
-            name: { type: 'string' },
-            email: { type: 'string', read: false },
-            createdOn: { type: 'datetime' },
-        });
-        ModelInstance = gstore.model('Blog', schema, {});
     });
 
     describe('should convert data FROM Datastore format', () => {
@@ -38,6 +31,13 @@ describe('Datastore serializer', () => {
         let data;
 
         beforeEach(() => {
+            const schema = new Schema({
+                name: { type: 'string' },
+                email: { type: 'string', read: false },
+                createdOn: { type: 'datetime' },
+            });
+            ModelInstance = gstore.model('Blog', schema, {});
+
             data = {
                 name: 'John',
                 lastname: 'Snow',
@@ -94,12 +94,12 @@ describe('Datastore serializer', () => {
 
         beforeEach(() => {
             const schema = new Schema({
-                name: { type: 'string', excludeFromIndexes: true },
-                lastname: { type: 'string' },
-                embedded: { type: 'object', excludeFromIndexes: 'description' },
-                array: { type: 'array', excludeFromIndexes: true },
-                array2: { type: 'array', excludeFromIndexes: true, joi: Joi.array() },
-                array3: { type: 'array', excludeFromIndexes: true, optional: true },
+                name: { type: String, excludeFromIndexes: true },
+                lastname: { type: String },
+                embedded: { type: Object, excludeFromIndexes: 'description' },
+                array: { type: Array, excludeFromIndexes: true },
+                array2: { type: Array, excludeFromIndexes: true, joi: Joi.array() },
+                array3: { type: Array, excludeFromIndexes: true, optional: true },
             });
             ModelInstance = gstore.model('Serializer', schema);
 
@@ -133,12 +133,12 @@ describe('Datastore serializer', () => {
 
         it('and set excludeFromIndexes properties', () => {
             const { excludeFromIndexes } = datastoreSerializer.toDatastore(entity);
-            expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]']);
+            expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]', 'array2[].*']);
         });
 
         it('should set all excludeFromIndexes on all properties of object', () => {
             const schema = new Schema({
-                embedded: { type: 'object', excludeFromIndexes: true },
+                embedded: { type: Object, excludeFromIndexes: true },
                 embedded2: { joi: Joi.object(), excludeFromIndexes: true },
                 embedded3: { joi: Joi.object(), excludeFromIndexes: true },
             });
@@ -159,9 +159,7 @@ describe('Datastore serializer', () => {
 
             const serialized = datastoreSerializer.toDatastore(entity);
             expect(serialized.excludeFromIndexes).to.deep.equal([
-                'embedded', 'embedded2', 'embedded3',
-                'embedded.prop1', 'embedded.prop2', 'embedded.prop3',
-                'embedded2.prop1', 'embedded2.prop2', 'embedded2.prop3',
+                'embedded', 'embedded.*', 'embedded2', 'embedded2.*',
             ]);
         });
     });

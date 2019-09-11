@@ -99,6 +99,6 @@
     "yargs": "^14.0.0"
   },
   "peerDependencies": {
-    "@google-cloud/datastore": ">= 3.0.0 < 5"
+    "@google-cloud/datastore": ">= 4.2.0 < 5"
   }
 }

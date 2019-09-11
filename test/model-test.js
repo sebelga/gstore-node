@@ -1334,7 +1334,12 @@ describe('Model', () => {
 
             const entity = new GstoreModel({});
 
-            expect(entity.excludeFromIndexes).deep.equal(['lastname', 'age'].concat(arr));
+            expect(entity.excludeFromIndexes).deep.equal({
+                lastname: ['lastname'],
+                age: ['age'],
+                newProp: ['newProp'],
+                url: ['url'],
+            });
             expect(schema.path('newProp').optional).equal(true);
         });
 
@@ -1344,7 +1349,10 @@ describe('Model', () => {
 
             const entity = new GstoreModel({});
 
-            expect(entity.excludeFromIndexes).deep.equal(['lastname', 'age']);
+            expect(entity.excludeFromIndexes).deep.equal({
+                lastname: ['lastname'],
+                age: ['age'],
+            });
             assert.isUndefined(schema.path('lastname').optional);
             expect(schema.path('lastname').excludeFromIndexes).equal(true);
         });
