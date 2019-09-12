@@ -31,8 +31,6 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - **[Typescript support](https://sebloix.gitbook.io/gstore-node/typescript)**
 - :tada: **NEW** [**populate()**](https://sebloix.gitbook.io/gstore-node/populate) support to fetch reference entities and do cross Entity Type "joins" when querying one or multiple entities (since v5.0.0)
 
-This library is in active development, please report any issue you might find.  
-
 > Please don’t forget to star this repo if you found it useful :)
 
 # Installation
@@ -48,7 +46,7 @@ yarn add gstore-node
 # Getting started
 
 Import gstore-node and @google-cloud/datastore and configure your project.  
-For the information on how to configure @google-cloud/datastore [read the docs here](https://cloud.google.com/nodejs/docs/reference/datastore/3.0.x/Datastore).
+For the information on how to configure @google-cloud/datastore [read the docs here](https://googleapis.dev/nodejs/datastore/latest/Datastore.html).
 
 ```js
 const { Gstore } = require('gstore-node');

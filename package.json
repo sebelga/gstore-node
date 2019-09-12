@@ -6,8 +6,8 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "commit": "git-cz",
-    "coverage": "nyc mocha test --recursive",
-    "coveralls": "nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+    "coverage": "rm -rf ./coverage && nyc report --reporter=html",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "lint": "./node_modules/eslint/bin/eslint.js ./lib ./test",
     "pretest": "npm run lint",
