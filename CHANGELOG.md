@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.1.0](https://github.com/sebelga/gstore-node/compare/v7.0.0...v7.1.0) (2019-09-13)
+
+
+### Features
+
+* **auto-unindex:** add Schema option to auto unindex large properties ([#183](https://github.com/sebelga/gstore-node/issues/183)) ([dbf9861](https://github.com/sebelga/gstore-node/commit/dbf9861))
+
 ## [7.0.0](https://github.com/sebelga/gstore-node/compare/v6.0.2...v7.0.0) (2019-09-11)
 
 
