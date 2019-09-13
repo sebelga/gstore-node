@@ -122,8 +122,9 @@ describe('Datastore serializer', () => {
                 array2: [1, 2, 3],
                 array: null,
             };
-            const { data } = datastoreSerializer.toDatastore(entity);
+            const { data, excludeLargeProperties } = datastoreSerializer.toDatastore(entity);
             expect(data).to.deep.equal(expected);
+            expect(excludeLargeProperties).to.equal(false);
         });
 
         it('not taking into account "undefined" variables', () => {
@@ -134,6 +135,15 @@ describe('Datastore serializer', () => {
         it('and set excludeFromIndexes properties', () => {
             const { excludeFromIndexes } = datastoreSerializer.toDatastore(entity);
             expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]', 'array2[].*']);
+        });
+
+        it('and set excludeLargeProperties flag', () => {
+            const schema = new Schema({ name: String }, { excludeLargeProperties: true });
+            const Model = gstore.model('Serializer-auto-unindex', schema);
+            entity = new Model({ name: 'John' });
+
+            const { excludeLargeProperties } = datastoreSerializer.toDatastore(entity);
+            expect(excludeLargeProperties).equal(true);
         });
 
         it('should set all excludeFromIndexes on all properties of object', () => {

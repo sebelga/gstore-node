@@ -750,6 +750,7 @@ export interface SchemaPathDefinition {
 export interface SchemaOptions {
     validateBeforeSave?: boolean;
     explicitOnly?: boolean;
+    excludeLargeProperties?: boolean;
     queries?: {
         readAll?: boolean;
         format?: JSONFormatType | EntityFormatType;
