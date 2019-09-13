@@ -1,6 +1,6 @@
 'use strict';
 
-const is = require('is');
+import is from 'is';
 
 function buildFromOptions(query, options, ds) {
     if (!query || query.constructor.name !== 'Query') {
@@ -75,6 +75,6 @@ function buildFromOptions(query, options, ds) {
     return query;
 }
 
-module.exports = {
+export default {
     buildFromOptions,
 };

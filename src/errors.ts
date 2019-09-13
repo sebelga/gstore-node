@@ -2,8 +2,8 @@
 
 'use strict';
 
-const util = require('util');
-const is = require('is');
+import util from 'util';
+import is from 'is';
 
 const errorCodes = {
     ERR_ENTITY_NOT_FOUND: 'ERR_ENTITY_NOT_FOUND',
@@ -97,7 +97,7 @@ class ValueError extends GstoreError {
     }
 }
 
-module.exports = {
+export default {
     GstoreError,
     ValidationError,
     TypeError,

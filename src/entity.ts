@@ -1,14 +1,13 @@
 
 'use strict';
 
-const is = require('is');
-const hooks = require('promised-hooks');
-const arrify = require('arrify');
-
-const datastoreSerializer = require('./serializer').Datastore;
-const defaultValues = require('./helpers/defaultValues');
-const { errorCodes } = require('./errors');
-const { validation, populateHelpers } = require('./helpers');
+import is from 'is';
+import hooks from 'promised-hooks';
+import arrify from 'arrify';
+import { Datastore as datastoreSerializer } from './serializer';
+import defaultValues from './helpers/defaultValues';
+import { errorCodes } from './errors';
+import { validation, populateHelpers } from './helpers';
 
 const { populateFactory } = populateHelpers;
 
@@ -479,4 +478,4 @@ function registerHooksFromSchema(self) {
     return self;
 }
 
-module.exports = Entity;
+export default Entity;

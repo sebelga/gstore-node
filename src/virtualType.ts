@@ -1,6 +1,6 @@
 'use strict';
 
-const is = require('is');
+import is from 'is';
 
 class VirtualType {
     constructor(name, options) {
@@ -44,4 +44,4 @@ class VirtualType {
     }
 }
 
-module.exports = VirtualType;
+export default VirtualType;

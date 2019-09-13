@@ -2,23 +2,23 @@
 
 'use strict';
 
-const is = require('is');
-const arrify = require('arrify');
-const extend = require('extend');
-const hooks = require('promised-hooks');
-const dsAdapter = require('nsql-cache-datastore')();
-const get = require('lodash.get');
-const set = require('lodash.set');
-
-const Entity = require('./entity');
-const Query = require('./query');
-const { GstoreError, errorCodes } = require('./errors');
-const { populateHelpers } = require('./helpers');
+import is from 'is';
+import arrify from 'arrify';
+import extend from 'extend';
+import hooks from 'promised-hooks';
+import dsAdapterFactory from 'nsql-cache-datastore';
+const dsAdapter = dsAdapterFactory();
+import get from 'lodash.get';
+import set from 'lodash.set';
+import Entity from './entity';
+import Query from './query';
+import { GstoreError, errorCodes } from './errors';
+import { populateHelpers } from './helpers';
 
 const { keyToString } = dsAdapter;
 const { populateFactory } = populateHelpers;
 
-class Model extends Entity {
+export class Model extends Entity {
     static compile(kind, schema, gstore) {
         const ModelInstance = class extends Model { };
 
@@ -964,4 +964,4 @@ Model.list = list;
 Model.findOne = findOne;
 Model.findAround = findAround;
 
-module.exports = Model;
+export default Model;

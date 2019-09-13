@@ -2,9 +2,11 @@
 
 /* eslint-disable import/no-extraneous-dependencies */
 
-const optional = require('optional');
-const dsAdapter = require('nsql-cache-datastore')();
-const arrify = require('arrify');
+import optional from 'optional';
+
+import dsAdapterFactory from 'nsql-cache-datastore';
+const dsAdapter = dsAdapterFactory();
+import arrify from 'arrify';
 
 const DataLoader = optional('dataloader');
 const { keyToString } = dsAdapter;
@@ -40,4 +42,4 @@ function createDataLoader(ds) {
     });
 }
 
-module.exports = { createDataLoader };
+export default { createDataLoader };

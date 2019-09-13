@@ -2,27 +2,20 @@
 
 /* eslint-disable prefer-template */
 
-const is = require('is');
-const extend = require('extend');
-const hooks = require('promised-hooks');
-const NsqlCache = require('nsql-cache');
-const dsAdapter = require('nsql-cache-datastore');
+import is from 'is';
 
-const Schema = require('./schema');
-const Model = require('./model');
-const { queries } = require('./constants');
-const {
-    GstoreError,
-    ValidationError,
-    TypeError,
-    ValueError,
-    errorCodes,
-} = require('./errors');
-const defaultValues = require('./helpers/defaultValues');
-const datastoreSerializer = require('./serializer').Datastore;
-const { createDataLoader } = require('./dataloader');
-
-const pkg = require('../package.json');
+import extend from 'extend';
+import hooks from 'promised-hooks';
+import NsqlCache from 'nsql-cache';
+import dsAdapter from 'nsql-cache-datastore';
+import Schema from './schema';
+import Model from './model';
+import { queries } from './constants';
+import { GstoreError, ValidationError, TypeError, ValueError, errorCodes } from './errors';
+import defaultValues from './helpers/defaultValues';
+import { Datastore as datastoreSerializer } from './serializer';
+import { createDataLoader } from './dataloader';
+import pkg from '../package.json';
 
 const defaultConfig = {
     cache: undefined,
@@ -196,7 +189,7 @@ const instances = {
     },
 };
 
-module.exports = {
+export default {
     Gstore,
     instances,
 };

@@ -2,15 +2,15 @@
 
 'use strict';
 
-const optional = require('optional');
-const extend = require('extend');
-const is = require('is');
+import optional from 'optional';
+import extend from 'extend';
+import is from 'is';
 
 const Joi = optional('@hapi/joi') || optional('joi');
 
-const { queries } = require('./constants');
-const VirtualType = require('./virtualType');
-const { ValidationError, errorCodes } = require('./errors');
+import { queries } from './constants';
+import VirtualType from './virtualType';
+import { ValidationError, errorCodes } from './errors';
 
 const IS_QUERY_HOOK = {
     update: true,
@@ -256,4 +256,4 @@ function buildJoiSchema(schema, joiConfig) {
     return joiSchema;
 }
 
-module.exports = Schema;
+export default Schema;

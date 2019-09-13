@@ -8,4 +8,4 @@ const queries = {
     },
 };
 
-module.exports = { queries };
+export default { queries };

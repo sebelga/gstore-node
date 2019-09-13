@@ -1,10 +1,9 @@
 'use strict';
 
-const moment = require('moment');
-const validator = require('validator');
-const is = require('is');
-
-const gstoreErrors = require('../errors');
+import moment from 'moment';
+import validator from 'validator';
+import is from 'is';
+import gstoreErrors from '../errors';
 
 const isValidDate = value => {
     if (value.constructor.name !== 'Date'
@@ -319,6 +318,6 @@ const validate = (entityData, schema, entityKind, datastore) => {
     };
 };
 
-module.exports = {
+export default {
     validate,
 };

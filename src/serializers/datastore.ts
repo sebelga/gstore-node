@@ -1,7 +1,7 @@
 'use strict';
 
-const is = require('is');
-const arrify = require('arrify');
+import is from 'is';
+import arrify from 'arrify';
 
 function toDatastore(entity, options = {}) {
     // For now the more robust excudeFromIndexes Array declaration
@@ -142,7 +142,7 @@ function entitiesToDatastore(entities, options) {
     return multiple ? result : result[0];
 }
 
-module.exports = {
+export default {
     toDatastore,
     fromDatastore,
     entitiesToDatastore,

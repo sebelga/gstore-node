@@ -1,11 +1,10 @@
 'use strict';
 
-const extend = require('extend');
-const is = require('is');
-
-const { queryHelpers, populateHelpers } = require('./helpers');
-const { GstoreError, errorCodes } = require('./errors');
-const datastoreSerializer = require('./serializer').Datastore;
+import extend from 'extend';
+import is from 'is';
+import { queryHelpers, populateHelpers } from './helpers';
+import { GstoreError, errorCodes } from './errors';
+import { Datastore as datastoreSerializer } from './serializer';
 
 const { populateFactory } = populateHelpers;
 
@@ -211,4 +210,4 @@ function createDatastoreQuery(Model, namespace, transaction) {
     return Model.gstore.ds.createQuery.apply(Model.gstore.ds, createQueryArgs);
 }
 
-module.exports = Query;
+export default Query;
