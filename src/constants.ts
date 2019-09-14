@@ -1,11 +1,7 @@
 
 'use strict';
 
-const queries = {
-    formats: {
-        JSON: 'JSON',
-        ENTITY: 'ENTITY',
-    },
+export const QUERIES_FORMATS = {
+    JSON: 'JSON',
+    ENTITY: 'ENTITY',
 };
-
-export default { queries };

@@ -5,7 +5,9 @@
 import util from 'util';
 import is from 'is';
 
-const errorCodes = {
+type MessageGetter = (...args:any[]) => string;
+
+export const ERROR_CODES = {
     ERR_ENTITY_NOT_FOUND: 'ERR_ENTITY_NOT_FOUND',
     ERR_GENERIC: 'ERR_GENERIC',
     ERR_VALIDATION: 'ERR_VALIDATION',
@@ -16,11 +18,11 @@ const errorCodes = {
     ERR_PROP_IN_RANGE: 'ERR_PROP_IN_RANGE',
 };
 
-const message = (text, ...args) => util.format(text, ...args);
+const message = (text: string, ...args: any[]) => util.format(text, ...args);
 
-const messages = {
+const messages: { [key: string]: string | (MessageGetter) } = {
     ERR_GENERIC: 'An error occured',
-    ERR_VALIDATION: entityKind => message('The entity data does not validate against the "%s" Schema', entityKind),
+    ERR_VALIDATION: (entityKind: string) => message('The entity data does not validate against the "%s" Schema', entityKind),
     ERR_PROP_TYPE: (prop, type) => message('Property "%s" must be a %s', prop, type),
     ERR_PROP_VALUE: (value, prop) => message('"%s" is not a valid value for property "%s"', value, prop),
     ERR_PROP_NOT_ALLOWED: (prop, entityKind) => (
@@ -30,29 +32,31 @@ const messages = {
     ERR_PROP_IN_RANGE: (prop, range) => message('Property "%s" must be one of [%s]', prop, range && range.join(', ')),
 };
 
-class GstoreError extends Error {
-    constructor(code, msg, args) {
+export class GstoreError extends Error {
+    public code: string;
+
+    constructor(code: string, msg?: string, args?: any) {
         if (!msg && code && code in messages) {
             if (is.function(messages[code])) {
-                msg = messages[code](...args.messageParams);
+                msg = (messages[code] as MessageGetter)(...args.messageParams);
             } else {
-                msg = messages[code];
+                msg = messages[code] as string;
             }
         }
 
         if (!msg) {
-            msg = messages.ERR_GENERIC;
+            msg = messages.ERR_GENERIC as string;
         }
 
-        super(msg, code, args);
+        super(msg);
         this.name = 'GstoreError';
         this.message = msg;
-        this.code = code || errorCodes.ERR_GENERIC;
+        this.code = code || ERROR_CODES.ERR_GENERIC;
 
         if (args) {
             Object.keys(args).forEach(k => {
                 if (k !== 'messageParams') {
-                    this[k] = args[k];
+                    (this as any)[k] = args[k];
                 }
             });
         }
@@ -73,35 +77,26 @@ class GstoreError extends Error {
     }
 }
 
-class ValidationError extends GstoreError {
-    constructor(...args) {
-        super(...args);
+export class ValidationError extends GstoreError {
+    constructor(code: string, msg?: string, args?: any) {
+        super(code, msg, args);
         this.name = 'ValidationError';
         Error.captureStackTrace(this, this.constructor);
     }
 }
 
-class TypeError extends GstoreError {
-    constructor(...args) {
-        super(...args);
+export class TypeError extends GstoreError {
+    constructor(code: string, msg?: string, args?: any) {
+        super(code, msg, args);
         this.name = 'TypeError';
         Error.captureStackTrace(this, this.constructor);
     }
 }
 
-class ValueError extends GstoreError {
-    constructor(...args) {
-        super(...args);
+export class ValueError extends GstoreError {
+    constructor(code: string, msg?: string, args?: any) {
+        super(code, msg, args);
         this.name = 'ValueError';
         Error.captureStackTrace(this, this.constructor);
     }
 }
-
-export default {
-    GstoreError,
-    ValidationError,
-    TypeError,
-    ValueError,
-    message,
-    errorCodes,
-};

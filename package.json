@@ -76,6 +76,7 @@
   "devDependencies": {
     "@google-cloud/datastore": "^4.0.0",
     "@types/arrify": "2.0.1",
+    "@types/is": "^0.0.21",
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "cache-manager-redis-store": "^1.5.0",
