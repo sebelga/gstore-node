@@ -1,0 +1,6 @@
+node_modules
+/coverage
+/logo
+/test
+/typings
+!.eslintrc.js
