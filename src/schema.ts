@@ -1,19 +1,21 @@
-/* eslint-disable import/no-extraneous-dependencies */
-
-'use strict';
-
 import optional from 'optional';
 import extend from 'extend';
 import is from 'is';
 
 // TODO: Open PR in @google-cloud repo to expose those types
-import { Operator } from "@google-cloud/datastore/build/src/query";
-
-const Joi = optional('@hapi/joi') || optional('joi');
+import { Operator } from '@google-cloud/datastore/build/src/query';
 
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';
+
+const Joi = optional('@hapi/joi') || optional('joi');
+
+type FuncReturningPromise = (...args: any[]) => Promise<any>;
+type FunctionType = (...args: any[]) => any;
+type GenericObject = { [key: string]: any };
+type EntityFormatType = 'ENTITY';
+type JSONFormatType = 'JSON';
 
 const IS_QUERY_HOOK: { [key: string]: boolean } = {
   update: true,
@@ -74,40 +76,48 @@ const RESERVED_PROPERTY_NAMES: { [key: string]: boolean } = {
   validate: true,
 };
 
+/**
+ * gstore-node Schema
+ */
 class Schema<T = { [key: string]: SchemaPathDefinition }> {
   public readonly methods: { [propName: string]: FunctionType };
+
   public readonly paths: { [P in keyof T]: SchemaPathDefinition };
 
-  private virtuals: { [key: string]: VirtualType };
-  private shortcutQueries: { [key: string]: QueryListOptions };
+  private readonly virtuals: { [key: string]: VirtualType };
+
+  private readonly shortcutQueries: { [key: string]: QueryListOptions };
+
   private callQueue: {
     model: {
       [key: string]: {
-        pres: FuncReturningPromise[] | FuncReturningPromise[][],
-        post: FuncReturningPromise[] | FuncReturningPromise[][],
-      }
-    },
+        pres: (FuncReturningPromise | FuncReturningPromise[])[];
+        post: (FuncReturningPromise | FuncReturningPromise[])[];
+      };
+    };
     entity: {
       [key: string]: {
-        pres: FuncReturningPromise[] | FuncReturningPromise[][],
-        post: FuncReturningPromise[] | FuncReturningPromise[][],
-      }
-    },
+        pres: (FuncReturningPromise | FuncReturningPromise[])[];
+        post: (FuncReturningPromise | FuncReturningPromise[])[];
+      };
+    };
   };
-  private options: SchemaOptions;
-  private joiSchema: any;
 
+  private options: SchemaOptions = {};
+
+  private joiSchema?: GenericObject;
 
   constructor(properties: { [P in keyof T]: SchemaPathDefinition }, options?: SchemaOptions) {
     this.methods = {};
     this.virtuals = {};
     this.shortcutQueries = {};
-    this.paths = {} as any;
+    this.paths = {} as { [P in keyof T]: SchemaPathDefinition };
     this.callQueue = {
       model: {},
-      entity: {}
+      entity: {},
     };
-    this.options = this.initSchemaOptions(options);
+
+    this.options = Schema.initSchemaOptions(options);
 
     Object.entries(properties).forEach(([key, definition]) => {
       if (RESERVED_PROPERTY_NAMES[key]) {
@@ -118,11 +128,22 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     });
 
     if (options) {
-      this.joiSchema = this.initJoiSchema(properties, this.options.joi);
+      this.joiSchema = Schema.initJoiSchema(properties, this.options.joi);
     }
   }
 
-  method(name: string | { [key: string]: FunctionType }, fn: FunctionType) {
+  /**
+   * Add custom methods to entities.
+   * @link https://sebloix.gitbook.io/gstore-node/schema/custom-methods
+   *
+   * @example
+   * ```
+   * schema.methods.profilePict = function() {
+       return this.model('Image').get(this.imgIdx)
+   * }
+   * ```
+  */
+  method(name: string | { [key: string]: FunctionType }, fn: FunctionType): void {
     if (typeof name !== 'string') {
       if (typeof name !== 'object') {
         return;
@@ -137,21 +158,21 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     }
   }
 
-  queries(type: 'list', settings: QueryListOptions) {
+  queries(type: 'list', settings: QueryListOptions): void {
     this.shortcutQueries[type] = settings;
   }
 
   /**
-     * Getter / Setter for Schema paths.
-     *
-     * @param {string} propName The entity property
-     * @param {SchemaPathDefinition} [definition] The property definition
-     * @link https://sebelga.gitbooks.io/gstore-node/content/schema/schema-methods/path.html
-     */
-  path(propName: string, definition: SchemaPathDefinition) {
+   * Getter / Setter for Schema paths.
+   *
+   * @param {string} propName The entity property
+   * @param {SchemaPathDefinition} [definition] The property definition
+   * @link https://sebloix.gitbook.io/gstore-node/schema/schema-methods/path
+   */
+  path(propName: string, definition: SchemaPathDefinition): Schema | SchemaPathDefinition | undefined {
     if (typeof definition === 'undefined') {
-      if (this.paths[propName]) {
-        return this.paths[propName];
+      if (this.paths[propName as keyof T]) {
+        return this.paths[propName as keyof T];
       }
       return undefined;
     }
@@ -165,13 +186,17 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
   }
 
   /**
-     * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method. The callback will receive the original argument(s) passed to the target method. You can modify them in your resolve passing an object with an __override property containing the new parameter(s) for the target method.
-     *
-     * @param {string} method The target method to add the hook to
-     * @param {(...args: any[]) => Promise<any>} fn Function to execute before the target method. It must return a Promise
-     * @link https://sebelga.gitbooks.io/gstore-node/content/middleware-hooks/pre-hooks.html
-     */
-  pre(method: string, fn: FuncReturningPromise | FuncReturningPromise[]) {
+   * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method.
+   * The callback will receive the original argument(s) passed to the target method. You can modify them
+   * in your resolve passing an object with an __override property containing the new parameter(s)
+   * for the target method.
+   *
+   * @param {string} method The target method to add the hook to
+   * @param {(...args: any[]) => Promise<any>} fn Function to execute before the target method.
+   * It must return a Promise
+   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/pre-hooks
+   */
+  pre(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
     const queue = IS_QUERY_HOOK[method] ? this.callQueue.model : this.callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
@@ -181,17 +206,18 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
       };
     }
 
-    return queue[method].pres.push(fn as any);
+    return queue[method].pres.push(fn);
   }
 
   /**
-     * Register a "post" middelware to execute after a target method.
-     *
-     * @param {string} method The target method to add the hook to
-     * @param {(response: any) => Promise<any>} callback Function to execute after the target method. It must return a Promise
-     * @link https://sebelga.gitbooks.io/gstore-node/content/middleware-hooks/post-hooks.html
-     */
-  post(method: string, fn: FuncReturningPromise | FuncReturningPromise[]) {
+   * Register a "post" middelware to execute after a target method.
+   *
+   * @param {string} method The target method to add the hook to
+   * @param {(response: any) => Promise<any>} callback Function to execute after the target method.
+   * It must return a Promise
+   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/post-hooks
+   */
+  post(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
     const queue = IS_QUERY_HOOK[method] ? this.callQueue.model : this.callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
@@ -201,17 +227,17 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
       };
     }
 
-    return queue[method].post.push(fn as any);
+    return queue[method].post.push(fn);
   }
 
   /**
-     * Getter / Setter of a virtual property.
-     * Virtual properties are created dynamically and not saved in the Datastore.
-     *
-     * @param {string} propName The virtual property name
-     * @link https://sebelga.gitbooks.io/gstore-node/content/schema/schema-methods/virtual.html
-     */
-  virtual(propName: string) {
+   * Getter / Setter of a virtual property.
+   * Virtual properties are created dynamically and not saved in the Datastore.
+   *
+   * @param {string} propName The virtual property name
+   * @link https://sebloix.gitbook.io/gstore-node/schema/methods/virtual
+   */
+  virtual(propName: string): VirtualType {
     if (RESERVED_PROPERTY_NAMES[propName]) {
       throw new Error(`${propName} is reserved and can not be used as virtual property.`);
     }
@@ -221,24 +247,30 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     return this.virtuals[propName];
   }
 
-  validateJoi(entityData: any) {
+  /**
+   * Executes joi.validate on given data. If the schema does not have a joi config object data is returned.
+   *
+   * @param {*} data The data to sanitize
+   * @returns {*} The data sanitized
+   */
+  validateJoi(entityData: any): any {
     if (!this.isJoi) {
       return {
-        error: new ValidationError(
-          ERROR_CODES.ERR_GENERIC,
-          'Schema does not have a joi configuration object'
-        ),
+        error: new ValidationError(ERROR_CODES.ERR_GENERIC, 'Schema does not have a joi configuration object'),
         value: entityData,
       };
     }
-    return this.joiSchema.validate(entityData, (this.options.joi as JoiConfig).options || {});
+    return this.joiSchema!.validate(entityData, (this.options.joi as JoiConfig).options || {});
   }
 
-  get isJoi() {
+  /**
+   * Flag that returns "true" if the schema has a joi config object.
+   */
+  get isJoi(): boolean {
     return !is.undefined(this.joiSchema);
   }
 
-  private initSchemaOptions(provided?: SchemaOptions): SchemaOptions {
+  static initSchemaOptions(provided?: SchemaOptions): SchemaOptions {
     const options = extend(true, {}, DEFAULT_OPTIONS, provided);
 
     if (options.joi) {
@@ -253,13 +285,17 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
         options.joi = { ...joiOptionsDefault };
       }
       if (!Object.prototype.hasOwnProperty.call((options.joi as JoiConfig).options, 'stripUnknown')) {
-        (options.joi as JoiConfig).options.stripUnknown = (options.joi as JoiConfig).options.allowUnknown !== true;
+        (options.joi as JoiConfig).options!.stripUnknown = (options.joi as JoiConfig).options!.allowUnknown !== true;
       }
     }
+
     return options;
   }
 
-  private initJoiSchema(schema: { [P in keyof T]: SchemaPathDefinition }, joiConfig?: boolean | JoiConfig) {
+  static initJoiSchema(
+    schema: { [key: string]: SchemaPathDefinition },
+    joiConfig?: boolean | JoiConfig
+  ): GenericObject | undefined {
     if (!is.object(joiConfig)) {
       return undefined;
     }
@@ -269,7 +305,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
 
     Object.entries(schema).forEach(([key, definition]) => {
       if ({}.hasOwnProperty.call(definition, 'joi')) {
-        joiKeys[key] = (definition as SchemaPathDefinition).joi;
+        joiKeys[key] = definition.joi;
       }
     });
 
@@ -277,10 +313,10 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     let args;
 
     if (hasExtra) {
-      Object.keys((joiConfig as JoiConfig).extra).forEach(k => {
+      Object.keys((joiConfig as JoiConfig).extra!).forEach(k => {
         if (is.function(joiSchema[k])) {
-          args = (joiConfig as JoiConfig).extra[k];
-          joiSchema = joiSchema[k].apply(joiSchema, args);
+          args = (joiConfig as JoiConfig).extra![k];
+          joiSchema = joiSchema[k](...args);
         }
       });
     }
@@ -297,16 +333,9 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
 
 export default Schema;
 
-type FuncReturningPromise = (...args: any[]) => Promise<any>;
-type FunctionType = (...args: any[]) => any;
-type EntityFormatType = "ENTITY";
-type JSONFormatType = "JSON";
-
 export interface SchemaPathDefinition {
   type?: PropType;
-  validate?:
-  | string
-  | { rule: string | ((...args: any[]) => boolean); args: any[] };
+  validate?: string | { rule: string | ((...args: any[]) => boolean); args: any[] };
   optional?: boolean;
   default?: any;
   excludeFromIndexes?: boolean | string | string[];
@@ -318,7 +347,7 @@ export interface SchemaPathDefinition {
   ref?: string;
 }
 
-type JoiConfig = { extra?: any; options?: any };
+type JoiConfig = { extra?: GenericObject; options?: GenericObject };
 
 export interface SchemaOptions {
   validateBeforeSave?: boolean;
@@ -349,9 +378,7 @@ export interface QueryListOptions extends QueryOptions {
    * @example ```{ property: 'userName', descending: true }```
    * @type {({ property: 'string', descending?: boolean } | { property: 'string', descending?: boolean }[])}
    */
-  order?:
-  | { property: string; descending?: boolean }
-  | { property: string; descending?: boolean }[];
+  order?: { property: string; descending?: boolean } | { property: string; descending?: boolean }[];
   /**
    * @type {(string | string[])}
    */
@@ -359,7 +386,7 @@ export interface QueryListOptions extends QueryOptions {
   /**
    * @type {([string, any] | [string, string, any] | (any)[][])}
    */
-  filters?: [string, any] | [string, Operator, any] | (any)[][];
+  filters?: [string, unknown] | [string, Operator, unknown] | (unknown)[][];
   /**
    * @type {Array<any>}
    */
@@ -376,14 +403,16 @@ export interface QueryListOptions extends QueryOptions {
 
 export interface QueryOptions {
   /**
-   * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation. Learn more about strong and eventual consistency in the link below
+   * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation.
+   * Learn more about strong and eventual consistency in the link below
    *
    * @type {('strong' | 'eventual')}
    * @link https://cloud.google.com/datastore/docs/articles/balancing-strong-and-eventual-consistency-with-google-cloud-datastore
    */
-  consistency?: "strong" | "eventual";
+  consistency?: 'strong' | 'eventual';
   /**
-   * If set to true will return all the properties of the entity, regardless of the *read* parameter defined in the Schema
+   * If set to true will return all the properties of the entity,
+   * regardless of the *read* parameter defined in the Schema
    *
    * @type {boolean}
    * @default false
@@ -420,16 +449,16 @@ export interface QueryOptions {
 }
 
 export type PropType =
-  | "string"
-  | "int"
-  | "double"
-  | "boolean"
-  | "datetime"
-  | "array"
-  | "object"
-  | "geoPoint"
-  | "buffer"
-  | "entityKey"
+  | 'string'
+  | 'int'
+  | 'double'
+  | 'boolean'
+  | 'datetime'
+  | 'array'
+  | 'object'
+  | 'geoPoint'
+  | 'buffer'
+  | 'entityKey'
   | NumberConstructor
   | StringConstructor
   | ObjectConstructor

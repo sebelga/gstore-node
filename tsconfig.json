@@ -3,15 +3,21 @@
     "moduleResolution": "node",
     "target": "ES2015",
     "module": "commonjs",
-    "lib": ["es2015", "es2016", "es2017"],
-    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["esnext"],
     "outDir": "dist/lib",
     "strict": true,
     "removeComments": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": [
+      "node",
+      "jest"
+    ],
+    "allowJs": true
   },
   "include": [
     "src",
-    "typings"
+    "typings",
+    ".eslintrc.js"
   ]
 }

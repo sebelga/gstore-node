@@ -1,13 +1,11 @@
-'use strict';
-
 const NOW = 'CURRENT_DATETIME';
-const timeNow = () => new Date();
+const timeNow = (): Date => new Date();
 const map: Record<string, (...args: any[]) => void> = {
   CURRENT_DATETIME: timeNow,
 };
 
-const handler = (key: string) => {
-  if (({}).hasOwnProperty.call(map, key)) {
+const handler = (key: string): unknown => {
+  if ({}.hasOwnProperty.call(map, key)) {
     return map[key]();
   }
 
