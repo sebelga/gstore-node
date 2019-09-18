@@ -1,5 +1,3 @@
-/* eslint-disable max-classes-per-file */
-
 import is from 'is';
 import arrify from 'arrify';
 import extend from 'extend';
@@ -7,13 +5,13 @@ import hooks from 'promised-hooks';
 import dsAdapterFactory from 'nsql-cache-datastore';
 import get from 'lodash.get';
 import set from 'lodash.set';
-// TODO: Open PR in @google-cloud repo to expose those types
-import { Transaction } from '@google-cloud/datastore/build/src/transaction';
+
+import { Transaction } from '@google-cloud/datastore';
 
 import Gstore from './index';
-import Schema from './schema';
+import Schema, { JoiConfig } from './schema';
 import Entity from './entity';
-import Query from './query';
+import Query, { QueryResponse } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
 import {
@@ -23,7 +21,10 @@ import {
   EntityKey,
   EntityData,
   PopulateRef,
-  PopulateMetaForEntity
+  PopulateMetaForEntity,
+  PopulateFunction,
+  PromiseWithPopulate,
+  GenericObject,
 } from './types';
 
 const dsAdapter = dsAdapterFactory();
@@ -32,94 +33,46 @@ const { populateHelpers } = helpers;
 const { keyToString } = dsAdapter;
 const { populateFactory } = populateHelpers;
 
-class Model<T = { [propName: string]: any }> extends Entity {
+export interface Model<T extends object = { [propName: string]: any }> {
+  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity;
   /**
    * gstore-node instance
    */
-  static gstore: Gstore;
+  gstore: Gstore;
 
   /**
    * The Model Schema
    */
-  static schema: Schema;
+  schema: Schema;
 
   /**
    * The Model Datastore Entity Kind
    */
-  static entityKind: string;
+  entityKind: string;
 
-  // The "pre" and "post" method are added by the promised-hook lib
-  static pre: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
+  __hooksEnabled: boolean;
 
-  static post: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
+  // The static "pre" method is added by the "promised-hooks" lib
+  // static pre: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
 
-  static compile(kind: string, schema: Schema, gstore: Gstore): typeof Model {
-    const NewModel = class extends Model {};
-
-    // Wrap the Model to add "pre" and "post" hooks functionalities
-    hooks.wrap(NewModel);
-
-    NewModel.schema = schema;
-    NewModel.schema.__meta = this.__generateMeta();
-    NewModel.registerHooksFromSchema();
-
-    /**
-     * Add schema "custom" methods on the prototype
-     * to be accesible from Entity instances
-     */
-    this.__applyMethods(NewModel.prototype, schema);
-    // this.__applyStatics(NewModel, schema); // It this used??
-
-    NewModel.prototype.entityKind = kind;
-    NewModel.entityKind = kind;
-
-    NewModel.prototype.gstore = gstore;
-    NewModel.gstore = gstore;
-
-    /**
-     * Create virtual properties (getters and setters for "virtuals" defined on the Schema)
-     */
-    Object.keys(schema.__virtuals)
-      .filter(key => ({}.hasOwnProperty.call(schema.__virtuals, key)))
-      .forEach(key =>
-        Object.defineProperty(NewModel.prototype, key, {
-          get: function getProp() {
-            return schema.__virtuals[key].applyGetters({ ...this.entityData });
-          },
-          set: function setProp(newValue) {
-            schema.__virtuals[key].applySetters(newValue, this.entityData);
-          },
-        })
-      );
-
-    return NewModel;
-  }
+  // The static "post" method is added by the "promised-hooks" lib
+  // static post: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
 
   /**
-   * Pass all the "pre" and "post" hooks from schema to
-   * the current ModelInstance
+   * Generates one or several entity key(s) for the Model.
+   *
+   * @static
+   * @param {(string | number)} id Entity id or name
+   * @param {(Array<string | number>)} [ancestors] The entity Ancestors
+   * @param {string} [namespace] The entity Namespace
+   * @returns {entity.Key}
+   * @link https://sebloix.gitbook.io/gstore-node/model/key.html
    */
-  static registerHooksFromSchema(): typeof Model {
-    const callQueue = this.schema.__callQueue.model;
-
-    if (!Object.keys(callQueue).length) {
-      return this;
-    }
-
-    Object.keys(callQueue).forEach((method: string) => {
-      // Add Pre hooks
-      callQueue[method].pres.forEach(fn => {
-        this.pre(method, fn);
-      });
-
-      // Add Post hooks
-      callQueue[method].post.forEach(fn => {
-        this.post(method, fn);
-      });
-    });
-
-    return this;
-  }
+  key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
+    id: U,
+    ancestors?: Array<string | number>,
+    namespace?: string,
+  ): R;
 
   /**
    * Fetch an Entity by KEY from the Datastore
@@ -130,733 +83,129 @@ class Model<T = { [propName: string]: any }> extends Entity {
    * @param {*} [transaction] The current Datastore Transaction (if any)
    * @param [options] Additional configuration
    * @returns {Promise<any>} The entity fetched from the Datastore
-   * @link https://sebelga.gitbooks.io/gstore-node/content/model/get.html
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/get
    */
-  static get<U extends IdType | Array<IdType>>(
+  get<U extends string | number | Array<string | number>>(
     id: U,
+    ancestors?: Array<string | number>,
+    namespace?: string,
+    transaction?: Transaction,
+    options?: GetOptions,
+  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+
+  /**
+   * Update an Entity in the Datastore
+   *
+   * @static
+   * @param {(string | number)} id Entity id or name
+   * @param {*} data The data to update (it will be merged with the data in the Datastore
+   * unless options.replace is set to "true")
+   * @param {(Array<string | number>)} [ancestors] The entity Ancestors
+   * @param {string} [namespace] The entity Namespace
+   * @param {*} [transaction] The current transaction (if any)
+   * @param {{ dataloader?: any, replace?: boolean }} [options] Additional configuration
+   * @returns {Promise<any>} The entity updated in the Datastore
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/update
+   */
+  update(
+    id: IdType,
+    data: EntityData,
     ancestors?: Ancestor,
     namespace?: string,
     transaction?: Transaction,
-    options: GetOptions = {}
-  ): Promise<any> {
-    const ids = arrify(id);
-
-    const key = this.key(ids, ancestors, namespace);
-    const refsToPopulate = [];
-    const { dataloader } = options;
-
-    const onEntity = entityDataFetched => {
-      const entityData = arrify(entityDataFetched);
-
-      if (
-        ids.length === 1 &&
-        (entityData.length === 0 || typeof entityData[0] === 'undefined' || entityData[0] === null)
-      ) {
-        if (this.gstore.config.errorOnEntityNotFound) {
-          return Promise.reject(
-            new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `${this.entityKind} { ${ids[0].toString()} } not found`)
-          );
-        }
-
-        return null;
-      }
-
-      const entity = entityData.map(data => {
-        if (typeof data === 'undefined' || data === null) {
-          return null;
-        }
-        return this.__model(data, null, null, null, data[this.gstore.ds.KEY]);
-      });
-
-      if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
-        entity.sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
-      }
-
-      return Array.isArray(id) ? entity : entity[0];
-    };
-
-    /**
-     * If gstore has been initialize with a cache we first fetch
-     * the key(s) from it.
-     * gstore-cache underneath will call the "fetchHandler" with only the keys that haven't
-     * been found. The final response is the merge of the cache result + the fetch.
-     */
-    const promise = this.fetchEntityByKey(key, transaction, dataloader, options)
-      .then(onEntity)
-      .then(this.populate(refsToPopulate, { ...options, transaction }));
-
-    promise.populate = populateFactory(refsToPopulate, promise, this);
-    return promise;
-  }
-
-  static fetchEntityByKey(key, transaction, dataloader, options) {
-    const handler = _keys => {
-      const keys = arrify(_keys);
-      if (transaction) {
-        if (transaction.constructor.name !== 'Transaction') {
-          return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
-        }
-        return transaction.get(keys).then(([result]) => arrify(result));
-      }
-
-      if (dataloader) {
-        if (dataloader.constructor.name !== 'DataLoader') {
-          return Promise.reject(new GstoreError(ERROR_CODES.ERR_GENERIC, 'dataloader must be a "DataLoader" instance'));
-        }
-        return dataloader.loadMany(keys).then(result => arrify(result));
-      }
-      return this.gstore.ds.get(keys).then(([result]) => arrify(result));
-    };
-
-    if (this.__hasCache(options)) {
-      return this.gstore.cache.keys.read(
-        // nsql-cache requires an array for multiple and a single key when *not* multiple
-        Array.isArray(key) && key.length === 1 ? key[0] : key,
-        options,
-        handler
-      );
-    }
-    return handler(key);
-  }
-
-  static update(id, data, ancestors, namespace, transaction, options) {
-    this.__hooksEnabled = true;
-    const _this = this;
-
-    let entityUpdated;
-
-    const key = this.key(id, ancestors, namespace);
-    const replace = options && options.replace === true;
-
-    let internalTransaction = false;
-
-    /**
-     * If options.replace is set to true we don't fetch the entity
-     * and save the data directly to the specified key, overriding any previous data.
-     */
-    if (replace) {
-      return saveEntity({ key, data })
-        .then(onEntityUpdated)
-        .catch(onUpdateError);
-    }
-
-    if (typeof transaction === 'undefined' || transaction === null) {
-      internalTransaction = true;
-      transaction = this.gstore.ds.transaction();
-      return transaction
-        .run()
-        .then(getAndUpdate)
-        .catch(onUpdateError);
-    }
-
-    if (transaction.constructor.name !== 'Transaction') {
-      return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
-    }
-
-    return getAndUpdate();
-
-    // ---------------------------------------------------------
-
-    function getAndUpdate() {
-      return getEntity()
-        .then(saveEntity)
-        .then(onEntityUpdated);
-    }
-
-    function getEntity() {
-      return transaction.get(key).then(getData => {
-        const entity = getData[0];
-
-        if (typeof entity === 'undefined') {
-          throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `Entity { ${id.toString()} } to update not found`);
-        }
-
-        extend(false, entity, data);
-
-        const result = {
-          key: entity[_this.gstore.ds.KEY],
-          data: entity,
-        };
-
-        return result;
-      });
-    }
-
-    function saveEntity(getData) {
-      const entityKey = getData.key;
-      const entityData = getData.data;
-      const model = _this.__model(entityData, null, null, null, entityKey);
-
-      /**
-       * If a DataLoader instance is passed in the options
-       * attach it to the entity so it is available in "pre" hooks
-       */
-      if (options && options.dataloader) {
-        model.dataloader = options.dataloader;
-      }
-
-      return model.save(transaction);
-    }
-
-    function onEntityUpdated(entity) {
-      entityUpdated = entity;
-
-      if (options && options.dataloader) {
-        options.dataloader.clear(key);
-      }
-
-      if (internalTransaction) {
-        // If we created the Transaction instance internally for the update, we commit it
-        // otherwise we leave the commit() call to the transaction creator
-        return transaction
-          .commit()
-          .then(() =>
-            transaction.execPostHooks().catch(err => {
-              entityUpdated[entityUpdated.gstore.ERR_HOOKS] = (
-                entityUpdated[entityUpdated.gstore.ERR_HOOKS] || []
-              ).push(err);
-            })
-          )
-          .then(onTransactionSuccess);
-      }
-
-      return onTransactionSuccess();
-    }
-
-    function onUpdateError(err) {
-      const error = Array.isArray(err) ? err[0] : err;
-      if (internalTransaction) {
-        // If we created the Transaction instance internally for the update, we rollback it
-        // otherwise we leave the rollback() call to the transaction creator
-        return transaction.rollback().then(() => {
-          throw error;
-        });
-      }
-
-      throw error;
-    }
-
-    function onTransactionSuccess() {
-      /**
-       * Make sure to delete the cache for this key
-       */
-      if (_this.__hasCache(options)) {
-        return _this
-          .clearCache(key)
-          .then(() => entityUpdated)
-          .catch(err => {
-            let msg = 'Error while clearing the cache after updating the entity.';
-            msg += 'The entity has been updated successfully though. ';
-            msg += 'Both the cache error and the entity updated have been attached.';
-            const cacheError = new Error(msg);
-            cacheError.__entityUpdated = entityUpdated;
-            cacheError.__cacheError = err;
-            throw cacheError;
-          });
-      }
-
-      return entityUpdated;
-    }
-  }
-
-  static delete(id, ancestors, namespace, transaction, key, options = {}) {
-    const _this = this;
-    this.__hooksEnabled = true;
-
-    if (!key) {
-      key = this.key(id, ancestors, namespace);
-    }
-
-    if (transaction && transaction.constructor.name !== 'Transaction') {
-      return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
-    }
-
-    /**
-     * If it is a transaction, we create a hooks.post array that will be executed
-     * when transaction succeeds by calling transaction.execPostHooks() ---> returns a Promise
-     */
-    if (transaction) {
-      // disable (post) hooks, to only trigger them if transaction succeeds
-      this.__hooksEnabled = false;
-      this.hooksTransaction(transaction, this.__posts ? this.__posts.delete : undefined);
-      transaction.delete(key);
-      return Promise.resolve();
-    }
-
-    return this.gstore.ds.delete(key).then(onDelete);
-
-    // -------------------------------------------------------
-
-    function onDelete(results) {
-      const response = results ? results[0] : {};
-      response.key = key;
-
-      /**
-       * If we passed a DataLoader instance, we clear its cache
-       */
-      if (options.dataloader) {
-        options.dataloader.clear(key);
-      }
-
-      if (typeof response.indexUpdates !== 'undefined') {
-        response.success = response.indexUpdates > 0;
-      }
-
-      /**
-       * Make sure to delete the cache for this key
-       */
-      if (_this.__hasCache(options)) {
-        return _this
-          .clearCache(key, options.clearQueries)
-          .then(() => response)
-          .catch(err => {
-            let msg = 'Error while clearing the cache after deleting the entity.';
-            msg += 'The entity has been deleted successfully though. ';
-            msg += 'The cache error has been attached.';
-            const cacheError = new Error(msg);
-            cacheError.__response = response;
-            cacheError.__cacheError = err;
-            throw cacheError;
-          });
-      }
-
-      return response;
-    }
-  }
-
-  static deleteAll(ancestors, namespace) {
-    const _this = this;
-
-    const maxEntitiesPerBatch = 500;
-    const timeoutBetweenBatches = 500;
-
-    /**
-     * We limit the number of entities fetched to 100.000 to avoid hang up the system when
-     * there are > 1 million of entities to delete
-     */
-    const limitDataPerQuery = 100000;
-
-    let currentBatch;
-    let entities;
-    let totalBatches;
-
-    return createQueryWithLimit()
-      .run({ cache: false })
-      .then(onEntities);
-
-    // ------------------------------------------------
-
-    function createQueryWithLimit() {
-      // We query only limit number in case of big table
-      // If we query with more than million data query will hang up
-      const query = _this.initQuery(namespace);
-      if (ancestors) {
-        query.hasAncestor(_this.gstore.ds.key(ancestors.slice()));
-      }
-      query.select('__key__');
-      query.limit(limitDataPerQuery);
-
-      return query;
-    }
-
-    function onEntities(data) {
-      // [entities] = data;
-      ({ entities } = data);
-
-      if (entities.length === 0) {
-        // No more Data in table
-        return {
-          success: true,
-          message: `All ${_this.entityKind} deleted successfully.`,
-        };
-      }
-
-      currentBatch = 0;
-
-      // We calculate the total batches we will need to process
-      // The Datastore does not allow more than 500 keys at once when deleting.
-      totalBatches = Math.ceil(entities.length / maxEntitiesPerBatch);
-
-      return deleteEntities(currentBatch);
-    }
-
-    function deleteEntities(batch) {
-      const indexStart = batch * maxEntitiesPerBatch;
-      const indexEnd = indexStart + maxEntitiesPerBatch;
-      const entitiesToDelete = entities.slice(indexStart, indexEnd);
-
-      if (_this.__pres && {}.hasOwnProperty.call(_this.__pres, 'delete')) {
-        // We execute delete in serie (chaining Promises) --> so we call each possible pre & post hooks
-        return entitiesToDelete.reduce(chainPromise, Promise.resolve()).then(onEntitiesDeleted);
-      }
-
-      const keys = entitiesToDelete.map(entity => entity[_this.gstore.ds.KEY]);
-
-      // We only need to clear the Queries from the cache once,
-      // so we do it on the first batch.
-      const clearQueries = currentBatch === 0;
-      return _this.delete.call(_this, null, null, null, null, keys, { clearQueries }).then(onEntitiesDeleted);
-    }
-
-    function onEntitiesDeleted() {
-      currentBatch += 1;
-
-      if (currentBatch < totalBatches) {
-        // Still more batches to process
-        return new Promise(resolve => {
-          setTimeout(resolve, timeoutBetweenBatches);
-        }).then(() => deleteEntities(currentBatch));
-      }
-
-      // Re-run the fetch Query in case there are still entities to delete
-      return createQueryWithLimit()
-        .run()
-        .then(onEntities);
-    }
-
-    function chainPromise(promise, entity) {
-      return promise.then(() => _this.delete.call(_this, null, null, null, null, entity[_this.gstore.ds.KEY]));
-    }
-  }
+    options?: GenericObject,
+  ): Promise<Entity<T>>;
 
   /**
-   * Generate one or an Array of Google Datastore entity keys
-   * based on the current entity kind
+   * Delete an Entity from the Datastore
    *
-   * @param {Number|String|Array} ids Id of the entity(ies)
-   * @param {Array} ancestors Ancestors path (otional)
-   * @namespace {String} namespace The namespace where to store the entity
+   * @static
+   * @param {(string | number)} id Entity id or name
+   * @param {(Array<string | number>)} [ancestors] The entity Ancestors
+   * @param {string} [namespace] The entity Namespace
+   * @param {*} [transaction] The current transaction (if any)
+   * @param {(entity.Key | entity.Key[])} [keys] If you already know the Key, you can provide it instead of passing
+   * an id/ancestors/namespace. You might then as well just call "gstore.ds.delete(Key)",
+   * but then you would not have the "hooks" triggered in case you have added some in your Schema.
+   * @returns {Promise<{ success: boolean, key: entity.Key, apiResponse: any }>}
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/delete
    */
-  static key(ids: IdType | IdType[], ancestors?: Ancestor, namespace?: string): EntityKey | EntityKey[] {
-    const keys = [];
-
-    let isMultiple = false;
-
-    const getPath = (id?: IdType | null): IdType[] => {
-      let path: IdType[] = [this.entityKind];
-
-      if (typeof id !== 'undefined' && id !== null) {
-        path.push(id);
-      }
-
-      if (ancestors && is.array(ancestors)) {
-        path = ancestors.concat(path);
-      }
-
-      return path;
-    };
-
-    const getKey = (id?: IdType | null): EntityKey => {
-      const path = getPath(id);
-      let key;
-
-      if (typeof namespace !== 'undefined' && namespace !== null) {
-        key = this.gstore.ds.key({
-          namespace,
-          path,
-        });
-      } else {
-        key = this.gstore.ds.key(path);
-      }
-      return key;
-    };
-
-    if (typeof ids !== 'undefined' && ids !== null) {
-      ids = arrify(ids);
-
-      isMultiple = ids.length > 1;
-
-      ids.forEach(id => {
-        const key = getKey(id);
-        keys.push(key);
-      });
-    } else {
-      const key = getKey(null);
-      keys.push(key);
-    }
-
-    return isMultiple ? keys : keys[0];
-  }
+  delete(
+    id?: IdType | IdType[],
+    ancestors?: Ancestor,
+    namespace?: string,
+    transaction?: Transaction,
+    key?: EntityKey | EntityKey[],
+    options?: DeleteOptions,
+  ): Promise<DeleteResponse>;
 
   /**
-   * Add "post" hooks to a transaction
+   * Clear all the Queries from the cache *linked* to the Model Entity Kind.
+   * One or multiple keys can also be passed to delete them from the cache. We normally don't have to call this method
+   * as gstore-node does it automatically each time an entity is added/edited or deleted.
+   *
+   * @static
+   * @param {(entity.Key | entity.Key[])} [keys] Optional entity Keys to remove from the cache with the Queries
+   * @returns {Promise<void>}
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/clearcache
    */
-  static hooksTransaction(transaction, postHooks) {
-    const _this = this;
-    postHooks = arrify(postHooks);
-
-    if (!{}.hasOwnProperty.call(transaction, 'hooks')) {
-      transaction.hooks = {
-        post: [],
-      };
-    }
-
-    postHooks.forEach(hook => transaction.hooks.post.push(hook));
-
-    transaction.execPostHooks = function executePostHooks() {
-      if (this.hooks.post) {
-        return this.hooks.post.reduce((promise, hook) => promise.then(hook.bind(_this)), Promise.resolve());
-      }
-
-      return Promise.resolve();
-    };
-  }
+  clearCache(keys?: EntityKey | EntityKey[]): Promise<{ success: boolean }>;
 
   /**
-   * Dynamic properties (in non explicitOnly Schemas) are indexes by default
-   * This method allows to exclude from indexes those properties if needed
-   * @param properties {Array} or {String}
-   * @param cb
+   * Dynamically remove a property from indexes. If you have set `explicityOnly: false` in your Schema options,
+   * then all the properties not declared in the Schema will be included in the indexes.
+   * This method allows you to dynamically exclude from indexes certain properties.
+   *
+   * @static
+   * @param {(string | string[])} propName Property name (can be one or an Array of properties)
+   * @link https://sebloix.gitbook.io/gstore-node/model/other-methods.html
    */
-  static excludeFromIndexes(properties) {
-    properties = arrify(properties);
-
-    properties.forEach(prop => {
-      if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
-        this.schema.path(prop, { optional: true, excludeFromIndexes: true });
-      } else {
-        this.schema.paths[prop].excludeFromIndexes = true;
-      }
-    });
-  }
+  excludeFromIndexes(propName: string | string[]): void;
 
   /**
-   * Sanitize user data before saving to Datastore
-   * @param data : userData
+   * Sanitize the data. It will remove all the properties marked as "write: false" and convert "null" (string) to `null`
+   *
+   * @param {*} data The data to sanitize
+   * @returns {*} The data sanitized
+   * @link https://sebloix.gitbook.io/gstore-node/model/sanitize.html
    */
-  static sanitize(data, options = { disabled: [] }) {
-    const { schema } = this;
-    const key = data[this.gstore.ds.KEY]; // save the Key
-
-    if (!is.object(data)) {
-      return null;
-    }
-
-    const isJoiSchema = schema.isJoi;
-
-    let sanitized;
-    let joiOptions;
-    if (isJoiSchema) {
-      const { error, value } = schema.validateJoi(data);
-      if (!error) {
-        sanitized = { ...value };
-      }
-      joiOptions = schema.options.joi.options || {};
-    }
-    if (sanitized === undefined) {
-      sanitized = { ...data };
-    }
-
-    const isSchemaExplicitOnly = isJoiSchema ? joiOptions.stripUnknown : schema.options.explicitOnly === true;
-
-    const isWriteDisabled = options.disabled.includes('write');
-    const hasSchemaRefProps = Boolean(schema.__meta.refProps);
-    let schemaHasProperty;
-    let isPropWritable;
-    let propValue;
-
-    Object.keys(data).forEach(k => {
-      schemaHasProperty = {}.hasOwnProperty.call(schema.paths, k);
-      isPropWritable = schemaHasProperty ? schema.paths[k].write !== false : true;
-      propValue = sanitized[k];
-
-      if ((isSchemaExplicitOnly && !schemaHasProperty) || (!isPropWritable && !isWriteDisabled)) {
-        delete sanitized[k];
-      } else if (propValue === 'null') {
-        sanitized[k] = null;
-      } else if (hasSchemaRefProps && schema.__meta.refProps[k] && !this.gstore.ds.isKey(propValue)) {
-        // Replace populated entity by their entity Key
-        if (is.object(propValue) && propValue[this.gstore.ds.KEY]) {
-          sanitized[k] = propValue[this.gstore.ds.KEY];
-        }
-      }
-    });
-
-    return key ? { ...sanitized, [this.gstore.ds.KEY]: key } : sanitized;
-  }
+  sanitize(data: { [propName: string]: any }): { [P in keyof T]: T[P] } | GenericObject;
 
   /**
-   * Clears all the cache related to the Model Entity Kind
-   * If keys are passed, it will delete those keys, otherwise it will delete
-   * all the queries in the cache linked to the Model Entity kind.
-   * @param {DatastoreKeys} keys Keys to delete from the cache
+   * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method.
+   * The callback will receive the original argument(s) passed to the target method.
+   * You can modify them in your resolve passing an object with an __override property containing the new parameter(s)
+   * for the target method.
+   *
+   * @param {string} method The target method to add the hook to
+   * @param {(...args: any[]) => Promise<any>} callback Function to execute before the target method.
+   * It must return a Promise
+   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/pre-hooks.html
    */
-  static clearCache(_keys, clearQueries = true) {
-    const handlers = [];
-
-    if (clearQueries) {
-      handlers.push(
-        this.gstore.cache.queries.clearQueriesByKind(this.entityKind).catch(e => {
-          if (e.code === 'ERR_NO_REDIS') {
-            // Silently fail if no Redis Client
-            return;
-          }
-          throw e;
-        })
-      );
-    }
-
-    if (_keys) {
-      const keys = arrify(_keys);
-      handlers.push(this.gstore.cache.keys.del(...keys));
-    }
-
-    return Promise.all(handlers).then(() => ({ success: true }));
-  }
-
-  static populate(refs?: PopulateRef[][], options: PopulateOptions = {}): any {
-    const dataloader = options.dataloader || this.gstore.createDataLoader();
-
-    const getPopulateMetaForEntity = (
-      entity: Entity | EntityData,
-      entityRefs: PopulateRef[]
-    ): PopulateMetaForEntity => {
-      const keysToFetch: EntityKey[] = [];
-      const mapKeyToPropAndSelect: { [key: string]: { ref: PopulateRef } } = {};
-
-      const isEntityClass = entity instanceof Model;
-      entityRefs.forEach(ref => {
-        const { path } = ref;
-        const entityData: EntityData = isEntityClass ? entity.entityData : entity;
-
-        const key = get(entityData, path);
-
-        if (!key) {
-          set(entityData, path, null);
-          return;
-        }
-
-        if (!this.gstore.ds.isKey(key)) {
-          throw new Error(`[gstore] ${path} is not a Datastore Key. Reference entity can't be fetched.`);
-        }
-
-        // Stringify the key
-        const strKey = keyToString(key);
-        // Add it to our map
-        mapKeyToPropAndSelect[strKey] = { ref };
-        // Add to our array to be fetched
-        keysToFetch.push(key);
-      });
-
-      return { entity, keysToFetch, mapKeyToPropAndSelect };
-    };
-
-    return (entitiesToProcess: Array<Entity | EntityData>): Promise<Entity | EntityData> => {
-      if (!refs || !refs.length) {
-        // Nothing to do here...
-        return Promise.resolve(entitiesToProcess);
-      }
-
-      // Keep track if we provided an array for the response format
-      const isArray = Array.isArray(entitiesToProcess);
-      const entities = arrify(entitiesToProcess);
-      const isEntityClass = entities[0] instanceof Model;
-
-      // Fetches the entity references at the current
-      // object tree depth
-      const fetchRefsEntitiesRefsAtLevel = (entityRefs: PopulateRef[]): Promise<any> => {
-        // For each one of the entities to process, we gatter some meta data
-        // like the keys to fetch for that entity in order to populate its refs.
-        // Dataloaader will take care to only fetch unique keys on the Datastore
-        const meta = entities.map(entity => getPopulateMetaForEntity(entity, entityRefs));
-
-        const onKeysFetched = (
-          response,
-          { entity, keysToFetch, mapKeyToPropAndSelect }: PopulateMetaForEntity
-        ): void => {
-          if (!response) {
-            // No keys have been fetched
-            return;
-          }
-
-          const entityData = isEntityClass ? { ...entity.entityData } : entity;
-
-          const mergeRefEntitiesToEntityData = (data: EntityData, i: number): void => {
-            const key = keysToFetch[i];
-            const strKey = keyToString(key);
-            const {
-              ref: { path, select },
-            } = mapKeyToPropAndSelect[strKey];
-
-            if (!data) {
-              set(entityData, path, data);
-              return;
-            }
-
-            const EmbeddedModel = this.gstore.model(key.kind);
-            const embeddedEntity = new EmbeddedModel(data, null, null, null, key);
-
-            // prettier-ignore
-            // If "select" fields are provided, we return them,
-            // otherwise we return the entity plain() json
-            const json =
-              select.length && !select.some(s => s === '*')
-                ? select.reduce(
-                  (acc, field) => {
-                    acc = {
-                      ...acc,
-                      [field]: data[field] || null,
-                    };
-                    return acc;
-                  },
-                    {} as { [key: string]: any }
-                )
-                : embeddedEntity.plain();
-
-            set(entityData, path, { ...json, id: key.name || key.id });
-
-            if (isEntityClass) {
-              entity.entityData = entityData;
-            }
-          };
-
-          // Loop over all dataloader.loadMany() responses
-          response.forEach(mergeRefEntitiesToEntityData);
-        };
-
-        const promises = meta.map(({ keysToFetch }) =>
-          keysToFetch.length
-            ? this.fetchEntityByKey(keysToFetch, options.transaction, dataloader, options)
-            : Promise.resolve(null)
-        );
-
-        return Promise.all(promises).then(result => {
-          // Loop over all responses from dataloader.loadMany() calls
-          result.forEach((res, i) => onKeysFetched(res, meta[i]));
-        });
-      };
-
-      return new Promise((resolve, reject): void => {
-        // At each tree level we fetch the entity references in series.
-        refs
-          .reduce(
-            (chainedPromise, entityRefs) => chainedPromise.then(() => fetchRefsEntitiesRefsAtLevel(entityRefs)),
-            Promise.resolve()
-          )
-          .then(() => {
-            resolve(isArray ? entities : entities[0]);
-          })
-          .catch(reject);
-      });
-    };
-  }
+  pre(method: string, callback: FuncReturningPromise | FuncReturningPromise[]): void;
 
   /**
-   * Returns all the schema properties that are references
-   * to other entities (their value is an entity Key)
+   * Register a "post" middelware to execute after a target method.
+   *
+   * @param {string} method The target method to add the hook to
+   * @param {(response: any) => Promise<any>} callback Function to execute after the target method.
+   * It must return a Promise
+   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/post-hooks.html
    */
-  static getEntitiesRefsFromSchema() {
-    return Object.entries(this.schema.paths)
-      .filter(({ 1: pathConfig }) => pathConfig.type === 'entityKey')
-      .map(({ 0: ref }) => ref);
-  }
+  post(method: string, callback: FuncReturningPromise | FuncReturningPromise[]): void;
 
-  // ------------------------------------------------------------------------
-  // "Private" methods
-  // ------------------------------------------------------------------------
+  query: Query<T>['initQuery'];
+
+  list: Query<T>['list'];
+
+  findOne: Query<T>['findOne'];
+
+  findAround: Query<T>['findAround'];
+
+  // __compile(kind: string, schema: Schema, gstore: Gstore): Model;
 
   /**
-   * Creates an entity instance of a Model
+   * Creates an entity instance from a Model
    * @param data (entity data)
    * @param id
    * @param ancestors
@@ -865,142 +214,939 @@ class Model<T = { [propName: string]: any }> extends Entity {
    * @returns {Entity} Entity --> Model instance
    * @private
    */
-  static __model(data, id, ancestors, namespace, key) {
-    const M = this.compile(this.entityKind, this.schema, this.gstore);
-    return new M(data, id, ancestors, namespace, key);
+  __model(data: EntityData, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity;
+
+  __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
+
+  __hasCache(options: { cache?: any }, type: string): boolean;
+
+  __populate(refs?: PopulateRef[][], options?: PopulateOptions): PopulateFunction<T>;
+
+  __hooksTransaction(transaction: Transaction, postHooks: FuncReturningPromise[]): void;
+
+  __scopeHook(hook: string, args: GenericObject, hookName: string, hookType: 'pre' | 'post'): any;
+
+  // __generateMeta(): GenericObject;
+
+  // __registerHooksFromSchema(): Model;
+}
+
+/**
+ * To improve performance and avoid looping over and over the entityData or Schema config
+ * we generate a meta object to cache useful data used later in models and entities methods.
+ */
+const extractMetaFromSchema = (schema: Schema): GenericObject => {
+  const meta: GenericObject = {};
+
+  Object.keys(schema.paths).forEach(k => {
+    switch (schema.paths[k].type) {
+      case 'geoPoint':
+        // This allows us to automatically convert valid lng/lat objects
+        // to Datastore.geoPoints
+        meta.geoPointsProps = meta.geoPointsProps || [];
+        meta.geoPointsProps.push(k);
+        break;
+      case 'entityKey':
+        meta.refProps = meta.refProps || {};
+        meta.refProps[k] = true;
+        break;
+      default:
+    }
+  });
+
+  return meta;
+};
+
+/**
+ * Pass all the "pre" and "post" hooks from schema to
+ * the current ModelInstance
+ */
+const registerHooksFromSchema = <T extends object>(model: Model<T>, schema: Schema): void => {
+  const callQueue = schema.__callQueue.model;
+
+  if (!Object.keys(callQueue).length) {
+    return;
   }
 
-  /**
-   * Helper to change the function scope for a hook if necessary
-   *
-   * @param {String} hook The name of the hook (save, delete...)
-   * @param {Array} args The arguments passed to the original method
-   */
-  static __scopeHook(hook, args, hookName, hookType) {
-    const _this = this;
+  Object.keys(callQueue).forEach((method: string) => {
+    // Add Pre hooks
+    callQueue[method].pres.forEach(fn => {
+      (model as any).pre(method, fn);
+    });
 
-    switch (hook) {
-      case 'delete':
-        return getScopeForDeleteHooks();
-      default:
-        return _this;
+    // Add Post hooks
+    callQueue[method].post.forEach(fn => {
+      (model as any).post(method, fn);
+    });
+  });
+};
+
+export const generateModel = <T extends object>(kind: string, schema: Schema, gstore: Gstore): Model<T> => {
+  if (!schema.__meta) {
+    schema.__meta = extractMetaFromSchema(schema);
+  }
+  const model: Model<T> = class NewModel extends Entity<T> {
+    static gstore: Gstore = gstore;
+
+    static schema: Schema = schema;
+
+    static entityKind: string = kind;
+
+    static __hooksEnabled = true;
+
+    static key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
+      ids: U,
+      ancestors?: Ancestor,
+      namespace?: string,
+    ): R {
+      const keys: EntityKey[] = [];
+
+      let isMultiple = false;
+
+      const getPath = (id?: IdType | null): IdType[] => {
+        let path: IdType[] = [this.entityKind];
+
+        if (typeof id !== 'undefined' && id !== null) {
+          path.push(id);
+        }
+
+        if (ancestors && is.array(ancestors)) {
+          path = ancestors.concat(path);
+        }
+
+        return path;
+      };
+
+      const getKey = (id?: IdType | null): EntityKey => {
+        const path = getPath(id);
+        let key;
+
+        if (typeof namespace !== 'undefined' && namespace !== null) {
+          key = this.gstore.ds.key({
+            namespace,
+            path,
+          });
+        } else {
+          key = this.gstore.ds.key(path);
+        }
+        return key;
+      };
+
+      if (typeof ids !== 'undefined' && ids !== null) {
+        const idsArray = arrify(ids);
+
+        isMultiple = idsArray.length > 1;
+
+        idsArray.forEach(id => {
+          const key = getKey(id);
+          keys.push(key);
+        });
+      } else {
+        const key = getKey(null);
+        keys.push(key);
+      }
+
+      return isMultiple ? ((keys as unknown) as R) : ((keys[0] as unknown) as R);
+    }
+
+    static get<U extends IdType | Array<IdType>>(
+      id: U,
+      ancestors?: Ancestor,
+      namespace?: string,
+      transaction?: Transaction,
+      options: GetOptions = {},
+    ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>> {
+      const ids = arrify(id);
+
+      const key = this.key(ids, ancestors, namespace);
+      const refsToPopulate: PopulateRef[][] = [];
+      const { dataloader } = options;
+
+      const onEntity = (entityDataFetched: EntityData | EntityData[]): Entity | null | Array<Entity | null> => {
+        const entityData = arrify(entityDataFetched);
+
+        if (
+          ids.length === 1 &&
+          (entityData.length === 0 || typeof entityData[0] === 'undefined' || entityData[0] === null)
+        ) {
+          if (this.gstore.config.errorOnEntityNotFound) {
+            throw new GstoreError(
+              ERROR_CODES.ERR_ENTITY_NOT_FOUND,
+              `${this.entityKind} { ${ids[0].toString()} } not found`,
+            );
+          }
+
+          return null;
+        }
+
+        // Convert entityData to Entity instance
+        const entity = (entityData as EntityData[]).map((data: EntityData) => {
+          if (typeof data === 'undefined' || data === null) {
+            return null;
+          }
+          return this.__model(data, undefined, undefined, undefined, data[this.gstore.ds.KEY]);
+        });
+
+        // TODO: Check if this is still useful??
+        if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
+          (entity as Entity[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
+        }
+
+        return Array.isArray(id) ? (entity as Entity[]) : entity[0];
+      };
+
+      /**
+       * If gstore has been initialize with a cache we first fetch
+       * the key(s) from it.
+       * gstore-cache underneath will call the "fetchHandler" with only the keys that haven't
+       * been found. The final response is the merge of the cache result + the fetch.
+       */
+      const promise = this.__fetchEntityByKey(key, transaction, dataloader, options)
+        .then(onEntity)
+        .then(this.__populate(refsToPopulate, { ...options, transaction }));
+
+      (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
+
+      return promise as PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+    }
+
+    static update(
+      id: IdType,
+      data: EntityData,
+      ancestors?: Ancestor,
+      namespace?: string,
+      transaction?: Transaction,
+      options?: GenericObject,
+    ): Promise<Entity<T>> {
+      this.__hooksEnabled = true;
+
+      let entityDataUpdated: Entity;
+      let internalTransaction = false;
+
+      const key = this.key(id, ancestors, namespace);
+      const replace = options && options.replace === true;
+
+      const getEntity = (): Promise<{ key: EntityKey; data: EntityData }> => {
+        return transaction!.get(key).then(([entityData]: [EntityData]) => {
+          if (typeof entityData === 'undefined') {
+            throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `Entity { ${id.toString()} } to update not found`);
+          }
+
+          extend(false, entityData, data);
+
+          const result = {
+            key: entityData[this.gstore.ds.KEY],
+            data: entityData,
+          };
+
+          return result;
+        });
+      };
+
+      const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData }): Promise<Entity<T>> => {
+        const { key: entityKey, data: entityData } = datastoreFormat;
+        const entity = this.__model(entityData, undefined, undefined, undefined, entityKey);
+
+        /**
+         * If a DataLoader instance is passed in the options
+         * attach it to the entity so it is available in "pre" hooks
+         */
+        if (options && options.dataloader) {
+          entity.dataloader = options.dataloader;
+        }
+
+        return entity.save(transaction);
+      };
+
+      const onTransactionSuccess = (): Promise<Entity> => {
+        /**
+         * Make sure to delete the cache for this key
+         */
+        if (this.__hasCache(options)) {
+          return this.clearCache(key)
+            .then(() => entityDataUpdated)
+            .catch(err => {
+              let msg = 'Error while clearing the cache after updating the entity.';
+              msg += 'The entity has been updated successfully though. ';
+              msg += 'Both the cache error and the entity updated have been attached.';
+              const cacheError = new Error(msg);
+              (cacheError as any).__entityUpdated = entityDataUpdated;
+              (cacheError as any).__cacheError = err;
+              throw cacheError;
+            });
+        }
+
+        return Promise.resolve(entityDataUpdated);
+      };
+
+      const onEntityUpdated = (entity: Entity): Promise<Entity<T>> => {
+        entityDataUpdated = entity;
+
+        if (options && options.dataloader) {
+          options.dataloader.clear(key);
+        }
+
+        if (internalTransaction) {
+          // If we created the Transaction instance internally for the update, we commit it
+          // otherwise we leave the commit() call to the transaction creator
+          return transaction!
+            .commit()
+            .then(() =>
+              transaction!.execPostHooks().catch((err: any) => {
+                (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] = (
+                  (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] || []
+                ).push(err);
+              }),
+            )
+            .then(onTransactionSuccess);
+        }
+
+        return onTransactionSuccess();
+      };
+
+      const getAndUpdate = (): Promise<Entity> =>
+        getEntity()
+          .then(saveEntity)
+          .then(onEntityUpdated);
+
+      const onUpdateError = (err: Error | Error[]): Promise<any> => {
+        const error = Array.isArray(err) ? err[0] : err;
+        if (internalTransaction) {
+          // If we created the Transaction instance internally for the update, we rollback it
+          // otherwise we leave the rollback() call to the transaction creator
+
+          // TODO: Check why transaction!.rollback does not return a Promise by default
+          return (transaction!.rollback as any)().then(() => {
+            throw error;
+          });
+        }
+
+        throw error;
+      };
+
+      /**
+       * If options.replace is set to true we don't fetch the entity
+       * and save the data directly to the specified key, overriding any previous data.
+       */
+      if (replace) {
+        return saveEntity({ key, data })
+          .then(onEntityUpdated)
+          .catch(onUpdateError);
+      }
+
+      if (typeof transaction === 'undefined' || transaction === null) {
+        internalTransaction = true;
+        transaction = this.gstore.ds.transaction();
+        return transaction!
+          .run()
+          .then(getAndUpdate)
+          .catch(onUpdateError);
+      }
+
+      if (transaction.constructor.name !== 'Transaction') {
+        throw new Error('Transaction needs to be a gcloud Transaction');
+      }
+
+      return getAndUpdate();
+    }
+
+    static delete(
+      id?: IdType | IdType[],
+      ancestors?: Ancestor,
+      namespace?: string,
+      transaction?: Transaction,
+      key?: EntityKey | EntityKey[],
+      options: DeleteOptions = {},
+    ): Promise<DeleteResponse> {
+      this.__hooksEnabled = true;
+
+      if (!key) {
+        key = this.key(id!, ancestors, namespace);
+      }
+
+      if (transaction && transaction.constructor.name !== 'Transaction') {
+        return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
+      }
+
+      /**
+       * If it is a transaction, we create a hooks.post array that will be executed
+       * when transaction succeeds by calling transaction.execPostHooks() ---> returns a Promise
+       */
+      if (transaction) {
+        // disable (post) hooks, to only trigger them if transaction succeeds
+        this.__hooksEnabled = false;
+        this.__hooksTransaction(transaction, (this as any).__posts ? (this as any).__posts.delete : undefined);
+        transaction.delete(key);
+        return Promise.resolve({ key: key! });
+      }
+
+      return this.gstore.ds.delete(key).then((results?: [{ indexUpdates?: number }]) => {
+        const response: DeleteResponse = results ? results[0] : {};
+        response.key = key;
+
+        /**
+         * If we passed a DataLoader instance, we clear its cache
+         */
+        if (options.dataloader) {
+          options.dataloader.clear(key);
+        }
+
+        if (response.indexUpdates !== undefined) {
+          response.success = response.indexUpdates > 0;
+        }
+
+        /**
+         * Make sure to delete the cache for this key
+         */
+        if (this.__hasCache(options)) {
+          return this.clearCache(key!, options.clearQueries)
+            .then(() => response)
+            .catch(err => {
+              let msg = 'Error while clearing the cache after deleting the entity.';
+              msg += 'The entity has been deleted successfully though. ';
+              msg += 'The cache error has been attached.';
+              const cacheError = new Error(msg);
+              (cacheError as any).__response = response;
+              (cacheError as any).__cacheError = err;
+              throw cacheError;
+            });
+        }
+
+        return response;
+      });
+    }
+
+    static deleteAll(ancestors?: Ancestor, namespace?: string): Promise<DeleteAllResponse> {
+      const maxEntitiesPerBatch = 500;
+      const timeoutBetweenBatches = 500;
+
+      /**
+       * We limit the number of entities fetched to 100.000 to avoid hang up the system when
+       * there are > 1 million of entities to delete
+       */
+      const QUERY_LIMIT = 100000;
+
+      let currentBatch: number;
+      let totalBatches: number;
+      let entities: EntityData[];
+
+      const runQueryAndDeleteEntities = (): Promise<DeleteAllResponse> => {
+        const deleteEntities = (batch: number): Promise<DeleteResponse> => {
+          const onEntitiesDeleted = (): Promise<DeleteResponse> => {
+            currentBatch += 1;
+
+            if (currentBatch < totalBatches) {
+              // Still more batches to process
+              return new Promise((resolve): void => {
+                setTimeout(resolve, timeoutBetweenBatches);
+              }).then(() => deleteEntities(currentBatch));
+            }
+
+            // Re-run the fetch Query in case there are still entities to delete
+            return runQueryAndDeleteEntities();
+          };
+
+          const indexStart = batch * maxEntitiesPerBatch;
+          const indexEnd = indexStart + maxEntitiesPerBatch;
+          const entitiesToDelete = entities.slice(indexStart, indexEnd);
+
+          if ((this as any).__pres && {}.hasOwnProperty.call((this as any).__pres, 'delete')) {
+            // We execute delete in serie (chaining Promises) --> so we call each possible pre & post hooks
+            return entitiesToDelete
+              .reduce(
+                (promise, entity) =>
+                  promise.then(() =>
+                    this.delete(undefined, undefined, undefined, undefined, entity[this.gstore.ds.KEY]),
+                  ),
+                Promise.resolve(),
+              )
+              .then(onEntitiesDeleted);
+          }
+
+          const keys = entitiesToDelete.map(entity => entity[this.gstore.ds.KEY]);
+
+          // We only need to clear the Queries from the cache once,
+          // so we do it on the first batch.
+          const clearQueries = currentBatch === 0;
+          return this.delete(undefined, undefined, undefined, undefined, keys, { clearQueries }).then(
+            onEntitiesDeleted,
+          );
+        };
+
+        const onQueryResponse = (data: QueryResponse): Promise<DeleteAllResponse | DeleteResponse> => {
+          ({ entities } = data);
+
+          if (entities.length === 0) {
+            // No more Data in table
+            return Promise.resolve({
+              success: true,
+              message: `All ${this.entityKind} deleted successfully.`,
+            });
+          }
+
+          currentBatch = 0;
+
+          // We calculate the total batches we will need to process
+          // The Datastore does not allow more than 500 keys at once when deleting.
+          totalBatches = Math.ceil(entities.length / maxEntitiesPerBatch);
+
+          return deleteEntities(currentBatch);
+        };
+
+        // We query only limit number in case of big table
+        // If we query with more than million data query will hang up
+        const query = this.query(namespace);
+        if (ancestors) {
+          query.hasAncestor(this.gstore.ds.key(ancestors.slice()));
+        }
+        query.select('__key__');
+        query.limit(QUERY_LIMIT);
+
+        return query.run({ cache: false }).then(onQueryResponse);
+      };
+
+      return runQueryAndDeleteEntities();
+    }
+
+    static clearCache(keys: EntityKey | EntityKey[], clearQueries = true): Promise<{ success: boolean }> {
+      const handlers = [];
+
+      if (clearQueries) {
+        handlers.push(
+          this.gstore.cache!.queries.clearQueriesByKind(this.entityKind).catch(e => {
+            if (e.code === 'ERR_NO_REDIS') {
+              // Silently fail if no Redis Client
+              return;
+            }
+            throw e;
+          }),
+        );
+      }
+
+      if (keys) {
+        const keysArray = arrify(keys);
+        handlers.push(this.gstore.cache!.keys.del(...keysArray));
+      }
+
+      return Promise.all(handlers).then(() => ({ success: true }));
     }
 
     /**
-     * For "delete" hooks we want to set the scope to
-     * the entity instance we are going to delete
-     * We won't have any entity data inside the entity but, if needed,
-     * we can then call the "datastoreEntity()" helper on the scope (this)
-     * from inside the hook.
-     * For "multiple" ids to delete, we obviously can't set any scope.
+     * Dynamic properties (in non explicitOnly Schemas) are indexes by default
+     * This method allows to exclude from indexes those properties if needed
+     * @param properties {Array} or {String}
+     * @param cb
      */
-    function getScopeForDeleteHooks() {
-      const id =
-        is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override') ? arrify(args[0].__override)[0] : args[0];
+    static excludeFromIndexes(properties: string | string[]): void {
+      properties = arrify(properties);
 
-      if (is.array(id)) {
-        return null;
+      properties.forEach(prop => {
+        if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
+          this.schema.path(prop, { optional: true, excludeFromIndexes: true });
+        } else {
+          this.schema.paths[prop].excludeFromIndexes = true;
+        }
+      });
+    }
+
+    /**
+     * Sanitize user data before saving to Datastore
+     * @param data : userData
+     */
+    static sanitize(
+      data: GenericObject,
+      options: { disabled: string[] } = { disabled: [] },
+    ): { [P in keyof T]: T[P] } | GenericObject {
+      const key = data[this.gstore.ds.KEY]; // save the Key
+
+      if (!is.object(data)) {
+        return data;
       }
 
-      let ancestors;
-      let namespace;
-      let key;
+      const isJoiSchema = schema.isJoi;
 
-      if (hookType === 'post') {
-        ({ key } = args);
-        if (is.array(key)) {
+      let sanitized: GenericObject | undefined;
+      let joiOptions: JoiConfig['options'];
+      if (isJoiSchema) {
+        const { error, value } = schema.validateJoi(data);
+        if (!error) {
+          sanitized = { ...value };
+        }
+        joiOptions = (schema.options.joi as JoiConfig).options || {};
+      }
+      if (sanitized === undefined) {
+        sanitized = { ...data };
+      }
+
+      const isSchemaExplicitOnly = isJoiSchema ? joiOptions!.stripUnknown : schema.options.explicitOnly === true;
+
+      const isWriteDisabled = options.disabled.includes('write');
+      const hasSchemaRefProps = Boolean(schema.__meta.refProps);
+      let schemaHasProperty;
+      let isPropWritable;
+      let propValue;
+
+      Object.keys(data).forEach(k => {
+        schemaHasProperty = {}.hasOwnProperty.call(schema.paths, k);
+        isPropWritable = schemaHasProperty ? schema.paths[k].write !== false : true;
+        propValue = sanitized![k];
+
+        if ((isSchemaExplicitOnly && !schemaHasProperty) || (!isPropWritable && !isWriteDisabled)) {
+          delete sanitized![k];
+        } else if (propValue === 'null') {
+          sanitized![k] = null;
+        } else if (hasSchemaRefProps && schema.__meta.refProps[k] && !this.gstore.ds.isKey(propValue)) {
+          // Replace populated entity by their entity Key
+          if (is.object(propValue) && propValue[this.gstore.ds.KEY]) {
+            sanitized![k] = propValue[this.gstore.ds.KEY];
+          }
+        }
+      });
+
+      return key ? { ...sanitized, [this.gstore.ds.KEY]: key } : sanitized;
+    }
+
+    // ------------------------------------
+    // Private methods
+    // ------------------------------------
+
+    // static __compile<NewType extends object>(kind: string, schema: Schema, gstore: Gstore): Model<NewType> {
+    //   return generateModel<NewType>(kind, schema, gstore);
+    // }
+
+    static __model(
+      data: EntityData,
+      id?: IdType,
+      ancestors?: Ancestor,
+      namespace?: string,
+      key?: EntityKey,
+    ): Entity<T> {
+      // const NewModel = this.__compile(this.entityKind, this.schema, this.gstore);
+      // return new NewModel(data, id, ancestors, namespace, key);
+
+      // TODO: Check if this is ok
+      // const NewModel = this;
+      return new this(data, id, ancestors, namespace, key);
+    }
+
+    static __fetchEntityByKey(
+      key: EntityKey | EntityKey[],
+      transaction?: Transaction,
+      dataloader?: any,
+      options?: GetOptions,
+    ): Promise<EntityData | EntityData[]> {
+      const handler = (keys: EntityKey | EntityKey[]): Promise<EntityData | EntityData[]> => {
+        const keysArray = arrify(keys);
+        if (transaction) {
+          if (transaction.constructor.name !== 'Transaction') {
+            return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
+          }
+          return transaction.get(keysArray).then(([result]) => arrify(result));
+        }
+
+        if (dataloader) {
+          if (dataloader.constructor.name !== 'DataLoader') {
+            return Promise.reject(
+              new GstoreError(ERROR_CODES.ERR_GENERIC, 'dataloader must be a "DataLoader" instance'),
+            );
+          }
+          return dataloader.loadMany(keysArray).then((result: EntityData) => arrify(result));
+        }
+        return this.gstore.ds.get(keysArray).then(([result]: [EntityData]) => arrify(result));
+      };
+
+      if (this.__hasCache(options)) {
+        return this.gstore.cache!.keys.read(
+          // nsql-cache requires an array for multiple and a single key when *not* multiple
+          Array.isArray(key) && key.length === 1 ? key[0] : key,
+          options,
+          handler,
+        );
+      }
+      return handler(key);
+    }
+
+    /**
+     * Helper to know if the cache is "on" to fetch entities or run a query
+     *
+     * @static
+     * @private
+     * @param {any} options The query options object
+     * @param {string} [type='keys'] The type of fetching. Can either be 'keys' or 'queries'
+     * @returns {boolean}
+     */
+    static __hasCache(options: { cache?: any } = {}, type = 'keys'): boolean {
+      if (typeof this.gstore.cache === 'undefined') {
+        return false;
+      }
+      if (typeof options.cache !== 'undefined') {
+        return options.cache;
+      }
+      if (this.gstore.cache.config.global === false) {
+        return false;
+      }
+      if (this.gstore.cache.config.ttl[type] === -1) {
+        return false;
+      }
+      return true;
+    }
+
+    static __populate(refs?: PopulateRef[][], options: PopulateOptions = {}): PopulateFunction<T> {
+      const dataloader = options.dataloader || this.gstore.createDataLoader();
+
+      const getPopulateMetaForEntity = (
+        entity: Entity | EntityData,
+        entityRefs: PopulateRef[],
+      ): PopulateMetaForEntity => {
+        const keysToFetch: EntityKey[] = [];
+        const mapKeyToPropAndSelect: { [key: string]: { ref: PopulateRef } } = {};
+
+        const isEntityClass = entity instanceof Entity;
+        entityRefs.forEach(ref => {
+          const { path } = ref;
+          const entityData: EntityData = isEntityClass ? entity.entityData : entity;
+
+          const key = get(entityData, path);
+
+          if (!key) {
+            set(entityData, path, null);
+            return;
+          }
+
+          if (!this.gstore.ds.isKey(key)) {
+            throw new Error(`[gstore] ${path} is not a Datastore Key. Reference entity can't be fetched.`);
+          }
+
+          // Stringify the key
+          const strKey = keyToString(key);
+          // Add it to our map
+          mapKeyToPropAndSelect[strKey] = { ref };
+          // Add to our array to be fetched
+          keysToFetch.push(key);
+        });
+
+        return { entity, keysToFetch, mapKeyToPropAndSelect };
+      };
+
+      const populateFn: PopulateFunction<T> = entitiesToProcess => {
+        if (!refs || !refs.length || entitiesToProcess === null) {
+          // Nothing to do here...
+          return Promise.resolve(entitiesToProcess);
+        }
+
+        // Keep track if we provided an array for the response format
+        const isArray = Array.isArray(entitiesToProcess);
+        const entities = arrify(entitiesToProcess);
+        const isEntityClass = entities[0] instanceof Entity;
+
+        // Fetches the entity references at the current
+        // object tree depth
+        const fetchRefsEntitiesRefsAtLevel = (entityRefs: PopulateRef[]): Promise<void> => {
+          // For each one of the entities to process, we gatter some meta data
+          // like the keys to fetch for that entity in order to populate its refs.
+          // Dataloaader will take care to only fetch unique keys on the Datastore
+          const meta = (entities as Entity<T>[]).map(entity => getPopulateMetaForEntity(entity, entityRefs));
+
+          const onKeysFetched = (
+            response: EntityData[] | null,
+            { entity, keysToFetch, mapKeyToPropAndSelect }: PopulateMetaForEntity,
+          ): void => {
+            if (!response) {
+              // No keys have been fetched
+              return;
+            }
+
+            const entityData = isEntityClass ? { ...entity.entityData } : entity;
+
+            const mergeRefEntitiesToEntityData = (data: EntityData, i: number): void => {
+              const key = keysToFetch[i];
+              const strKey = keyToString(key);
+              const {
+                ref: { path, select },
+              } = mapKeyToPropAndSelect[strKey];
+
+              if (!data) {
+                set(entityData, path, data);
+                return;
+              }
+
+              const EmbeddedModel = this.gstore.model(key.kind);
+              const embeddedEntity = new EmbeddedModel(data, null, null, null, key);
+
+              // prettier-ignore
+              // If "select" fields are provided, we return them,
+              // otherwise we return the entity plain() json
+              const json =
+                select.length && !select.some(s => s === '*')
+                  ? select.reduce(
+                    (acc, field) => {
+                      acc = {
+                        ...acc,
+                        [field]: data[field] || null,
+                      };
+                      return acc;
+                    },
+                      {} as { [key: string]: any }
+                  )
+                  : embeddedEntity.plain();
+
+              set(entityData, path, { ...json, id: key.name || key.id });
+
+              if (isEntityClass) {
+                entity.entityData = entityData;
+              }
+            };
+
+            // Loop over all dataloader.loadMany() responses
+            response.forEach(mergeRefEntitiesToEntityData);
+          };
+
+          const promises = meta.map(({ keysToFetch }) =>
+            keysToFetch.length
+              ? (this.__fetchEntityByKey(keysToFetch, options.transaction, dataloader, options) as Promise<
+                  EntityData[]
+                >)
+              : Promise.resolve(null),
+          );
+
+          return Promise.all(promises).then(result => {
+            // Loop over all responses from dataloader.loadMany() calls
+            result.forEach((res, i) => onKeysFetched(res, meta[i]));
+          });
+        };
+
+        return new Promise((resolve, reject): void => {
+          // At each tree level we fetch the entity references in series.
+          refs
+            .reduce(
+              (chainedPromise, entityRefs) => chainedPromise.then(() => fetchRefsEntitiesRefsAtLevel(entityRefs)),
+              Promise.resolve(),
+            )
+            .then(() => {
+              resolve(isArray ? entities : entities[0]);
+            })
+            .catch(reject);
+        });
+      };
+
+      return populateFn;
+    }
+
+    /**
+     * Add "post" hooks to a transaction
+     */
+    static __hooksTransaction(transaction: Transaction, postHooks: FuncReturningPromise[]): void {
+      const _this = this; // eslint-disable-line @typescript-eslint/no-this-alias
+      postHooks = arrify(postHooks);
+
+      if (!{}.hasOwnProperty.call(transaction, 'hooks')) {
+        transaction.hooks = {
+          post: [],
+        };
+      }
+
+      transaction.hooks.post = [...transaction.hooks.post, ...postHooks];
+
+      transaction.execPostHooks = function executePostHooks(): Promise<any> {
+        return (this.hooks.post as FuncReturningPromise[]).reduce(
+          (promise, hook) => promise.then(hook.bind(_this)),
+          Promise.resolve() as Promise<any>,
+        );
+      };
+    }
+
+    /**
+     * Helper to change the function scope for a hook if necessary
+     * This is called by the promised-hooks lib....
+     *
+     * TODO: Refactor this (in promised hookd) to make it explicit that the handler is being called
+     *
+     * @param {String} hook The name of the hook (save, delete...)
+     * @param {Array} args The arguments passed to the original method
+     */
+    static __scopeHook(hook: string, args: GenericObject, hookName: string, hookType: 'pre' | 'post'): any {
+      const _this = this; // eslint-disable-line @typescript-eslint/no-this-alias
+
+      /**
+       * For "delete" hooks we want to set the scope to
+       * the entity instance we are going to delete
+       * We won't have any entity data inside the entity but, if needed,
+       * we can then call the "datastoreEntity()" helper on the scope (this)
+       * from inside the hook.
+       * For "multiple" ids to delete, we obviously can't set any scope.
+       */
+      const getScopeForDeleteHooks = (): any => {
+        const id =
+          is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override') ? arrify(args[0].__override)[0] : args[0];
+
+        if (is.array(id)) {
           return null;
         }
-      } else {
-        ({ 1: ancestors, 2: namespace, 4: key } = args);
-      }
 
-      if (!id && !ancestors && !namespace && !key) {
-        return undefined;
-      }
+        let ancestors;
+        let namespace;
+        let key;
 
-      return _this.__model(null, id, ancestors, namespace, key);
-    }
-  }
+        if (hookType === 'post') {
+          ({ key } = args);
+          if (is.array(key)) {
+            return null;
+          }
+        } else {
+          ({ 1: ancestors, 2: namespace, 4: key } = args);
+        }
 
-  /**
-   * Helper to know if the cache is "on" to fetch entities or run a query
-   *
-   * @static
-   * @private
-   * @param {any} options The query options object
-   * @param {string} [type='keys'] The type of fetching. Can either be 'keys' or 'queries'
-   * @returns {boolean}
-   * @memberof Model
-   */
-  static __hasCache(options = {}, type = 'keys') {
-    if (typeof this.gstore.cache === 'undefined') {
-      return false;
-    }
-    if (typeof options.cache !== 'undefined') {
-      return options.cache;
-    }
-    if (this.gstore.cache.config.global === false) {
-      return false;
-    }
-    if (this.gstore.cache.config.ttl[type] === -1) {
-      return false;
-    }
-    return true;
-  }
+        if (!id && !ancestors && !namespace && !key) {
+          return undefined;
+        }
 
-  // To improve performance and avoid looping over and over the entityData or Schema
-  // we keep here some meta data to be used later in models and entities methods
-  static __generateMeta(): { [key: string]: any } {
-    const meta: { [key: string]: any } = {};
+        return _this.__model({}, id, ancestors, namespace, key);
+      };
 
-    Object.keys(this.schema.paths).forEach(k => {
-      switch (this.schema.paths[k].type) {
-        case 'geoPoint':
-          // This allows us to automatically convert valid lng/lat objects
-          // to Datastore.geoPoints
-          meta.geoPointsProps = meta.geoPointsProps || [];
-          meta.geoPointsProps.push(k);
-          break;
-        case 'entityKey':
-          meta.refProps = meta.refProps || {};
-          meta.refProps[k] = true;
-          break;
+      switch (hook) {
+        case 'delete':
+          return getScopeForDeleteHooks();
         default:
+          return this;
       }
-    });
+    }
 
-    return meta;
-  }
+    // -----------------------------------------------------------
+    // Other properties and methods attached to the Model Class
+    // -----------------------------------------------------------
 
-  /**
-   * Add custom methods declared on the Schema to the Entity Class
-   *
-   * @param {Entity} entity Entity
-   * @param {any} schema Model Schema
-   * @returns Model.prototype
-   */
-  static __applyMethods(entity: Entity & { [key: string]: any }, schema: Schema): Entity {
-    Object.keys(schema.methods).forEach(method => {
-      entity[method] = schema.methods[method];
-    });
-    return entity;
-  }
+    static pre: any; // Is added below when wrapping with hooks
 
-  // static __applyStatics(model: Model & { [key: string]: any }, schema: Schema): Model {
-  //   Object.keys(schema.statics).forEach(method => {
-  //     if (typeof model[method] !== 'undefined') {
-  //       throw new Error(`${method} already declared as static.`);
-  //     }
-  //     model[method] = schema.statics[method];
-  //   });
-  //   return model;
-  // }
-}
+    static post: any; // Is added below when wrapping with hooks
+
+    static query: any; // Is added below from the Query instance
+
+    static findOne: any; // Is added below from the Query instance
+
+    static list: any; // Is added below from the Query instance
+
+    static findAround: any; // Is added below from the Query instance
+  };
+
+  // Wrap the Model to add "pre" and "post" hooks functionalities
+  hooks.wrap(model);
+  registerHooksFromSchema(model, schema);
+
+  const query = new Query<T>(model);
+  const { initQuery, list, findOne, findAround } = query;
+
+  model.query = initQuery;
+  model.list = list;
+  model.findOne = findOne;
+  model.findAround = findAround;
+
+  return model;
+};
 
 interface GetOptions {
   /**
-   * If you have provided an Array of ids, the order returned by the Datastore is not guaranteed. If you need the entities back in the same order of the IDs provided, then set `preserveOrder: true`
+   * If you have provided an Array of ids, the order returned by the Datastore is not guaranteed.
+   * If you need the entities back in the same order of the IDs provided, then set `preserveOrder: true`
    *
    * @type {boolean}
    * @default false
@@ -1010,7 +1156,7 @@ interface GetOptions {
    * An optional Dataloader instance.
    *
    * @type {*}
-   * @link https://sebelga.gitbooks.io/gstore-node/content/dataloader.html#dataloader
+   * @link https://sebloix.gitbook.io/gstore-node/dataloader.html#dataloader
    */
   dataloader?: any;
   /**
@@ -1020,7 +1166,7 @@ interface GetOptions {
    *
    * @type {boolean}
    * @default The "global" cache configuration
-   * @link https://sebelga.gitbooks.io/gstore-node/content/cache.html
+   * @link https://sebloix.gitbook.io/gstore-node/cache.html
    */
   cache?: boolean;
   /**
@@ -1030,22 +1176,31 @@ interface GetOptions {
    *
    * @type {(number | { [propName: string] : number })}
    * @default The "ttl.keys" cache configuration
-   * @link https://sebelga.gitbooks.io/gstore-node/content/cache.html
+   * @link https://sebloix.gitbook.io/gstore-node/cache.html
    */
   ttl?: number | { [propName: string]: number };
+}
+
+interface DeleteOptions {
+  dataloader?: any;
+  cache?: any;
+  clearQueries?: boolean;
+}
+
+interface DeleteResponse {
+  key?: EntityKey | EntityKey[];
+  success?: boolean;
+  apiResponse?: any;
+  indexUpdates?: number;
+}
+
+interface DeleteAllResponse {
+  success: boolean;
+  message: string;
 }
 
 interface PopulateOptions extends GetOptions {
   transaction?: Transaction;
 }
-
-// Bind Query methods
-const { initQuery, list, findOne, findAround } = new Query();
-
-Model.initQuery = initQuery;
-Model.query = initQuery; // create alias
-Model.list = list;
-Model.findOne = findOne;
-Model.findAround = findAround;
 
 export default Model;

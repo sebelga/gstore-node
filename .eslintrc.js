@@ -54,16 +54,9 @@ module.exports = {
     'prefer-spread': 'off',
     'no-restricted-globals': 'off',
     'no-underscore-dangle': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
-    // 'mocha/no-exclusive-tests': 'error',
-    'comma-dangle': [
-      'error',
-      {
-        arrays: 'always-multiline',
-        objects: 'always-multiline',
-        functions: 'ignore',
-      },
-    ],
+    'mocha/no-exclusive-tests': 'error',
   },
 };

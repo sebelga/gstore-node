@@ -1,125 +1,130 @@
-'use strict';
-
 import is from 'is';
 import arrify from 'arrify';
 
-function toDatastore(entity, options = {}) {
-    // For now the more robust excudeFromIndexes Array declaration
-    // has an issue with Arrays ("Exclude from indexes cannot be set on a list value")
-    // and cannot be used for now
-    // See issue: https://github.com/googleapis/nodejs-datastore/issues/14
+import { Entity } from '../entity';
 
-    const data = Object.entries(entity.entityData).reduce((acc, [key, value]) => {
+function toDatastore(entity: Entity, options = {}) {
+  // For now the more robust excudeFromIndexes Array declaration
+  // has an issue with Arrays ("Exclude from indexes cannot be set on a list value")
+  // and cannot be used for now
+  // See issue: https://github.com/googleapis/nodejs-datastore/issues/14
+
+  const data = Object.entries(entity.entityData).reduce(
+    (acc, [key, value]) => {
         if (typeof value !== 'undefined') {
-            acc[key] = value;
+        acc[key] = value;
         }
         return acc;
-    }, {});
+    },
+    {} as { [key: string]: any }
+  );
 
-    const excludeFromIndexes = getExcludeFromIndexes();
+  const excludeFromIndexes = getExcludeFromIndexes();
 
-    const datastoreFormat = {
-        key: entity.entityKey,
-        data,
-        excludeLargeProperties: entity.schema.options.excludeLargeProperties,
-    };
+  const datastoreFormat = {
+    key: entity.entityKey,
+    data,
+    excludeLargeProperties: entity.schema.options.excludeLargeProperties,
+  };
 
-    if (excludeFromIndexes.length > 0) {
-        datastoreFormat.excludeFromIndexes = excludeFromIndexes;
-    }
+  if (excludeFromIndexes.length > 0) {
+    datastoreFormat.excludeFromIndexes = excludeFromIndexes;
+  }
 
-    if (options.method) {
-        datastoreFormat.method = options.method;
-    }
+  if (options.method) {
+    datastoreFormat.method = options.method;
+  }
 
-    return datastoreFormat;
+  return datastoreFormat;
 
-    // ---------
+  // ---------
 
-    function getExcludeFromIndexes() {
-        return Object.entries(data)
-            .filter(({ 1: value }) => value !== null)
-            .map(([key]) => entity.excludeFromIndexes[key])
-            .filter(v => v !== undefined)
-            .reduce((acc, arr) => [...acc, ...arr], []);
-    }
+  function getExcludeFromIndexes() {
+    return Object.entries(data)
+      .filter(({ 1: value }) => value !== null)
+      .map(([key]) => entity.excludeFromIndexes[key])
+      .filter(v => v !== undefined)
+      .reduce((acc, arr) => [...acc, ...arr], []);
+  }
 }
 
 function fromDatastore(entity, options = {}) {
-    switch (options.format) {
-        case 'ENTITY':
-            return convertToEntity.call(this);
-        default:
-            return convertToJson.call(this);
-    }
+  switch (options.format) {
+    case 'ENTITY':
+      return convertToEntity.call(this);
+    default:
+      return convertToJson.call(this);
+  }
 
-    // --------------
+  // --------------
 
-    function convertToJson() {
-        options.readAll = typeof options.readAll === 'undefined' ? false : options.readAll;
+  function convertToJson() {
+    options.readAll = typeof options.readAll === 'undefined' ? false : options.readAll;
 
-        const { schema } = this;
-        const { KEY } = this.gstore.ds;
-        const entityKey = entity[KEY];
-        const data = {
-            id: idFromKey(entityKey),
-        };
-        data[KEY] = entityKey;
+    const { schema } = this;
+    const { KEY } = this.gstore.ds;
+    const entityKey = entity[KEY];
+    const data = {
+      id: idFromKey(entityKey),
+    };
+    data[KEY] = entityKey;
 
-        Object.keys(entity).forEach(k => {
-            if (options.readAll || !{}.hasOwnProperty.call(schema.paths, k) || schema.paths[k].read !== false) {
-                let value = entity[k];
+    Object.keys(entity).forEach(k => {
+      if (options.readAll || !{}.hasOwnProperty.call(schema.paths, k) || schema.paths[k].read !== false) {
+        let value = entity[k];
 
-                if ({}.hasOwnProperty.call(this.schema.paths, k)) {
-                    // During queries @google-cloud converts datetime to number
-                    if (this.schema.paths[k].type === 'datetime' && is.number(value)) {
-                        value = new Date(value / 1000);
-                    }
+        if ({}.hasOwnProperty.call(this.schema.paths, k)) {
+          // During queries @google-cloud converts datetime to number
+          if (this.schema.paths[k].type === 'datetime' && is.number(value)) {
+            value = new Date(value / 1000);
+          }
 
-                    // Sanitise embedded objects
-                    if (typeof this.schema.paths[k].excludeFromRead !== 'undefined'
-                        && is.array(this.schema.paths[k].excludeFromRead)
-                        && !options.readAll) {
-                        this.schema.paths[k].excludeFromRead.forEach(prop => {
-                            const segments = prop.split('.');
-                            let v = value;
+          // Sanitise embedded objects
+          if (
+            typeof this.schema.paths[k].excludeFromRead !== 'undefined' &&
+            is.array(this.schema.paths[k].excludeFromRead) &&
+            !options.readAll
+          ) {
+            this.schema.paths[k].excludeFromRead.forEach(prop => {
+              const segments = prop.split('.');
+              let v = value;
 
-                            while (segments.length > 1 && v !== undefined) {
-                                v = v[segments.shift()];
-                            }
+              while (segments.length > 1 && v !== undefined) {
+                v = v[segments.shift()];
+              }
 
-                            const segment = segments.pop();
+              const segment = segments.pop();
 
-                            if (v !== undefined && segment in v) {
-                                delete v[segment];
-                            }
-                        });
-                    }
-                }
-
-                data[k] = value;
-            }
-        });
-
-        if (options.showKey) {
-            data.__key = entityKey;
-        } else {
-            delete data.__key;
+              if (v !== undefined && segment in v) {
+                delete v[segment];
+              }
+            });
+          }
         }
 
-        return data;
+        data[k] = value;
+      }
+    });
 
-        // ----------------------
-
-        function idFromKey(key) {
-            return key.path[key.path.length - 1];
-        }
+    if (options.showKey) {
+      data.__key = entityKey;
+    } else {
+      delete data.__key;
     }
 
-    function convertToEntity() {
-        const key = entity[this.gstore.ds.KEY];
-        return this.__model(entity, null, null, null, key);
+    return data;
+
+    // ----------------------
+
+    function idFromKey(key) {
+      return key.path[key.path.length - 1];
     }
+  }
+
+  function convertToEntity() {
+    const key = entity[this.gstore.ds.KEY];
+    return this.__model(entity, null, null, null, key);
+  }
 }
 
 /**
@@ -129,21 +134,21 @@ function fromDatastore(entity, options = {}) {
  * @returns {array} the formated entity(ies)
  */
 function entitiesToDatastore(entities, options) {
-    const multiple = is.array(entities);
-    entities = arrify(entities);
+  const multiple = is.array(entities);
+  entities = arrify(entities);
 
-    if (entities[0].className !== 'Entity') {
-        // Not an entity instance, nothing to do here...
-        return entities;
-    }
+  if (entities[0].className !== 'Entity') {
+    // Not an entity instance, nothing to do here...
+    return entities;
+  }
 
-    const result = entities.map(e => toDatastore(e, options));
+  const result = entities.map(e => toDatastore(e, options));
 
-    return multiple ? result : result[0];
+  return multiple ? result : result[0];
 }
 
 export default {
-    toDatastore,
-    fromDatastore,
-    entitiesToDatastore,
+  toDatastore,
+  fromDatastore,
+  entitiesToDatastore,
 };

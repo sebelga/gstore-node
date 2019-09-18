@@ -77,6 +77,8 @@
     "@google-cloud/datastore": "^4.0.0",
     "@types/arrify": "2.0.1",
     "@types/is": "^0.0.21",
+    "@types/lodash.get": "^4.4.6",
+    "@types/lodash.set": "^4.3.6",
     "@types/jest": "^24.0.18",
     "@typescript-eslint/eslint-plugin": "^2.2.0",
     "@typescript-eslint/parser": "^2.2.0",

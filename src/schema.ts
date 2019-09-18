@@ -8,12 +8,10 @@ import { Operator } from '@google-cloud/datastore/build/src/query';
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';
+import { FunctionType, FuncReturningPromise, GenericObject } from './types';
 
 const Joi = optional('@hapi/joi') || optional('joi');
 
-type FuncReturningPromise = (...args: any[]) => Promise<any>;
-type FunctionType = (...args: any[]) => any;
-type GenericObject = { [key: string]: any };
 type EntityFormatType = 'ENTITY';
 type JSONFormatType = 'JSON';
 
@@ -84,11 +82,13 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
 
   public readonly paths: { [P in keyof T]: SchemaPathDefinition };
 
-  private readonly virtuals: { [key: string]: VirtualType };
+  public readonly options: SchemaOptions = {};
 
-  private readonly shortcutQueries: { [key: string]: QueryListOptions };
+  public __meta: GenericObject = {};
 
-  private callQueue: {
+  public readonly __virtuals: { [key: string]: VirtualType };
+
+  public __callQueue: {
     model: {
       [key: string]: {
         pres: (FuncReturningPromise | FuncReturningPromise[])[];
@@ -103,16 +103,16 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     };
   };
 
-  private options: SchemaOptions = {};
+  public readonly shortcutQueries: { [key: string]: QueryListOptions };
 
   private joiSchema?: GenericObject;
 
   constructor(properties: { [P in keyof T]: SchemaPathDefinition }, options?: SchemaOptions) {
     this.methods = {};
-    this.virtuals = {};
+    this.__virtuals = {};
     this.shortcutQueries = {};
     this.paths = {} as { [P in keyof T]: SchemaPathDefinition };
-    this.callQueue = {
+    this.__callQueue = {
       model: {},
       entity: {},
     };
@@ -197,7 +197,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
    * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/pre-hooks
    */
   pre(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
-    const queue = IS_QUERY_HOOK[method] ? this.callQueue.model : this.callQueue.entity;
+    const queue = IS_QUERY_HOOK[method] ? this.__callQueue.model : this.__callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
       queue[method] = {
@@ -218,7 +218,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
    * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/post-hooks
    */
   post(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
-    const queue = IS_QUERY_HOOK[method] ? this.callQueue.model : this.callQueue.entity;
+    const queue = IS_QUERY_HOOK[method] ? this.__callQueue.model : this.__callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
       queue[method] = {
@@ -241,10 +241,10 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
     if (RESERVED_PROPERTY_NAMES[propName]) {
       throw new Error(`${propName} is reserved and can not be used as virtual property.`);
     }
-    if (!{}.hasOwnProperty.call(this.virtuals, propName)) {
-      this.virtuals[propName] = new VirtualType(propName);
+    if (!{}.hasOwnProperty.call(this.__virtuals, propName)) {
+      this.__virtuals[propName] = new VirtualType(propName);
     }
-    return this.virtuals[propName];
+    return this.__virtuals[propName];
   }
 
   /**
@@ -294,7 +294,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
 
   static initJoiSchema(
     schema: { [key: string]: SchemaPathDefinition },
-    joiConfig?: boolean | JoiConfig
+    joiConfig?: boolean | JoiConfig,
   ): GenericObject | undefined {
     if (!is.object(joiConfig)) {
       return undefined;
@@ -347,7 +347,7 @@ export interface SchemaPathDefinition {
   ref?: string;
 }
 
-type JoiConfig = { extra?: GenericObject; options?: GenericObject };
+export type JoiConfig = { extra?: GenericObject; options?: GenericObject };
 
 export interface SchemaOptions {
   validateBeforeSave?: boolean;

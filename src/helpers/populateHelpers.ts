@@ -1,8 +1,16 @@
 import arrify from 'arrify';
 
-import Model from '../model';
+import Schema from '../schema';
+import { PopulateRef } from '../types';
 
-type Ref = { path: string; select: string[] };
+/**
+ * Returns all the schema properties that are references
+ * to other entities (their value is an entity Key)
+ */
+const getEntitiesRefsFromSchema = (schema: Schema): string[] =>
+  Object.entries(schema.paths)
+    .filter(([, pathConfig]) => pathConfig.type === 'entityKey')
+    .map(([property]) => property);
 
 /**
  *
@@ -25,7 +33,7 @@ type Ref = { path: string; select: string[] };
  *  [{ path: 'user.company', select: ['*'] }], // tree depth at level 1 (will be fetched after level 0 has been fetched)
  * ]
  */
-const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: Ref[][]): void => {
+const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: PopulateRef[][]): void => {
   const pathToArray = initialPath.split('.');
   const select = arrify(_select);
   let prefix = '';
@@ -53,16 +61,16 @@ const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: Ref[]
   });
 };
 
-const populateFactory = (refsToPopulate: Ref[][], promise: Promise<any>, model: typeof Model) => (
+const populateFactory = (refsToPopulate: PopulateRef[][], promise: Promise<any>, schema: Schema) => (
   path?: string,
-  propsToSelect?: string[]
+  propsToSelect?: string[],
 ): Promise<any> => {
   if (propsToSelect && Array.isArray(path)) {
     throw new Error('Only 1 property can be populated when fields to select are provided');
   }
 
   // If no path is specified, we fetch all the schema properties that are references to entities (Keys)
-  const paths: string[] = path ? arrify(path) : model.getEntitiesRefsFromSchema();
+  const paths: string[] = path ? arrify(path) : getEntitiesRefsFromSchema(schema);
 
   paths.forEach(p => addPathToPopulateRefs(p, propsToSelect, refsToPopulate));
 
