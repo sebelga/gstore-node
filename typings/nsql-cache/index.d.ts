@@ -2,13 +2,39 @@ declare module 'nsql-cache' {
   import { entity } from '@google-cloud/datastore/build/src/entity';
   import { Query } from "@google-cloud/datastore/build/src/query";
 
+  export interface NsqlCacheConfig {
+    ttl: {
+        keys?: number,
+        queries?: number,
+        memory?: {
+            keys: number,
+            queries: number
+        },
+        redis?: {
+            keys: number,
+            queries: number
+        },
+        [key: string]: {
+            keys: number,
+            queries: number
+        } | number | undefined,
+
+    },
+    cachePrefix: {
+        keys: string;
+        queries: string;
+    },
+    hashCacheKeys: boolean,
+    wrapClient: boolean,
+}
+
   /**
    * gstore-cache Instance
    *
    * @class Cache
    */
   class NsqlCache {
-    constructor(settings: { db: any })
+    constructor(settings: { db: any, stores: any[], config: NsqlCacheConfig })
 
     public config: any;
 
@@ -86,5 +112,5 @@ declare module 'nsql-cache' {
     reset(): Promise<void>;
   }
 
-  export = NsqlCache;
+  export default NsqlCache;
 }

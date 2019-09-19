@@ -1,19 +1,29 @@
 const NOW = 'CURRENT_DATETIME';
-const timeNow = (): Date => new Date();
-const map: Record<string, (...args: any[]) => void> = {
-  CURRENT_DATETIME: timeNow,
+
+const returnCurrentTime = (): Date => new Date();
+
+const mapDefaultValueIdToHandler: Record<string, (...args: any[]) => void> = {
+  [NOW]: returnCurrentTime,
 };
 
 const handler = (key: string): unknown => {
-  if ({}.hasOwnProperty.call(map, key)) {
-    return map[key]();
+  if ({}.hasOwnProperty.call(mapDefaultValueIdToHandler, key)) {
+    return mapDefaultValueIdToHandler[key]();
   }
 
   return null;
 };
 
-export default {
+export interface DefaultValues {
+  NOW: 'CURRENT_DATETIME';
+  __handler__: (key: string) => unknown;
+  __map__: { [key: string]: () => any };
+}
+
+const defaultValues: DefaultValues = {
   NOW,
   __handler__: handler,
-  __map__: map,
+  __map__: mapDefaultValueIdToHandler,
 };
+
+export default defaultValues;

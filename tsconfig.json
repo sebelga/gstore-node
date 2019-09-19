@@ -9,6 +9,7 @@
     "strict": true,
     "removeComments": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "types": [
       "node",
       "jest"

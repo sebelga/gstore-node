@@ -1,5 +1,5 @@
 declare module 'nsql-cache-datastore' {
-  function factory(): {
+  function factory(ds?: any): {
     keyToString: (key: any) =>  string
   }
   export default factory;

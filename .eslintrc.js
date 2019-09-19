@@ -18,7 +18,7 @@ module.exports = {
     node: true,
     mocha: true,
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'mocha'],
   settings: {
     'import/resolver': {
       node: {

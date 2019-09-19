@@ -1,45 +1,48 @@
-'use strict';
-
-/* eslint-disable import/no-extraneous-dependencies */
-
 import optional from 'optional';
-
-import dsAdapterFactory from 'nsql-cache-datastore';
-const dsAdapter = dsAdapterFactory();
 import arrify from 'arrify';
+import datastoreAdapterFactory from 'nsql-cache-datastore';
+import { Datastore } from '@google-cloud/datastore';
+import DataLoader from 'dataloader'; // eslint-disable-line import/no-extraneous-dependencies
 
-const DataLoader = optional('dataloader');
+import { EntityKey, EntityData } from './types';
+
+const OptionalDataloader = optional('dataloader');
+
+const dsAdapter = datastoreAdapterFactory();
+
 const { keyToString } = dsAdapter;
 
 /**
  * Create a DataLoader instance
  * @param {Datastore} ds @google-cloud Datastore instance
  */
-function createDataLoader(ds) {
-    ds = typeof ds !== 'undefined' ? ds : this && this.ds;
+export const createDataLoader = (
+  ds: Datastore,
+  options?: { maxBatchSize: number },
+): DataLoader<EntityKey[], EntityData> => {
+  if (!ds) {
+    throw new Error('A Datastore instance has to be passed');
+  }
 
-    if (!ds) {
-        throw new Error('A Datastore instance has to be passed');
-    }
+  const fetchHandler = (keys: EntityKey[]): Promise<EntityData> =>
+    ds.get(keys).then(([response]: [EntityData | EntityData[]]) => {
+      // When providing an Array with 1 Key item, google-datastore
+      // returns a single item.
+      // For predictable results in gstore, all responses from Datastore.get()
+      // calls return an Array
+      const entityData = arrify(response);
+      const entitiesByKey: { [key: string]: any } = {};
+      entityData.forEach(data => {
+        entitiesByKey[keyToString(data[ds.KEY as any])] = entityData;
+      });
 
-    return new DataLoader(keys => (
-        ds.get(keys).then(([res]) => {
-            // When providing an Array with 1 Key item, google-datastore
-            // returns a single item.
-            // For predictable results in gstore, all responses from Datastore.get()
-            // calls return an Array
-            const entities = arrify(res);
-            const entitiesByKey = {};
-            entities.forEach(entity => {
-                entitiesByKey[keyToString(entity[ds.KEY])] = entity;
-            });
-
-            return keys.map(key => entitiesByKey[keyToString(key)] || null);
-        })
-    ), {
-        cacheKeyFn: _key => keyToString(_key),
-        maxBatchSize: 1000,
+      return keys.map(key => entitiesByKey[keyToString(key)] || null);
     });
-}
 
-export default { createDataLoader };
+  const defaultOptions = {
+    cacheKeyFn: (key: EntityKey): string => keyToString(key),
+    maxBatchSize: 1000,
+  };
+
+  return new OptionalDataloader(fetchHandler, { ...defaultOptions, ...options });
+};

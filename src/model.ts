@@ -384,7 +384,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           if (typeof data === 'undefined' || data === null) {
             return null;
           }
-          return this.__model(data, undefined, undefined, undefined, data[this.gstore.ds.KEY]);
+          return this.__model(data, undefined, undefined, undefined, data[this.gstore.ds.KEY as any]);
         });
 
         // TODO: Check if this is still useful??
@@ -435,7 +435,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           extend(false, entityData, data);
 
           const result = {
-            key: entityData[this.gstore.ds.KEY],
+            key: entityData[this.gstore.ds.KEY as any],
             data: entityData,
           };
 
@@ -537,7 +537,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
       if (typeof transaction === 'undefined' || transaction === null) {
         internalTransaction = true;
         transaction = this.gstore.ds.transaction();
-        return transaction!
+        return transaction
           .run()
           .then(getAndUpdate)
           .catch(onUpdateError);
@@ -580,7 +580,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
         return Promise.resolve({ key: key! });
       }
 
-      return this.gstore.ds.delete(key).then((results?: [{ indexUpdates?: number }]) => {
+      return ((this.gstore.ds.delete(key) as unknown) as Promise<any>).then((results?: [{ indexUpdates?: number }]) => {
         const response: DeleteResponse = results ? results[0] : {};
         response.key = key;
 
@@ -656,14 +656,14 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
               .reduce(
                 (promise, entity) =>
                   promise.then(() =>
-                    this.delete(undefined, undefined, undefined, undefined, entity[this.gstore.ds.KEY]),
+                    this.delete(undefined, undefined, undefined, undefined, entity[this.gstore.ds.KEY as any]),
                   ),
                 Promise.resolve(),
               )
               .then(onEntitiesDeleted);
           }
 
-          const keys = entitiesToDelete.map(entity => entity[this.gstore.ds.KEY]);
+          const keys = entitiesToDelete.map(entity => entity[this.gstore.ds.KEY as any]);
 
           // We only need to clear the Queries from the cache once,
           // so we do it on the first batch.
@@ -757,7 +757,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
       data: GenericObject,
       options: { disabled: string[] } = { disabled: [] },
     ): { [P in keyof T]: T[P] } | GenericObject {
-      const key = data[this.gstore.ds.KEY]; // save the Key
+      const key = data[this.gstore.ds.KEY as any]; // save the Key
 
       if (!is.object(data)) {
         return data;
@@ -971,7 +971,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
               }
 
               const EmbeddedModel = this.gstore.model(key.kind);
-              const embeddedEntity = new EmbeddedModel(data, null, null, null, key);
+              const embeddedEntity = new EmbeddedModel(data, undefined, undefined, undefined, key);
 
               // prettier-ignore
               // If "select" fields are provided, we return them,

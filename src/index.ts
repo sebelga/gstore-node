@@ -1,195 +1,246 @@
-'use strict';
-
-/* eslint-disable prefer-template */
+/* eslint-disable prefer-template, max-classes-per-file */
 
 import is from 'is';
 
 import extend from 'extend';
 import hooks from 'promised-hooks';
-import NsqlCache from 'nsql-cache';
+import NsqlCache, { NsqlCacheConfig } from 'nsql-cache';
 import dsAdapter from 'nsql-cache-datastore';
+import DataLoader from 'dataloader'; // eslint-disable-line import/no-extraneous-dependencies
+import { Datastore, Transaction } from '@google-cloud/datastore';
+
 import Schema from './schema';
-import Model from './model';
-import { queries } from './constants';
-import { GstoreError, ValidationError, TypeError, ValueError, errorCodes } from './errors';
-import defaultValues from './helpers/defaultValues';
+import Model, { generateModel } from './model';
+import Entity from './entity';
+import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
+import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { Datastore as datastoreSerializer } from './serializer';
 import { createDataLoader } from './dataloader';
 import pkg from '../package.json';
+import { EntityKey, EntityData } from './types';
 
-const defaultConfig = {
-    cache: undefined,
-    errorOnEntityNotFound: true,
+interface CacheConfig {
+  stores: any[];
+  config: NsqlCacheConfig;
+}
+
+interface GstoreConfig {
+  cache?: boolean | CacheConfig;
+  errorOnEntityNotFound: boolean;
+}
+const DEFAULT_GSTORE_CONFIG = {
+  cache: undefined,
+  errorOnEntityNotFound: true,
+};
+
+const DEFAULT_CACHE_SETTINGS = {
+  config: {
+    wrapClient: false,
+  },
 };
 
 class Gstore {
-    constructor(config = {}) {
-        if (!is.object(config)) {
-            throw new Error('Gstore config must be an object.');
-        }
+  /**
+   * Map of Gstore Model created
+   */
+  public models: { [key: string]: Model<any> };
 
-        this.models = {};
-        this.modelSchemas = {};
-        this.options = {};
-        this.config = { ...defaultConfig, ...config };
-        this.Schema = Schema;
-        this.Queries = queries;
-        this._defaultValues = defaultValues;
-        this._pkgVersion = pkg.version;
+  /**
+   * Alias to Schema class
+   */
+  public Schema: typeof Schema;
 
-        this.errors = {
-            GstoreError,
-            ValidationError,
-            TypeError,
-            ValueError,
-            codes: errorCodes,
-        };
-        this.ERR_HOOKS = hooks.ERRORS;
-        this.createDataLoader = createDataLoader;
+  public config: GstoreConfig;
+
+  /**
+   * The underlying gstore-cache instance
+   *
+   * @type {GstoreCache}
+   */
+  public cache: NsqlCache | undefined;
+
+  /**
+   * The symbol to access possible errors thrown
+   * in a "post" hooks
+   */
+  public ERR_HOOKS: symbol;
+
+  public errors: {
+    GstoreError: typeof GstoreError;
+    ValidationError: typeof ValidationError;
+    TypeError: typeof TypeError;
+    ValueError: typeof ValueError;
+    codes: typeof ERROR_CODES;
+  };
+
+  public __ds: Datastore | null = null;
+
+  public __defaultValues: DefaultValues;
+
+  public __pkgVersion: string;
+
+  constructor(config = {}) {
+    if (!is.object(config)) {
+      throw new Error('Gstore config must be an object.');
     }
 
-    model(entityKind, schema, options) {
-        if (is.object(schema) && !(schema.instanceOfSchema)) {
-            schema = new Schema(schema);
-        }
+    this.models = {};
+    this.config = { ...DEFAULT_GSTORE_CONFIG, ...config };
+    this.Schema = Schema;
+    this.__defaultValues = defaultValues;
+    this.__pkgVersion = pkg.version;
 
-        options = options || {};
+    this.errors = {
+      GstoreError,
+      ValidationError,
+      TypeError,
+      ValueError,
+      codes: ERROR_CODES,
+    };
 
-        // look up schema in cache
-        if (!this.modelSchemas[entityKind]) {
-            if (schema) {
-                // cache it so we only apply plugins once
-                this.modelSchemas[entityKind] = schema;
-            } else {
-                throw new Error(`Schema ${entityKind} missing`);
-            }
-        }
+    this.ERR_HOOKS = hooks.ERRORS;
+  }
 
-        // we might be passing a different schema for
-        // an existing model entityKind. in this case don't read from cache.
-        if (this.models[entityKind] && options.cache !== false) {
-            if (schema && schema.instanceOfSchema && schema !== this.models[entityKind].schema) {
-                throw new Error('Trying to override ' + entityKind + ' Model Schema');
-            }
-            return this.models[entityKind];
-        }
-
-        const model = Model.compile(entityKind, schema, this);
-
-        if (options.cache === false) {
-            return model;
-        }
-
-        this.models[entityKind] = model;
-
-        return this.models[entityKind];
+  model<T extends object>(entityKind: string, schema?: Schema<T>): Model<T> {
+    // We might be passing a different schema for
+    // an existing model entityKind. in this case warn the user,
+    if (this.models[entityKind]) {
+      if (schema instanceof Schema && schema !== this.models[entityKind].schema) {
+        throw new Error(`Trying to override ${entityKind} Model Schema`);
+      }
+      return this.models[entityKind];
     }
 
-    /**
-     * Alias to gcloud datastore Transaction method
-     */
-    transaction() {
-        return this._ds.transaction();
+    if (!schema) {
+      throw new Error('A Schema needs to be provided to create a Model.');
     }
 
-    /**
-     * Return an array of model names created on this instance of Gstore
-     * @returns {Array}
-     */
-    modelNames() {
-        const names = Object.keys(this.models);
-        return names;
-    }
+    const model = generateModel<T>(entityKind, schema, this);
 
-    save(entities, transaction, options = {}) {
-        if (!entities) {
-            throw new Error('No entities passed');
-        }
+    this.models[entityKind] = model;
 
-        /**
-         * Validate entities before saving
-         */
-        if (options.validate) {
-            let error;
-            const validateEntity = entity => {
-                ({ error } = entity.validate());
-                if (error) {
-                    throw error;
-                }
-            };
-            try {
-                if (Array.isArray(entities)) {
-                    entities.forEach(validateEntity);
-                } else {
-                    validateEntity(entities);
-                }
-            } catch (err) {
-                return Promise.reject(err);
-            }
-        }
+    return this.models[entityKind];
+  }
 
-        // Convert gstore entities to datastore forma ({key, data})
-        const entitiesSerialized = datastoreSerializer.entitiesToDatastore(entities, options);
+  /**
+   * Alias to gcloud datastore Transaction method
+   */
+  transaction(): Transaction {
+    return this.__ds!.transaction();
+  }
 
-        if (transaction) {
-            return transaction.save(entitiesSerialized);
-        }
+  /**
+   * Return an array of model names created on this instance of Gstore
+   * @returns {Array}
+   */
+  modelNames(): string[] {
+    const names = Object.keys(this.models);
+    return names;
+  }
 
-        // We forward the call to google-datastore
-        return this._ds.save.call(this._ds, entitiesSerialized);
-    }
-
-    // Connect to Google Datastore instance
-    connect(ds) {
-        if (!ds.constructor || ds.constructor.name !== 'Datastore') {
-            throw new Error('No @google-cloud/datastore instance provided.');
-        }
-
-        this._ds = ds;
-
-        if (this.config.cache) {
-            const defaultCacheSettings = {
-                config: {
-                    wrapClient: false,
-                },
-            };
-            const cacheSettings = this.config.cache === true
-                ? defaultCacheSettings
-                : extend(true, {}, defaultCacheSettings, this.config.cache);
-            const { stores, config } = cacheSettings;
-            const db = dsAdapter(ds);
-            this.cache = new NsqlCache({ db, stores, config });
-            delete this.config.cache;
-        }
+  save(
+    entities: Entity | Entity[],
+    transaction?: Transaction,
+    options: { method?: 'upsert' | 'insert' | 'update'; validate?: boolean } | undefined = {},
+  ): Promise<
+    [
+      {
+        mutationResults?: any;
+        indexUpdates?: number | null;
+      },
+    ]
+  > {
+    if (!entities) {
+      throw new Error('No entities passed');
     }
 
     /**
-     * Expose the defaultValues constants
+     * Validate entities before saving
      */
-    get defaultValues() {
-        return this._defaultValues;
+    if (options.validate) {
+      let error;
+      const validateEntity = (entity: Entity): void => {
+        ({ error } = entity.validate());
+        if (error) {
+          throw error;
+        }
+      };
+      try {
+        if (Array.isArray(entities)) {
+          entities.forEach(validateEntity);
+        } else {
+          validateEntity(entities);
+        }
+      } catch (err) {
+        return Promise.reject(err);
+      }
     }
 
-    get version() {
-        return this._pkgVersion;
+    // Convert gstore entities to datastore forma ({key, data})
+    const entitiesSerialized = datastoreSerializer.entitiesToDatastore(entities, options);
+
+    if (transaction) {
+      return transaction.save(entitiesSerialized);
     }
 
-    get ds() {
-        return this._ds;
+    // We forward the call to google-datastore
+    return this.__ds!.save(entitiesSerialized);
+  }
+
+  // Connect to Google Datastore instance
+  connect(datastore: Datastore): void {
+    if (!datastore.constructor || datastore.constructor.name !== 'Datastore') {
+      throw new Error('No @google-cloud/datastore instance provided.');
     }
+
+    this.__ds = datastore;
+
+    if (this.config.cache) {
+      const cacheSettings =
+        this.config.cache === true
+          ? extend(true, {}, DEFAULT_CACHE_SETTINGS)
+          : extend(true, {}, DEFAULT_CACHE_SETTINGS, this.config.cache);
+
+      const { stores, config } = cacheSettings as CacheConfig;
+
+      const db = dsAdapter(datastore);
+      this.cache = new NsqlCache({ db, stores, config });
+      delete this.config.cache;
+    }
+  }
+
+  createDataLoader(): DataLoader<EntityKey[], EntityData> {
+    return createDataLoader(this.ds);
+  }
+
+  /**
+   * Expose the defaultValues constants
+   */
+  get defaultValues(): DefaultValues {
+    return this.__defaultValues;
+  }
+
+  get version(): string {
+    return this.__pkgVersion;
+  }
+
+  get ds(): Datastore {
+    return this.__ds!;
+  }
 }
 
-const instances = {
-    refs: new Map(),
-    get(id) {
-        return this.refs.get(id);
-    },
-    set(id, instance) {
-        this.refs.set(id, instance);
-    },
+export const instances = {
+  __refs: new Map<string, Gstore>(),
+  get(id: string): Gstore {
+    const instance = this.__refs.get(id);
+    if (!instance) {
+      throw new Error(`Could not find gstore instance with id "${id}"`);
+    }
+    return instance;
+  },
+  set(id: string, instance: Gstore): void {
+    this.__refs.set(id, instance);
+  },
 };
 
-export default {
-    Gstore,
-    instances,
-};
+export default Gstore;
