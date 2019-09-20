@@ -30,12 +30,12 @@ class Query<T extends object> {
    *
    * @returns {Object} The query to be run
    */
-  initQuery<R = QueryResponse>(namespace?: string, transaction?: Transaction): GstoreQuery<R> {
+  initQuery<R = QueryResponse<T>>(namespace?: string, transaction?: Transaction): GstoreQuery<T, R> {
     const query = createDatastoreQueryForModel(this.Model, namespace, transaction);
 
-    const runQuery: QueryRunFunc<R> = (
+    const runQuery: QueryRunFunc<T, R> = (
       options = {},
-      responseHandler = (res: QueryResponse): R => (res as unknown) as R,
+      responseHandler = (res: QueryResponse<T>): R => (res as unknown) as R,
     ): PromiseWithPopulate<R> => {
       options = extend(true, {}, this.Model.schema.options.queries, options);
 
@@ -45,16 +45,16 @@ class Query<T extends object> {
       const refsToPopulate: PopulateRef[][] = [];
       let promise;
 
-      const onResponse = (data: [EntityData[], { moreResults: string; endCursor: string }]): QueryResponse => {
+      const onResponse = (data: [EntityData<T>[], { moreResults: string; endCursor: string }]): QueryResponse<T> => {
         let entities = data[0];
         const info = data[1];
 
         // TODO: This whole scope binding needs to be refactored!! Please!! :)
         // Add id property to entities and suppress properties
         // where "read" setting is set to false
-        entities = entities.map(entity => datastoreSerializer.fromDatastore.call(this.Model, entity, options));
+        entities = entities.map(entity => datastoreSerializer.fromDatastore(entity, this.Model, options));
 
-        const response: QueryResponse = {
+        const response: QueryResponse<T> = {
           entities,
         };
 
@@ -66,11 +66,11 @@ class Query<T extends object> {
       };
 
       // prettier-ignore
-      const populateHandler = (response: QueryResponse): QueryResponse | Promise<QueryResponse> =>
+      const populateHandler = (response: QueryResponse<T>): QueryResponse<T> | Promise<QueryResponse<T>> =>
         refsToPopulate.length
           ? this.Model.__populate(refsToPopulate, options)(response.entities).then((entitiesPopulated: any) => ({
             ...response,
-            entities: entitiesPopulated as EntityData[],
+            entities: entitiesPopulated as EntityData<T>[],
           }))
           : response;
 
@@ -102,7 +102,7 @@ class Query<T extends object> {
     return query;
   }
 
-  list(options: QueryListOptions = {}): PromiseWithPopulate<QueryResponse> {
+  list(options: QueryListOptions = {}): PromiseWithPopulate<QueryResponse<T>> {
     // const Model = this.Model || this;
 
     /**
@@ -112,7 +112,7 @@ class Query<T extends object> {
       options = extend({}, this.Model.schema.shortcutQueries.list, options);
     }
 
-    let query = this.initQuery<QueryResponse>(options.namespace);
+    let query = this.initQuery<QueryResponse<T>>(options.namespace);
 
     /**
      * Build Datastore Query from options passed
@@ -149,7 +149,7 @@ class Query<T extends object> {
       query.hasAncestor(this.Model.gstore.ds.key(ancestors.slice()));
     }
 
-    const responseHandler = ({ entities }: QueryResponse): Entity | null => {
+    const responseHandler = ({ entities }: QueryResponse<T>): Entity<T> | null => {
       if (entities.length === 0) {
         if (this.Model.gstore.config.errorOnEntityNotFound) {
           throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `${this.Model.entityKind} not found`);
@@ -158,7 +158,13 @@ class Query<T extends object> {
       }
 
       const [e] = entities;
-      const entity = this.Model.__model(e, undefined, undefined, undefined, e[this.Model.gstore.ds.KEY]);
+      const entity = this.Model.__model(
+        e,
+        undefined,
+        undefined,
+        undefined,
+        (e as any)[this.Model.gstore.ds.KEY as any],
+      );
       return entity;
     };
     return query.run(options, responseHandler);
@@ -224,14 +230,14 @@ class Query<T extends object> {
   }
 }
 
-export interface GstoreQuery<R = any> extends Omit<DatastoreQuery, 'run'> {
+export interface GstoreQuery<T, R = any> extends Omit<DatastoreQuery, 'run'> {
   __originalRun: DatastoreQuery['run'];
-  run: QueryRunFunc<R>;
+  run: QueryRunFunc<T, R>;
 }
 
-type QueryRunFunc<R = any> = (
+type QueryRunFunc<T, R = any> = (
   options?: QueryOptions,
-  responseHandler?: (res: QueryResponse) => R,
+  responseHandler?: (res: QueryResponse<T>) => R,
 ) => PromiseWithPopulate<R>;
 export interface QueryOptions {
   /**
@@ -328,8 +334,8 @@ export interface QueryFindAroundOptions extends QueryOptions {
   showKey?: boolean;
 }
 
-export interface QueryResponse {
-  entities: EntityData[];
+export interface QueryResponse<T> {
+  entities: EntityData<T>[];
   nextPageCursor?: string;
 }
 

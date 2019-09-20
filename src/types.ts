@@ -28,8 +28,8 @@ export type PopulateMetaForEntity = {
 };
 
 export type PopulateFunction<T extends object> = (
-  entitiesToProcess: null | Entity<T> | Array<Entity<T> | EntityData | null>,
-) => Promise<Entity<T> | EntityData | null | Array<Entity<T> | EntityData | null>>;
+  entitiesToProcess: null | Entity<T> | Array<Entity<T> | EntityData<T> | null>,
+) => Promise<Entity<T> | EntityData<T> | null | Array<Entity<T> | EntityData<T> | null>>;
 
 export interface PromiseWithPopulate<T> extends Promise<T> {
   populate: <U extends string | string[]>(

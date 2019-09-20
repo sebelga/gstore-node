@@ -214,7 +214,7 @@ export interface Model<T extends object = { [propName: string]: any }> {
    * @returns {Entity} Entity --> Model instance
    * @private
    */
-  __model(data: EntityData, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity;
+  __model(data: EntityData, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
 
@@ -362,7 +362,9 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
       const refsToPopulate: PopulateRef[][] = [];
       const { dataloader } = options;
 
-      const onEntity = (entityDataFetched: EntityData | EntityData[]): Entity | null | Array<Entity | null> => {
+      const onEntity = (
+        entityDataFetched: EntityData<T> | EntityData<T>[],
+      ): Entity<T> | null | Array<Entity<T> | null> => {
         const entityData = arrify(entityDataFetched);
 
         if (
@@ -392,7 +394,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           (entity as Entity[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
         }
 
-        return Array.isArray(id) ? (entity as Entity[]) : entity[0];
+        return Array.isArray(id) ? (entity as Entity<T>[]) : entity[0];
       };
 
       /**
@@ -426,8 +428,8 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
       const key = this.key(id, ancestors, namespace);
       const replace = options && options.replace === true;
 
-      const getEntity = (): Promise<{ key: EntityKey; data: EntityData }> => {
-        return transaction!.get(key).then(([entityData]: [EntityData]) => {
+      const getEntity = (): Promise<{ key: EntityKey; data: EntityData<T> }> => {
+        return transaction!.get(key).then(([entityData]: [EntityData<T>]) => {
           if (typeof entityData === 'undefined') {
             throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `Entity { ${id.toString()} } to update not found`);
           }
@@ -435,7 +437,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           extend(false, entityData, data);
 
           const result = {
-            key: entityData[this.gstore.ds.KEY as any],
+            key: (entityData as any)[this.gstore.ds.KEY as any] as EntityKey,
             data: entityData,
           };
 
@@ -458,13 +460,13 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
         return entity.save(transaction);
       };
 
-      const onTransactionSuccess = (): Promise<Entity> => {
+      const onTransactionSuccess = (): Promise<Entity<T>> => {
         /**
          * Make sure to delete the cache for this key
          */
         if (this.__hasCache(options)) {
           return this.clearCache(key)
-            .then(() => entityDataUpdated)
+            .then(() => entityDataUpdated as Entity<T>)
             .catch(err => {
               let msg = 'Error while clearing the cache after updating the entity.';
               msg += 'The entity has been updated successfully though. ';
@@ -476,10 +478,10 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
             });
         }
 
-        return Promise.resolve(entityDataUpdated);
+        return Promise.resolve(entityDataUpdated as Entity<T>);
       };
 
-      const onEntityUpdated = (entity: Entity): Promise<Entity<T>> => {
+      const onEntityUpdated = (entity: Entity<T>): Promise<Entity<T>> => {
         entityDataUpdated = entity;
 
         if (options && options.dataloader) {
@@ -504,7 +506,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
         return onTransactionSuccess();
       };
 
-      const getAndUpdate = (): Promise<Entity> =>
+      const getAndUpdate = (): Promise<Entity<T>> =>
         getEntity()
           .then(saveEntity)
           .then(onEntityUpdated);
@@ -673,7 +675,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           );
         };
 
-        const onQueryResponse = (data: QueryResponse): Promise<DeleteAllResponse | DeleteResponse> => {
+        const onQueryResponse = (data: QueryResponse<T>): Promise<DeleteAllResponse | DeleteResponse> => {
           ({ entities } = data);
 
           if (entities.length === 0) {
@@ -834,8 +836,8 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
       transaction?: Transaction,
       dataloader?: any,
       options?: GetOptions,
-    ): Promise<EntityData | EntityData[]> {
-      const handler = (keys: EntityKey | EntityKey[]): Promise<EntityData | EntityData[]> => {
+    ): Promise<EntityData<T> | EntityData<T>[]> {
+      const handler = (keys: EntityKey | EntityKey[]): Promise<EntityData<T> | EntityData<T>[]> => {
         const keysArray = arrify(keys);
         if (transaction) {
           if (transaction.constructor.name !== 'Transaction') {
@@ -852,7 +854,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
           }
           return dataloader.loadMany(keysArray).then((result: EntityData) => arrify(result));
         }
-        return this.gstore.ds.get(keysArray).then(([result]: [EntityData]) => arrify(result));
+        return this.gstore.ds.get(keysArray).then(([result]: [any]) => arrify(result));
       };
 
       if (this.__hasCache(options)) {

@@ -9,14 +9,14 @@ import dsAdapter from 'nsql-cache-datastore';
 import DataLoader from 'dataloader'; // eslint-disable-line import/no-extraneous-dependencies
 import { Datastore, Transaction } from '@google-cloud/datastore';
 
+import pkg from '../package.json';
 import Schema from './schema';
-import Model, { generateModel } from './model';
 import Entity from './entity';
-import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
+import Model, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
+import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
 import { Datastore as datastoreSerializer } from './serializer';
 import { createDataLoader } from './dataloader';
-import pkg from '../package.json';
 import { EntityKey, EntityData } from './types';
 
 interface CacheConfig {
