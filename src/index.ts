@@ -15,7 +15,7 @@ import Entity from './entity';
 import Model, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
-import { Datastore as datastoreSerializer } from './serializer';
+import { datastoreSerializer } from './serializers';
 import { createDataLoader } from './dataloader';
 import { EntityKey, EntityData } from './types';
 

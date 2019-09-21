@@ -8,7 +8,7 @@ import Model from './model';
 import Entity from './entity';
 import helpers from './helpers';
 import { GstoreError, ERROR_CODES } from './errors';
-import { Datastore as datastoreSerializer } from './serializer';
+import { datastoreSerializer } from './serializers';
 import { PopulateRef, EntityData, EntityFormatType, JSONFormatType, PromiseWithPopulate } from './types';
 
 const { queryHelpers, populateHelpers } = helpers;
