@@ -294,6 +294,8 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
 
     static __hooksEnabled = true;
 
+    // TODO: Clean up by typing from Model interface
+    // e.g. static key:Model['key] = () => { ... }
     static key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
       ids: U,
       ancestors?: Ancestor,

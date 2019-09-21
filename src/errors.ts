@@ -61,19 +61,6 @@ export class GstoreError extends Error {
 
     Error.captureStackTrace(this, this.constructor);
   }
-
-  // TODO: Check if the static below are actually used
-  // static get TypeError() {
-  //   return class extends TypeError {};
-  // }
-
-  // static get ValueError() {
-  //   return class extends ValueError {};
-  // }
-
-  // static get ValidationError() {
-  //   return class extends ValidationError {};
-  // }
 }
 
 export class ValidationError extends GstoreError {

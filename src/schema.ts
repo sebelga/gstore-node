@@ -335,7 +335,7 @@ export default Schema;
 
 export interface SchemaPathDefinition {
   type?: PropType;
-  validate?: string | { rule: string | ((...args: any[]) => boolean); args: any[] };
+  validate?: Validator;
   optional?: boolean;
   default?: any;
   excludeFromIndexes?: boolean | string | string[];
@@ -343,6 +343,7 @@ export interface SchemaPathDefinition {
   excludeFromRead?: string[];
   write?: boolean;
   required?: boolean;
+  values?: any[];
   joi?: any;
   ref?: string;
 }
@@ -447,6 +448,8 @@ export interface QueryOptions {
    */
   ttl?: number | { [propName: string]: number };
 }
+
+export type Validator = string | { rule: string | ((...args: any[]) => boolean); args: any[] };
 
 export type PropType =
   | 'string'
