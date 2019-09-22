@@ -5,10 +5,11 @@ import is from 'is';
 // TODO: Open PR in @google-cloud repo to expose those types
 import { Operator } from '@google-cloud/datastore/build/src/query';
 
+import Entity from './entity';
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';
-import { FunctionType, FuncReturningPromise, GenericObject } from './types';
+import { FunctionType, FuncReturningPromise, CustomEntityFunction, GenericObject } from './types';
 
 const Joi = optional('@hapi/joi') || optional('joi');
 
@@ -77,8 +78,9 @@ const RESERVED_PROPERTY_NAMES: { [key: string]: boolean } = {
 /**
  * gstore-node Schema
  */
-class Schema<T = { [key: string]: SchemaPathDefinition }> {
-  public readonly methods: { [propName: string]: FunctionType };
+class Schema<T extends object = { [key: string]: any }, M extends object = { [key: string]: CustomEntityFunction<T> }> {
+  // public readonly methods: { [propName: string]: CustomEntityFunction<T> };
+  public readonly methods: { [P in keyof M]: CustomEntityFunction<T> };
 
   public readonly paths: { [P in keyof T]: SchemaPathDefinition };
 
@@ -108,7 +110,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
   private joiSchema?: GenericObject;
 
   constructor(properties: { [P in keyof T]: SchemaPathDefinition }, options?: SchemaOptions) {
-    this.methods = {};
+    this.methods = {} as any;
     this.__virtuals = {};
     this.shortcutQueries = {};
     this.paths = {} as { [P in keyof T]: SchemaPathDefinition };
@@ -150,11 +152,11 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
       }
       Object.keys(name).forEach(k => {
         if (typeof name[k] === 'function') {
-          this.methods[k] = name[k];
+          this.methods[k as keyof M] = name[k];
         }
       });
     } else if (typeof fn === 'function') {
-      this.methods[name] = fn;
+      this.methods[name as keyof M] = fn;
     }
   }
 
@@ -169,7 +171,7 @@ class Schema<T = { [key: string]: SchemaPathDefinition }> {
    * @param {SchemaPathDefinition} [definition] The property definition
    * @link https://sebloix.gitbook.io/gstore-node/schema/schema-methods/path
    */
-  path(propName: string, definition: SchemaPathDefinition): Schema | SchemaPathDefinition | undefined {
+  path(propName: string, definition: SchemaPathDefinition): Schema<T> | SchemaPathDefinition | undefined {
     if (typeof definition === 'undefined') {
       if (this.paths[propName as keyof T]) {
         return this.paths[propName as keyof T];

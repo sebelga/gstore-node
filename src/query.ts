@@ -31,9 +31,9 @@ class Query<T extends object> {
    * @returns {Object} The query to be run
    */
   initQuery<R = QueryResponse<T>>(namespace?: string, transaction?: Transaction): GstoreQuery<T, R> {
-    const query = createDatastoreQueryForModel(this.Model, namespace, transaction);
+    const query: DatastoreQuery = createDatastoreQueryForModel(this.Model, namespace, transaction);
 
-    const runQuery: QueryRunFunc<T, R> = (
+    const enhancedQueryRun: QueryRunFunc<T, R> = (
       options = {},
       responseHandler = (res: QueryResponse<T>): R => (res as unknown) as R,
     ): PromiseWithPopulate<R> => {
@@ -93,13 +93,14 @@ class Query<T extends object> {
     };
 
     /* eslint-disable @typescript-eslint/unbound-method */
-    // keep a reference to original run() method
-    query.__originalRun = ((query as unknown) as DatastoreQuery).run;
-
-    query.run = runQuery;
+    const enhancedQuery = {
+      ...query,
+      // keep a reference to original run() method
+      __originalRun: ((query as unknown) as DatastoreQuery).run,
+      run: enhancedQueryRun,
+    } as GstoreQuery<T>;
     /* eslint-enable @typescript-eslint/unbound-method */
-
-    return query;
+    return enhancedQuery;
   }
 
   list(options: QueryListOptions = {}): PromiseWithPopulate<QueryResponse<T>> {

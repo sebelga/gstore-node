@@ -5,7 +5,7 @@ import arrify from 'arrify';
 import { GstoreQuery, QueryListOptions } from '../query';
 import GstoreModel from '../model';
 
-const buildQueryFromOptions = (query: GstoreQuery, options: QueryListOptions, ds: Datastore): GstoreQuery => {
+const buildQueryFromOptions = <T>(query: GstoreQuery<T>, options: QueryListOptions, ds: Datastore): GstoreQuery<T> => {
   if (!query || query.constructor.name !== 'Query') {
     throw new Error('Query not passed');
   }
@@ -80,19 +80,19 @@ const createDatastoreQueryForModel = <T extends object>(
   Model: GstoreModel<T>,
   namespace?: string,
   transaction?: Transaction,
-): GstoreQuery => {
+): DatastoreQuery => {
   if (transaction && transaction.constructor.name !== 'Transaction') {
     throw Error('Transaction needs to be a gcloud Transaction');
   }
 
-  const createQueryArgs: [string, string?] = [Model.entityKind];
+  const createQueryArgs: any = [Model.entityKind];
 
   if (namespace) {
     createQueryArgs.unshift(namespace);
   }
 
   if (transaction) {
-    return (transaction.createQuery.apply(transaction, createQueryArgs) as unknown) as GstoreQuery;
+    return transaction.createQuery.apply(transaction, createQueryArgs);
   }
 
   return Model.gstore.ds.createQuery.apply(Model.gstore.ds, createQueryArgs);

@@ -1,15 +1,15 @@
 import arrify from 'arrify';
 
-import Schema from '../schema';
+import Schema, { SchemaPathDefinition } from '../schema';
 import { PopulateRef } from '../types';
 
 /**
  * Returns all the schema properties that are references
  * to other entities (their value is an entity Key)
  */
-const getEntitiesRefsFromSchema = (schema: Schema): string[] =>
+const getEntitiesRefsFromSchema = <T extends object>(schema: Schema<T>): string[] =>
   Object.entries(schema.paths)
-    .filter(([, pathConfig]) => pathConfig.type === 'entityKey')
+    .filter(([, pathConfig]) => (pathConfig as SchemaPathDefinition).type === 'entityKey')
     .map(([property]) => property);
 
 /**
@@ -61,20 +61,25 @@ const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: Popul
   });
 };
 
-const populateFactory = (refsToPopulate: PopulateRef[][], promise: Promise<any>, schema: Schema) => (
-  path?: string,
-  propsToSelect?: string[],
-): Promise<any> => {
-  if (propsToSelect && Array.isArray(path)) {
-    throw new Error('Only 1 property can be populated when fields to select are provided');
-  }
+type PopulateHandler = (path?: string, propsToSelect?: string[]) => Promise<any>;
 
-  // If no path is specified, we fetch all the schema properties that are references to entities (Keys)
-  const paths: string[] = path ? arrify(path) : getEntitiesRefsFromSchema(schema);
+const populateFactory = <T extends object>(
+  refsToPopulate: PopulateRef[][],
+  promise: Promise<any>,
+  schema: Schema<T>,
+): PopulateHandler => {
+  const populateHandler: PopulateHandler = (path, propsToSelect) => {
+    if (propsToSelect && Array.isArray(path)) {
+      throw new Error('Only 1 property can be populated when fields to select are provided');
+    }
 
-  paths.forEach(p => addPathToPopulateRefs(p, propsToSelect, refsToPopulate));
+    // If no path is specified, we fetch all the schema properties that are references to entities (Keys)
+    const paths: string[] = path ? arrify(path) : getEntitiesRefsFromSchema(schema);
+    paths.forEach(p => addPathToPopulateRefs(p, propsToSelect, refsToPopulate));
+    return promise;
+  };
 
-  return promise;
+  return populateHandler;
 };
 
 export default { addPathToPopulateRefs, populateFactory };

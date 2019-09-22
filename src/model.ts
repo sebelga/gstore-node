@@ -16,6 +16,7 @@ import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
 import {
   FuncReturningPromise,
+  CustomEntityFunction,
   IdType,
   Ancestor,
   EntityKey,
@@ -33,8 +34,12 @@ const { populateHelpers } = helpers;
 const { keyToString } = dsAdapter;
 const { populateFactory } = populateHelpers;
 
-export interface Model<T extends object = { [propName: string]: any }> {
-  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity;
+export interface Model<
+  T extends object = GenericObject,
+  M extends object = { [key: string]: CustomEntityFunction<T> }
+> {
+  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T> & T & M;
+
   /**
    * gstore-node instance
    */
@@ -43,7 +48,7 @@ export interface Model<T extends object = { [propName: string]: any }> {
   /**
    * The Model Schema
    */
-  schema: Schema;
+  schema: Schema<T>;
 
   /**
    * The Model Datastore Entity Kind
@@ -235,11 +240,11 @@ export interface Model<T extends object = { [propName: string]: any }> {
  * To improve performance and avoid looping over and over the entityData or Schema config
  * we generate a meta object to cache useful data used later in models and entities methods.
  */
-const extractMetaFromSchema = (schema: Schema): GenericObject => {
+const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObject => {
   const meta: GenericObject = {};
 
   Object.keys(schema.paths).forEach(k => {
-    switch (schema.paths[k].type) {
+    switch (schema.paths[k as keyof T].type) {
       case 'geoPoint':
         // This allows us to automatically convert valid lng/lat objects
         // to Datastore.geoPoints
@@ -261,7 +266,7 @@ const extractMetaFromSchema = (schema: Schema): GenericObject => {
  * Pass all the "pre" and "post" hooks from schema to
  * the current ModelInstance
  */
-const registerHooksFromSchema = <T extends object>(model: Model<T>, schema: Schema): void => {
+const registerHooksFromSchema = <T extends object>(model: Model<T>, schema: Schema<T>): void => {
   const callQueue = schema.__callQueue.model;
 
   if (!Object.keys(callQueue).length) {
@@ -281,14 +286,25 @@ const registerHooksFromSchema = <T extends object>(model: Model<T>, schema: Sche
   });
 };
 
-export const generateModel = <T extends object>(kind: string, schema: Schema, gstore: Gstore): Model<T> => {
+/**
+ * Dynamically generate a new Gstore Model
+ *
+ * @param kind The Entity Kind
+ * @param schema The Gstore Schema
+ * @param gstore The Gstore instance
+ */
+export const generateModel = <T extends object, M extends object>(
+  kind: string,
+  schema: Schema<T, M>,
+  gstore: Gstore,
+): Model<T, M> => {
   if (!schema.__meta) {
     schema.__meta = extractMetaFromSchema(schema);
   }
-  const model: Model<T> = class NewModel extends Entity<T> {
+  const model: Model<T, M> = class NewModel extends Entity<T> {
     static gstore: Gstore = gstore;
 
-    static schema: Schema = schema;
+    static schema: Schema<T> = schema;
 
     static entityKind: string = kind;
 
@@ -393,7 +409,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
 
         // TODO: Check if this is still useful??
         if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
-          (entity as Entity[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
+          (entity as Entity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
         }
 
         return Array.isArray(id) ? (entity as Entity<T>[]) : entity[0];
@@ -424,7 +440,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
     ): Promise<Entity<T>> {
       this.__hooksEnabled = true;
 
-      let entityDataUpdated: Entity;
+      let entityDataUpdated: Entity<T>;
       let internalTransaction = false;
 
       const key = this.key(id, ancestors, namespace);
@@ -468,7 +484,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
          */
         if (this.__hasCache(options)) {
           return this.clearCache(key)
-            .then(() => entityDataUpdated as Entity<T>)
+            .then(() => entityDataUpdated)
             .catch(err => {
               let msg = 'Error while clearing the cache after updating the entity.';
               msg += 'The entity has been updated successfully though. ';
@@ -480,7 +496,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
             });
         }
 
-        return Promise.resolve(entityDataUpdated as Entity<T>);
+        return Promise.resolve(entityDataUpdated);
       };
 
       const onEntityUpdated = (entity: Entity<T>): Promise<Entity<T>> => {
@@ -497,8 +513,8 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
             .commit()
             .then(() =>
               transaction!.execPostHooks().catch((err: any) => {
-                (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] = (
-                  (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] || []
+                (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] = (
+                  (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] || []
                 ).push(err);
               }),
             )
@@ -748,7 +764,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
         if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
           this.schema.path(prop, { optional: true, excludeFromIndexes: true });
         } else {
-          this.schema.paths[prop].excludeFromIndexes = true;
+          this.schema.paths[prop as keyof T].excludeFromIndexes = true;
         }
       });
     }
@@ -792,7 +808,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
 
       Object.keys(data).forEach(k => {
         schemaHasProperty = {}.hasOwnProperty.call(schema.paths, k);
-        isPropWritable = schemaHasProperty ? schema.paths[k].write !== false : true;
+        isPropWritable = schemaHasProperty ? schema.paths[k as keyof T].write !== false : true;
         propValue = sanitized![k];
 
         if ((isSchemaExplicitOnly && !schemaHasProperty) || (!isPropWritable && !isWriteDisabled)) {
@@ -1130,7 +1146,7 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
     static list: any; // Is added below from the Query instance
 
     static findAround: any; // Is added below from the Query instance
-  };
+  } as Model<T, M> & T;
 
   // Wrap the Model to add "pre" and "post" hooks functionalities
   hooks.wrap(model);
@@ -1143,6 +1159,12 @@ export const generateModel = <T extends object>(kind: string, schema: Schema, gs
   model.list = list;
   model.findOne = findOne;
   model.findAround = findAround;
+
+  // Attach props to prototype
+  // TODO: Refactor how the Model/ENtity relationship!
+  (model.constructor as any).gstore = gstore;
+  (model.constructor as any).schema = schema;
+  (model.constructor as any).entityKind = kind;
 
   return model;
 };
@@ -1208,3 +1230,31 @@ interface PopulateOptions extends GetOptions {
 }
 
 export default Model;
+
+type User = { name: string; lastName: string; age: number };
+
+export interface CustomMethods {
+  hasTexts(someFlag: boolean): Promise<boolean>;
+}
+
+const schema = new Schema<User, CustomMethods>({
+  name: { type: String },
+  lastName: { type: String },
+  age: { type: Number },
+});
+
+schema.methods.hasTexts = function getText(): void {
+  this.model('Text').get(this.entityData.age);
+  this.model('Yeah');
+};
+
+const UserModel = generateModel('User', schema, new Gstore());
+
+const user = new UserModel({
+  name: 'John',
+  lastName: 'Snow',
+  age: 28,
+});
+
+const { age } = user;
+user.hasTexts(false).then(response => {});
