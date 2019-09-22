@@ -17,7 +17,7 @@ import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { createDataLoader } from './dataloader';
-import { EntityKey, EntityData } from './types';
+import { EntityKey, EntityData, DatastoreSaveMethod } from './types';
 
 interface CacheConfig {
   stores: any[];
@@ -101,7 +101,7 @@ class Gstore {
     this.ERR_HOOKS = hooks.ERRORS;
   }
 
-  model<T extends object>(entityKind: string, schema?: Schema<T>): Model<T> {
+  model<T extends object, M extends object>(entityKind: string, schema?: Schema<T, M>): Model<T, M> {
     // We might be passing a different schema for
     // an existing model entityKind. in this case warn the user,
     if (this.models[entityKind]) {
@@ -115,7 +115,7 @@ class Gstore {
       throw new Error('A Schema needs to be provided to create a Model.');
     }
 
-    const model = generateModel<T>(entityKind, schema, this);
+    const model = generateModel<T, M>(entityKind, schema, this);
 
     this.models[entityKind] = model;
 
@@ -141,7 +141,7 @@ class Gstore {
   save(
     entities: Entity | Entity[],
     transaction?: Transaction,
-    options: { method?: 'upsert' | 'insert' | 'update'; validate?: boolean } | undefined = {},
+    options: { method?: DatastoreSaveMethod; validate?: boolean } | undefined = {},
   ): Promise<
     [
       {

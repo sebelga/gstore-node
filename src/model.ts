@@ -174,7 +174,7 @@ export interface Model<
    * @returns {*} The data sanitized
    * @link https://sebloix.gitbook.io/gstore-node/model/sanitize.html
    */
-  sanitize(data: { [propName: string]: any }): { [P in keyof T]: T[P] } | GenericObject;
+  sanitize(data: { [propName: string]: any }, options: { disabled: string[] }): EntityData<T>;
 
   /**
    * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method.
@@ -223,7 +223,7 @@ export interface Model<
 
   __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
 
-  __hasCache(options: { cache?: any }, type: string): boolean;
+  __hasCache(options: { cache?: any }, type?: string): boolean;
 
   __populate(refs?: PopulateRef[][], options?: PopulateOptions): PopulateFunction<T>;
 
@@ -1237,24 +1237,26 @@ export interface CustomMethods {
   hasTexts(someFlag: boolean): Promise<boolean>;
 }
 
-const schema = new Schema<User, CustomMethods>({
-  name: { type: String },
-  lastName: { type: String },
-  age: { type: Number },
-});
+// Some tests of Typescript...
 
-schema.methods.hasTexts = function getText(): void {
-  this.model('Text').get(this.entityData.age);
-  this.model('Yeah');
-};
+// const schema = new Schema<User, CustomMethods>({
+//   name: { type: String },
+//   lastName: { type: String },
+//   age: { type: Number },
+// });
 
-const UserModel = generateModel('User', schema, new Gstore());
+// schema.methods.hasTexts = function getText(): void {
+//   this.model('Text').get(this.entityData.age);
+//   this.model('Yeah');
+// };
 
-const user = new UserModel({
-  name: 'John',
-  lastName: 'Snow',
-  age: 28,
-});
+// const UserModel = generateModel('User', schema, new Gstore());
 
-const { age } = user;
-user.hasTexts(false).then(response => {});
+// const user = new UserModel({
+//   name: 'John',
+//   lastName: 'Snow',
+//   age: 28,
+// });
+
+// const { age } = user;
+// user.hasTexts().then(response => {});

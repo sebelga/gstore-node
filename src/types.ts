@@ -21,6 +21,8 @@ export type EntityFormatType = 'ENTITY';
 
 export type JSONFormatType = 'JSON';
 
+export type DatastoreSaveMethod = 'upsert' | 'insert' | 'update';
+
 export type PopulateRef = { path: string; select: string[] };
 
 export type PopulateMetaForEntity = {

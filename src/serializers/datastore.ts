@@ -3,30 +3,31 @@ import arrify from 'arrify';
 
 import Entity from '../entity';
 import Model from '../model';
-import { GenericObject, EntityKey, EntityData, IdType } from '../types';
+import { GenericObject, EntityKey, EntityData, IdType, DatastoreSaveMethod } from '../types';
 
-type SaveMethods = 'upsert' | 'insert' | 'update';
-
-type ToDatastoreOptions = { method?: SaveMethods };
+type ToDatastoreOptions = { method?: DatastoreSaveMethod };
 
 type DatastoreFormat = {
   key: EntityKey;
   data: EntityData;
   excludeLargeProperties?: boolean;
   excludeFromIndexes?: string[];
-  method?: SaveMethods;
+  method?: DatastoreSaveMethod;
 };
 
-const getExcludeFromIndexes = (data: GenericObject, entity: Entity): string[] =>
+const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: Entity<T>): string[] =>
   Object.entries(data)
     .filter(([, value]) => value !== null)
-    .map(([key]) => entity.excludeFromIndexes[key] as string[])
+    .map(([key]) => entity.excludeFromIndexes[key as keyof T] as string[])
     .filter(v => v !== undefined)
     .reduce((acc: string[], arr) => [...acc, ...arr], []);
 
 const idFromKey = (key: EntityKey): IdType => key.path[key.path.length - 1];
 
-const toDatastore = (entity: Entity, options: ToDatastoreOptions | undefined = {}): DatastoreFormat => {
+const toDatastore = <T extends object>(
+  entity: Entity<T>,
+  options: ToDatastoreOptions | undefined = {},
+): DatastoreFormat => {
   const data = Object.entries(entity.entityData).reduce(
     (acc, [key, value]) => {
       if (typeof value !== 'undefined') {
@@ -56,7 +57,7 @@ const toDatastore = (entity: Entity, options: ToDatastoreOptions | undefined = {
   return datastoreFormat;
 };
 
-const fromDatastore = <F extends 'JSON' | 'ENTITY', R = F extends 'ENTITY' ? Entity : GenericObject>(
+const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTITY' ? Entity : EntityData>(
   entityData: EntityData,
   model: Model<any>,
   options: { format?: F; readAll?: boolean; showKey?: boolean } = {},

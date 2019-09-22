@@ -183,9 +183,9 @@ export interface ValidateResponse {
   catch: (onError: (error: ValidationError) => any) => Promise<any> | undefined;
 }
 
-const validate = (
+const validate = <T extends object>(
   entityData: EntityData,
-  schema: Schema,
+  schema: Schema<T>,
   entityKind: string,
   datastore: Datastore,
 ): ValidateResponse => {
@@ -214,7 +214,7 @@ const validate = (
     skip = false;
     error = null;
     schemaHasProperty = {}.hasOwnProperty.call(schema.paths, prop);
-    pathConfig = schema.paths[prop] || {};
+    pathConfig = schema.paths[prop as keyof T] || {};
     propertyType = schemaHasProperty ? pathConfig.type : null;
     propertyValue = entityData[prop];
     isEmpty = isValueEmpty(propertyValue);
