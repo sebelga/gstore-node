@@ -5,7 +5,6 @@ import is from 'is';
 // TODO: Open PR in @google-cloud repo to expose those types
 import { Operator } from '@google-cloud/datastore/build/src/query';
 
-import Entity from './entity';
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';

@@ -199,13 +199,13 @@ export interface Model<
    */
   post(method: string, callback: FuncReturningPromise | FuncReturningPromise[]): void;
 
-  query: Query<T>['initQuery'];
+  query: Query<T, M>['initQuery'];
 
-  list: Query<T>['list'];
+  list: Query<T, M>['list'];
 
-  findOne: Query<T>['findOne'];
+  findOne: Query<T, M>['findOne'];
 
-  findAround: Query<T>['findAround'];
+  findAround: Query<T, M>['findAround'];
 
   // __compile(kind: string, schema: Schema, gstore: Gstore): Model;
 
@@ -266,7 +266,7 @@ const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObje
  * Pass all the "pre" and "post" hooks from schema to
  * the current ModelInstance
  */
-const registerHooksFromSchema = <T extends object>(model: Model<T>, schema: Schema<T>): void => {
+const registerHooksFromSchema = <T extends object, M extends object>(model: Model<T, M>, schema: Schema<T>): void => {
   const callQueue = schema.__callQueue.model;
 
   if (!Object.keys(callQueue).length) {
@@ -1152,7 +1152,7 @@ export const generateModel = <T extends object, M extends object>(
   hooks.wrap(model);
   registerHooksFromSchema(model, schema);
 
-  const query = new Query<T>(model);
+  const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;
 
   model.query = initQuery;

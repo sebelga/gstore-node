@@ -3,7 +3,7 @@ import is from 'is';
 import arrify from 'arrify';
 
 import { GstoreQuery, QueryListOptions } from '../query';
-import GstoreModel from '../model';
+import Model from '../model';
 
 const buildQueryFromOptions = <T>(query: GstoreQuery<T>, options: QueryListOptions, ds: Datastore): GstoreQuery<T> => {
   if (!query || query.constructor.name !== 'Query') {
@@ -76,8 +76,8 @@ const buildQueryFromOptions = <T>(query: GstoreQuery<T>, options: QueryListOptio
   return query;
 };
 
-const createDatastoreQueryForModel = <T extends object>(
-  Model: GstoreModel<T>,
+const createDatastoreQueryForModel = <T extends object, M extends object>(
+  model: Model<T, M>,
   namespace?: string,
   transaction?: Transaction,
 ): DatastoreQuery => {
@@ -85,7 +85,7 @@ const createDatastoreQueryForModel = <T extends object>(
     throw Error('Transaction needs to be a gcloud Transaction');
   }
 
-  const createQueryArgs: any = [Model.entityKind];
+  const createQueryArgs: any = [model.entityKind];
 
   if (namespace) {
     createQueryArgs.unshift(namespace);
@@ -95,7 +95,7 @@ const createDatastoreQueryForModel = <T extends object>(
     return transaction.createQuery.apply(transaction, createQueryArgs);
   }
 
-  return Model.gstore.ds.createQuery.apply(Model.gstore.ds, createQueryArgs);
+  return model.gstore.ds.createQuery.apply(model.gstore.ds, createQueryArgs);
 };
 
 export default {

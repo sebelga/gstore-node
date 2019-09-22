@@ -9,6 +9,8 @@ export type FuncReturningPromise = (...args: any[]) => Promise<any>;
 
 export type FunctionType = (...args: any[]) => any;
 
+export type CustomEntityFunction<T extends object> = (this: Entity<T>, ...args: any[]) => any;
+
 export type GenericObject = { [key: string]: any };
 
 export type IdType = string | number;
