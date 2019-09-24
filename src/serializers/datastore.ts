@@ -43,7 +43,7 @@ const toDatastore = <T extends object>(
   const datastoreFormat: DatastoreFormat = {
     key: entity.entityKey,
     data,
-    excludeLargeProperties: entity.schema.options.excludeLargeProperties,
+    excludeLargeProperties: entity.schema!.options.excludeLargeProperties,
   };
 
   if (excludeFromIndexes.length > 0) {

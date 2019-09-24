@@ -26,11 +26,11 @@ const { validation, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
 
 export class Entity<T extends object = GenericObject> {
-  public gstore: Gstore = {} as any; // Added when creating the Model
+  public gstore: Gstore | undefined; // Added when creating the Model
 
-  public schema: Schema<T> = {} as any; // Added when creating the Model
+  public schema: Schema<T> | undefined; // Added when creating the Model
 
-  public entityKind = ''; // Added when creating the Model
+  public entityKind: string | undefined; // Added when creating the Model
 
   public entityKey: EntityKey;
 
@@ -46,7 +46,7 @@ export class Entity<T extends object = GenericObject> {
 
   public __hooksEnabled = true;
 
-  constructor(data: EntityData, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
+  constructor(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
     this.className = 'Entity';
 
     this.excludeFromIndexes = {};
@@ -60,7 +60,7 @@ export class Entity<T extends object = GenericObject> {
     this.context = {};
 
     if (key) {
-      if (!this.gstore.ds.isKey(key)) {
+      if (!this.gstore!.ds.isKey(key)) {
         throw new Error('Entity Key must be a Datastore Key');
       }
       this.entityKey = key;
@@ -93,7 +93,7 @@ export class Entity<T extends object = GenericObject> {
 
     // Validations
     const validateEntityData = (): Partial<ValidateResponse> => {
-      if (this.schema.options.validateBeforeSave) {
+      if (this.schema!.options.validateBeforeSave) {
         return this.validate();
       }
 
@@ -133,7 +133,7 @@ export class Entity<T extends object = GenericObject> {
        * If the schema has a "modifiedOn" property we automatically
        * update its value to the current dateTime
        */
-      if ({}.hasOwnProperty.call(this.schema.paths, 'modifiedOn')) {
+      if ({}.hasOwnProperty.call(this.schema!.paths, 'modifiedOn')) {
         (this.entityData as any).modifiedOn = new Date();
       }
 
@@ -142,14 +142,14 @@ export class Entity<T extends object = GenericObject> {
        * and its value is an js object with "latitude" and "longitude"
        * we convert it to a datastore GeoPoint.
        */
-      if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
-        this.schema.__meta.geoPointsProps.forEach((property: string) => {
+      if ({}.hasOwnProperty.call(this.schema!.__meta, 'geoPointsProps')) {
+        this.schema!.__meta.geoPointsProps.forEach((property: string) => {
           if (
             {}.hasOwnProperty.call(this.entityData, property) &&
             (this.entityData as any)[property] !== null &&
             (this.entityData as any)[property].constructor.name !== 'GeoPoint'
           ) {
-            (this.entityData as any)[property] = this.gstore.ds.geoPoint((this.entityData as any)[property]);
+            (this.entityData as any)[property] = this.gstore!.ds.geoPoint((this.entityData as any)[property]);
           }
         });
       }
@@ -225,13 +225,13 @@ export class Entity<T extends object = GenericObject> {
       return Promise.resolve(this);
     }
 
-    return this.gstore.ds.save(datastoreEntity).then(onEntitySaved);
+    return this.gstore!.ds.save(datastoreEntity).then(onEntitySaved);
   }
 
   validate(): ValidateResponse {
     const { entityData, schema, entityKind, gstore } = this;
 
-    return validation.validate(entityData, schema, entityKind, gstore.ds);
+    return validation.validate(entityData, schema!, entityKind!, gstore!.ds);
   }
 
   plain(
@@ -258,15 +258,15 @@ export class Entity<T extends object = GenericObject> {
   }
 
   get<P extends keyof T>(path: P): any {
-    if ({}.hasOwnProperty.call(this.schema.__virtuals, path)) {
-      return this.schema.__virtuals[path as string].applyGetters(this.entityData);
+    if ({}.hasOwnProperty.call(this.schema!.__virtuals, path)) {
+      return this.schema!.__virtuals[path as string].applyGetters(this.entityData);
     }
     return this.entityData[path];
   }
 
   set<P extends keyof T>(path: P, value: any): Entity<T> {
-    if ({}.hasOwnProperty.call(this.schema.__virtuals, path)) {
-      this.schema.__virtuals[path as string].applySetters(value, this.entityData);
+    if ({}.hasOwnProperty.call(this.schema!.__virtuals, path)) {
+      this.schema!.__virtuals[path as string].applySetters(value, this.entityData);
       return this;
     }
 
@@ -279,7 +279,7 @@ export class Entity<T extends object = GenericObject> {
    * @param name : model name
    */
   model(name: string): Model {
-    return this.gstore.model(name);
+    return this.gstore!.model(name);
   }
 
   // TODO: Rename this function "fetch" (and create alias to this for backward compatibility)
@@ -293,7 +293,7 @@ export class Entity<T extends object = GenericObject> {
       const entityData = result ? result[0] : null;
 
       if (!entityData) {
-        if (this.gstore.config.errorOnEntityNotFound) {
+        if (this.gstore!.config.errorOnEntityNotFound) {
           const error = new Error('Entity not found');
           (error as any).code = ERROR_CODES.ERR_ENTITY_NOT_FOUND;
           throw error;
@@ -307,9 +307,9 @@ export class Entity<T extends object = GenericObject> {
     };
 
     if ((this.constructor as Model<T>).__hasCache(options)) {
-      return this.gstore.cache!.keys.read(this.entityKey, options).then(onEntityFetched);
+      return this.gstore!.cache!.keys.read(this.entityKey, options).then(onEntityFetched);
     }
-    return this.gstore.ds.get(this.entityKey).then(onEntityFetched);
+    return this.gstore!.ds.get(this.entityKey).then(onEntityFetched);
   }
 
   populate(path?: string, propsToSelect?: string[]): PromiseWithPopulate<T> {
@@ -318,7 +318,7 @@ export class Entity<T extends object = GenericObject> {
     // TODO: Check if the "Promise.resolve(this)" is needed here.
     const promise = Promise.resolve(this).then((this.constructor as Model<T>).__populate(refsToPopulate));
 
-    (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
+    (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema!);
     (promise as any).populate(path, propsToSelect);
     return promise as any;
   }
@@ -329,11 +329,11 @@ export class Entity<T extends object = GenericObject> {
 
   __buildEntityData(data: GenericObject): void {
     const { schema } = this;
-    const isJoiSchema = schema.isJoi;
+    const isJoiSchema = schema!.isJoi;
 
     // If Joi schema, get its default values
     if (isJoiSchema) {
-      const { error, value } = schema.validateJoi(data);
+      const { error, value } = schema!.validateJoi(data);
 
       if (!error) {
         this.entityData = { ...value };
@@ -345,7 +345,7 @@ export class Entity<T extends object = GenericObject> {
     let isArray;
     let isObject;
 
-    Object.entries(schema.paths as { [k: string]: SchemaPathDefinition }).forEach(([key, prop]) => {
+    Object.entries(schema!.paths as { [k: string]: SchemaPathDefinition }).forEach(([key, prop]) => {
       const hasValue = {}.hasOwnProperty.call(this.entityData, key);
       const isOptional = {}.hasOwnProperty.call(prop, 'optional') && prop.optional !== false;
       const isRequired = {}.hasOwnProperty.call(prop, 'required') && prop.required === true;
@@ -406,7 +406,7 @@ export class Entity<T extends object = GenericObject> {
     });
 
     // add Symbol Key to the entityData
-    (this.entityData as any)[this.gstore.ds.KEY] = this.entityKey;
+    (this.entityData as any)[this.gstore!.ds.KEY] = this.entityKey;
   }
 
   __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
@@ -423,19 +423,19 @@ export class Entity<T extends object = GenericObject> {
 
     let path: (string | number)[];
     if (id) {
-      path = hasAncestors ? entityAncestors!.concat([this.entityKind, id]) : [this.entityKind, id];
+      path = hasAncestors ? entityAncestors!.concat([this.entityKind!, id]) : [this.entityKind!, id];
     } else {
       if (hasAncestors) {
-        entityAncestors!.push(this.entityKind);
+        entityAncestors!.push(this.entityKind!);
       }
-      path = ancestors || [this.entityKind];
+      path = ancestors || [this.entityKind!];
     }
 
-    return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
+    return namespace ? this.gstore!.ds.key({ namespace, path }) : this.gstore!.ds.key(path);
   }
 
   __addAliasAndVirtualProperties(): void {
-    const { schema } = this;
+    const schema = this.schema!;
 
     // Create virtual properties (getters and setters for entityData object)
     Object.keys(schema.paths)
@@ -468,7 +468,7 @@ export class Entity<T extends object = GenericObject> {
   }
 
   __registerHooksFromSchema(): Entity<T> {
-    const callQueue = this.schema.__callQueue.entity;
+    const callQueue = this.schema!.__callQueue.entity;
 
     if (!Object.keys(callQueue).length) {
       return this;
@@ -494,13 +494,13 @@ export class Entity<T extends object = GenericObject> {
   }
 
   __addCustomMethodsFromSchema(): void {
-    Object.entries(this.schema.methods).forEach(([method, handler]) => {
+    Object.entries(this.schema!.methods).forEach(([method, handler]) => {
       (this as any)[method] = handler;
     });
   }
 
   __getEntityDataWithVirtuals(): EntityData<T> & { [key: string]: any } {
-    const { __virtuals } = this.schema;
+    const { __virtuals } = this.schema!;
     const entityData: EntityData<T> & { [key: string]: any } = { ...this.entityData };
 
     Object.keys(__virtuals).forEach(k => {

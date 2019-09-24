@@ -106,7 +106,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
 
   public readonly shortcutQueries: { [key: string]: QueryListOptions };
 
-  private joiSchema?: GenericObject;
+  public joiSchema?: GenericObject;
 
   constructor(properties: { [P in keyof T]: SchemaPathDefinition }, options?: SchemaOptions) {
     this.methods = {} as any;

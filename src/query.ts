@@ -16,7 +16,7 @@ const { populateFactory } = populateHelpers;
 const { createDatastoreQueryForModel, buildQueryFromOptions } = queryHelpers;
 
 class Query<T extends object, M extends object> {
-  private Model: Model<T, M>;
+  public Model: Model<T, M>;
 
   constructor(GstoreModel: Model<T, M>) {
     this.Model = GstoreModel;

@@ -207,7 +207,15 @@ export interface Model<
 
   findAround: Query<T, M>['findAround'];
 
-  // __compile(kind: string, schema: Schema, gstore: Gstore): Model;
+  /**
+   * Generate a new Gstore Model directly from a Model.
+   * This model won't be cached in the gstore.models {} map.
+   *
+   * @param kind The Entity Kind
+   * @param schema The Gstore Schema
+   * @param gstore The Gstore instance
+   */
+  __compile(kind: string, schema: Schema<T, M>): Model<T, M>;
 
   /**
    * Creates an entity instance from a Model
@@ -219,7 +227,7 @@ export interface Model<
    * @returns {Entity} Entity --> Model instance
    * @private
    */
-  __model(data: EntityData, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
+  __model(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
 
@@ -298,10 +306,10 @@ export const generateModel = <T extends object, M extends object>(
   schema: Schema<T, M>,
   gstore: Gstore,
 ): Model<T, M> => {
-  if (!schema.__meta) {
+  if (!schema.__meta || Object.keys(schema.__meta).length === 0) {
     schema.__meta = extractMetaFromSchema(schema);
   }
-  const model: Model<T, M> = class NewModel extends Entity<T> {
+  const model: Model<T, M> = class GstoreModel extends Entity<T> {
     static gstore: Gstore = gstore;
 
     static schema: Schema<T> = schema;
@@ -400,11 +408,11 @@ export const generateModel = <T extends object, M extends object>(
         }
 
         // Convert entityData to Entity instance
-        const entity = (entityData as EntityData[]).map((data: EntityData) => {
+        const entity = (entityData as EntityData<T>[]).map(data => {
           if (typeof data === 'undefined' || data === null) {
             return null;
           }
-          return this.__model(data, undefined, undefined, undefined, data[this.gstore.ds.KEY as any]);
+          return this.__model(data, undefined, undefined, undefined, (data as any)[this.gstore.ds.KEY]);
         });
 
         // TODO: Check if this is still useful??
@@ -432,7 +440,7 @@ export const generateModel = <T extends object, M extends object>(
 
     static update(
       id: IdType,
-      data: EntityData,
+      data: EntityData<T>,
       ancestors?: Ancestor,
       namespace?: string,
       transaction?: Transaction,
@@ -463,7 +471,7 @@ export const generateModel = <T extends object, M extends object>(
         });
       };
 
-      const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData }): Promise<Entity<T>> => {
+      const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData<T> }): Promise<Entity<T>> => {
         const { key: entityKey, data: entityData } = datastoreFormat;
         const entity = this.__model(entityData, undefined, undefined, undefined, entityKey);
 
@@ -513,8 +521,8 @@ export const generateModel = <T extends object, M extends object>(
             .commit()
             .then(() =>
               transaction!.execPostHooks().catch((err: any) => {
-                (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] = (
-                  (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] || []
+                (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] = (
+                  (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] || []
                 ).push(err);
               }),
             )
@@ -564,7 +572,7 @@ export const generateModel = <T extends object, M extends object>(
       }
 
       if (transaction.constructor.name !== 'Transaction') {
-        throw new Error('Transaction needs to be a gcloud Transaction');
+        return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
       }
 
       return getAndUpdate();
@@ -780,7 +788,7 @@ export const generateModel = <T extends object, M extends object>(
       const key = data[this.gstore.ds.KEY as any]; // save the Key
 
       if (!is.object(data)) {
-        return data;
+        return {};
       }
 
       const isJoiSchema = schema.isJoi;
@@ -830,12 +838,12 @@ export const generateModel = <T extends object, M extends object>(
     // Private methods
     // ------------------------------------
 
-    // static __compile<NewType extends object>(kind: string, schema: Schema, gstore: Gstore): Model<NewType> {
-    //   return generateModel<NewType>(kind, schema, gstore);
-    // }
+    static __compile<T2 extends object, M2 extends object>(newKind: string, newSchema: Schema<T2, M2>): Model<T2, M2> {
+      return generateModel<T2, M2>(newKind, newSchema, gstore);
+    }
 
     static __model(
-      data: EntityData,
+      data: EntityData<T>,
       id?: IdType,
       ancestors?: Ancestor,
       namespace?: string,
@@ -1120,7 +1128,7 @@ export const generateModel = <T extends object, M extends object>(
           return undefined;
         }
 
-        return _this.__model({}, id, ancestors, namespace, key);
+        return _this.__model({} as EntityData<T>, id, ancestors, namespace, key);
       };
 
       switch (hook) {
@@ -1162,9 +1170,9 @@ export const generateModel = <T extends object, M extends object>(
 
   // Attach props to prototype
   // TODO: Refactor how the Model/ENtity relationship!
-  (model.constructor as any).gstore = gstore;
-  (model.constructor as any).schema = schema;
-  (model.constructor as any).entityKind = kind;
+  model.prototype.gstore = gstore;
+  model.prototype.schema = schema;
+  model.prototype.entityKind = kind;
 
   return model;
 };

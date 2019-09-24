@@ -3,13 +3,13 @@ import is from 'is';
 import { FunctionType, GenericObject } from './types';
 
 class VirtualType {
-  private readonly name: string;
+  public readonly name: string;
 
-  private getter: FunctionType | null;
+  public getter: FunctionType | null;
 
-  private setter: FunctionType | null;
+  public setter: FunctionType | null;
 
-  private options: GenericObject;
+  public options: GenericObject;
 
   constructor(name: string, options?: GenericObject) {
     this.name = name;
