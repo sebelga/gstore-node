@@ -9,7 +9,7 @@ import dsAdapter from 'nsql-cache-datastore';
 import DataLoader from 'dataloader'; // eslint-disable-line import/no-extraneous-dependencies
 import { Datastore, Transaction } from '@google-cloud/datastore';
 
-import pkg from '../package.json';
+// import pkg from '../package.json';
 import Schema from './schema';
 import Entity from './entity';
 import Model, { generateModel } from './model';
@@ -39,7 +39,7 @@ const DEFAULT_CACHE_SETTINGS = {
   },
 };
 
-class Gstore {
+export class Gstore {
   /**
    * Map of Gstore Model created
    */
@@ -73,11 +73,11 @@ class Gstore {
     codes: typeof ERROR_CODES;
   };
 
-  public __ds: Datastore | null = null;
+  public __ds: Datastore | undefined;
 
   public __defaultValues: DefaultValues;
 
-  public __pkgVersion: string;
+  public __pkgVersion = '7.1.0'; // TODO Fix this!
 
   constructor(config = {}) {
     if (!is.object(config)) {
@@ -88,7 +88,7 @@ class Gstore {
     this.config = { ...DEFAULT_GSTORE_CONFIG, ...config };
     this.Schema = Schema;
     this.__defaultValues = defaultValues;
-    this.__pkgVersion = pkg.version;
+    // this.__pkgVersion = pkg.version;
 
     this.errors = {
       GstoreError,
@@ -105,7 +105,7 @@ class Gstore {
     // We might be passing a different schema for
     // an existing model entityKind. in this case warn the user,
     if (this.models[entityKind]) {
-      if (schema instanceof Schema && schema !== this.models[entityKind].schema) {
+      if (schema instanceof Schema && schema !== undefined) {
         throw new Error(`Trying to override ${entityKind} Model Schema`);
       }
       return this.models[entityKind];
@@ -126,7 +126,7 @@ class Gstore {
    * Alias to gcloud datastore Transaction method
    */
   transaction(): Transaction {
-    return this.__ds!.transaction();
+    return this.ds.transaction();
   }
 
   /**
@@ -184,7 +184,7 @@ class Gstore {
     }
 
     // We forward the call to google-datastore
-    return this.__ds!.save(entitiesSerialized);
+    return this.ds.save(entitiesSerialized);
   }
 
   // Connect to Google Datastore instance
@@ -225,7 +225,10 @@ class Gstore {
   }
 
   get ds(): Datastore {
-    return this.__ds!;
+    if (this.__ds === undefined) {
+      throw new Error('Trying to access Datastore instance but none was provided.');
+    }
+    return this.__ds;
   }
 }
 
@@ -242,5 +245,7 @@ export const instances = {
     this.__refs.set(id, instance);
   },
 };
+
+export { QUERIES_FORMATS } from './constants';
 
 export default Gstore;

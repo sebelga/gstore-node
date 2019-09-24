@@ -18,8 +18,8 @@ const { createDatastoreQueryForModel, buildQueryFromOptions } = queryHelpers;
 class Query<T extends object, M extends object> {
   public Model: Model<T, M>;
 
-  constructor(GstoreModel: Model<T, M>) {
-    this.Model = GstoreModel;
+  constructor(model: Model<T, M>) {
+    this.Model = model;
   }
 
   /**
@@ -93,14 +93,11 @@ class Query<T extends object, M extends object> {
     };
 
     /* eslint-disable @typescript-eslint/unbound-method */
-    const enhancedQuery = {
-      ...query,
-      // keep a reference to original run() method
-      __originalRun: ((query as unknown) as DatastoreQuery).run,
-      run: enhancedQueryRun,
-    } as GstoreQuery<T>;
+    ((query as unknown) as GstoreQuery<T>).__originalRun = ((query as unknown) as DatastoreQuery).run;
+    ((query as unknown) as GstoreQuery<T>).run = enhancedQueryRun;
     /* eslint-enable @typescript-eslint/unbound-method */
-    return enhancedQuery;
+
+    return (query as unknown) as GstoreQuery<T>;
   }
 
   list(options: QueryListOptions = {}): PromiseWithPopulate<QueryResponse<T>> {
@@ -136,7 +133,9 @@ class Query<T extends object, M extends object> {
     this.Model.__hooksEnabled = true;
 
     if (!is.object(keyValues)) {
-      throw new Error('[gstore.findOne()]: "Params" has to be an object.');
+      return Promise.reject(new Error('[gstore.findOne()]: "Params" has to be an object.')) as PromiseWithPopulate<
+        never
+      >;
     }
 
     const query = this.initQuery<Entity<T> | null>(namespace);
@@ -215,7 +214,7 @@ class Query<T extends object, M extends object> {
     const { error } = validateArguments();
 
     if (error) {
-      throw error;
+      return Promise.reject(error) as PromiseWithPopulate<never>;
     }
 
     const query = this.initQuery<E>(namespace);

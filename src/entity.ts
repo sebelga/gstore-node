@@ -334,6 +334,10 @@ export class Entity<T extends object = GenericObject> {
     return this.__gstore;
   }
 
+  set gstore(gstore: Gstore) {
+    this.__gstore = gstore;
+  }
+
   get schema(): Schema<T> {
     if (this.__schema === undefined) {
       throw new Error('No schema instance attached to entity');
@@ -341,11 +345,19 @@ export class Entity<T extends object = GenericObject> {
     return this.__schema;
   }
 
+  set schema(schema: Schema<T>) {
+    this.__schema = schema;
+  }
+
   get entityKind(): string {
     if (this.__entityKind === undefined) {
       throw new Error('No entity kind attached to entity');
     }
     return this.__entityKind;
+  }
+
+  set entityKind(entityKind: string) {
+    this.__entityKind = entityKind;
   }
 
   __buildEntityData(data: GenericObject): void {
@@ -437,19 +449,12 @@ export class Entity<T extends object = GenericObject> {
 
     const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
 
-    /*
-    /* Create copy of ancestors to avoid mutating the Array
-    */
-    const entityAncestors = hasAncestors ? [...ancestors!] : undefined;
+    let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
 
-    let path: (string | number)[];
     if (id) {
-      path = hasAncestors ? entityAncestors!.concat([this.entityKind, id]) : [this.entityKind, id];
+      path = [...path, this.entityKind, id];
     } else {
-      if (hasAncestors) {
-        entityAncestors!.push(this.entityKind);
-      }
-      path = ancestors || [this.entityKind];
+      path.push(this.entityKind);
     }
 
     return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);

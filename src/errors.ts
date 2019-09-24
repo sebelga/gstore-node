@@ -16,7 +16,7 @@ export const ERROR_CODES = {
   ERR_PROP_IN_RANGE: 'ERR_PROP_IN_RANGE',
 };
 
-const message = (text: string, ...args: any[]): string => util.format(text, ...args);
+export const message = (text: string, ...args: any[]): string => util.format(text, ...args);
 
 const messages: { [key: string]: string | (MessageGetter) } = {
   ERR_GENERIC: 'An error occured',

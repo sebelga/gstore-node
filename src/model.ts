@@ -1076,6 +1076,9 @@ export const generateModel = <T extends object, M extends object>(
       transaction.hooks.post = [...transaction.hooks.post, ...postHooks];
 
       transaction.execPostHooks = function executePostHooks(): Promise<any> {
+        if (!this.hooks.post) {
+          return Promise.resolve();
+        }
         return (this.hooks.post as FuncReturningPromise[]).reduce(
           (promise, hook) => promise.then(hook.bind(_this)),
           Promise.resolve() as Promise<any>,
@@ -1156,23 +1159,23 @@ export const generateModel = <T extends object, M extends object>(
     static findAround: any; // Is added below from the Query instance
   } as Model<T, M> & T;
 
-  // Wrap the Model to add "pre" and "post" hooks functionalities
-  hooks.wrap(model);
-  registerHooksFromSchema(model, schema);
-
   const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;
 
-  model.query = initQuery;
-  model.list = list;
-  model.findOne = findOne;
-  model.findAround = findAround;
+  model.query = initQuery.bind(query);
+  model.list = list.bind(query);
+  model.findOne = findOne.bind(query);
+  model.findAround = findAround.bind(query);
 
   // Attach props to prototype
   // TODO: Refactor how the Model/ENtity relationship!
   model.prototype.gstore = gstore;
   model.prototype.schema = schema;
   model.prototype.entityKind = kind;
+
+  // Wrap the Model to add "pre" and "post" hooks functionalities
+  hooks.wrap(model);
+  registerHooksFromSchema(model, schema);
 
   return model;
 };

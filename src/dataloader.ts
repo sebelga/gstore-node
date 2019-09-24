@@ -33,7 +33,7 @@ export const createDataLoader = (
       const entityData = arrify(response);
       const entitiesByKey: { [key: string]: any } = {};
       entityData.forEach(data => {
-        entitiesByKey[keyToString(data[ds.KEY as any])] = entityData;
+        entitiesByKey[keyToString(data[ds.KEY as any])] = data;
       });
 
       return keys.map(key => entitiesByKey[keyToString(key)] || null);

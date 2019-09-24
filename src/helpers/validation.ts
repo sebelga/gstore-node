@@ -34,9 +34,10 @@ const isValidLngLat = (data: any): boolean => {
   return validLatitude && validLongitude;
 };
 
-const errorToObject = ({ code, message }: { code: string; message: string }): { code: string; message: string } => ({
-  code,
-  message,
+const errorToObject = (error: any): { code: string; message: string; ref: string } => ({
+  code: error.code,
+  message: error.message,
+  ref: error.ref,
 });
 
 const validatePropType = (
