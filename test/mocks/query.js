@@ -21,17 +21,29 @@ class Query {
     return Promise.resolve([this.mocks.entities, info]);
   }
 
-  limit() { return this; }
+  limit() {
+    return this;
+  }
 
-  offset() { return this; }
+  offset() {
+    return this;
+  }
 
-  order() { return this; }
+  order() {
+    return this;
+  }
 
-  filter() { return this; }
+  filter() {
+    return this;
+  }
 
-  select() { return this; }
+  select() {
+    return this;
+  }
 
-  hasAncestor(ancestors) { this.ancestors = ancestors; }
+  hasAncestor(ancestors) {
+    this.ancestors = ancestors;
+  }
 }
 
 module.exports = Query;

@@ -26,10 +26,13 @@ describe('Schema', () => {
     });
 
     it('should merge options passed', () => {
-      const schema = new Schema({}, {
-        newOption: 'myValue',
-        queries: { simplifyResult: false },
-      });
+      const schema = new Schema(
+        {},
+        {
+          newOption: 'myValue',
+          queries: { simplifyResult: false },
+        },
+      );
 
       expect(schema.options.newOption).equal('myValue');
       expect(schema.options.queries.simplifyResult).equal(false);
@@ -64,7 +67,7 @@ describe('Schema', () => {
     });
 
     it('should add it to its methods table', () => {
-      const fn = () => { };
+      const fn = () => {};
       schema.method('doSomething', fn);
 
       assert.isDefined(schema.methods.doSomething);
@@ -78,7 +81,7 @@ describe('Schema', () => {
     });
 
     it('should allow to pass a table of functions and validate type', () => {
-      const fn = () => { };
+      const fn = () => {};
       schema.method({
         doSomething: fn,
         doAnotherThing: 123,
@@ -90,7 +93,7 @@ describe('Schema', () => {
     });
 
     it('should only allow function and object to be passed', () => {
-      schema.method(10, () => { });
+      schema.method(10, () => {});
 
       expect(Object.keys(schema.methods).length).equal(0);
     });
@@ -134,7 +137,7 @@ describe('Schema', () => {
 
   describe('callQueue', () => {
     it('should add pre hooks to callQueue', () => {
-      const preMiddleware = () => { };
+      const preMiddleware = () => {};
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -147,7 +150,7 @@ describe('Schema', () => {
     });
 
     it('should add post hooks to callQueue', () => {
-      const postMiddleware = () => { };
+      const postMiddleware = () => {};
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -195,12 +198,15 @@ describe('Schema', () => {
     let schema;
 
     beforeEach(() => {
-      schema = new Schema({
-        name: { joi: Joi.string().required() },
-        notJoi: { type: 'string' },
-      }, {
-        joi: true,
-      });
+      schema = new Schema(
+        {
+          name: { joi: Joi.string().required() },
+          notJoi: { type: 'string' },
+        },
+        {
+          joi: true,
+        },
+      );
     });
 
     it('should build Joi schema', () => {

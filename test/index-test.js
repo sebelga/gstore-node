@@ -191,23 +191,21 @@ describe('gstore-node', () => {
       sinon.spy(entity1, 'validate');
       sinon.spy(entity3, 'validate');
 
-      gstore.save([entity1, entity2, entity3], undefined, { validate: true })
-        .catch(e => {
-          expect(e.code).equal('ERR_VALIDATION');
-          expect(entity1.validate.called).equal(true);
-          expect(entity3.validate.called).equal(false); // fail fast, exit validation
-          done();
-        });
+      gstore.save([entity1, entity2, entity3], undefined, { validate: true }).catch(e => {
+        expect(e.code).equal('ERR_VALIDATION');
+        expect(entity1.validate.called).equal(true);
+        expect(entity3.validate.called).equal(false); // fail fast, exit validation
+        done();
+      });
     });
 
     it('should allow to pass a save method ("insert", "update", "upsert")', () => {
       const entity = new ModelInstance({ name: 'John' });
 
-      return gstore.save(entity, undefined, { method: 'insert' })
-        .then(() => {
-          const { args } = ds.save.getCall(0);
-          expect(args[0].method).equal('insert');
-        });
+      return gstore.save(entity, undefined, { method: 'insert' }).then(() => {
+        const { args } = ds.save.getCall(0);
+        expect(args[0].method).equal('insert');
+      });
     });
   });
 

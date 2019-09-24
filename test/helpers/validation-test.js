@@ -18,7 +18,7 @@ const { expect, assert } = chai;
 const customValidationFunction = (obj, validator, min, max) => {
   if ('embeddedEntity' in obj) {
     const { value } = obj.embeddedEntity;
-    return validator.isNumeric(value.toString()) && (value >= min) && (value <= max);
+    return validator.isNumeric(value.toString()) && value >= min && value <= max;
   }
 
   return false;
@@ -32,9 +32,7 @@ const customValidationFunction = (obj, validator, min, max) => {
 describe('Validation', () => {
   let schema;
 
-  const validate = entityData => (
-    validation.validate(entityData, schema, 'MyEntityKind', ds)
-  );
+  const validate = entityData => validation.validate(entityData, schema, 'MyEntityKind', ds);
 
   beforeEach(() => {
     schema = new Schema({
@@ -66,7 +64,7 @@ describe('Validation', () => {
       address: { type: Schema.Types.Key, ref: 'Address' },
     });
 
-    schema.virtual('fullname').get(() => { });
+    schema.virtual('fullname').get(() => {});
   });
 
   it('should return an object with an "error" and "value" properties', () => {
@@ -81,11 +79,12 @@ describe('Validation', () => {
   it('should return a Promise and resolve with the entityData', () => {
     const entityData = { name: 'John' };
 
-    return validate(entityData).then(value => {
-      expect(value).equal(entityData);
-      return Promise.resolve('test');
-    })
-      .catch(() => { })
+    return validate(entityData)
+      .then(value => {
+        expect(value).equal(entityData);
+        return Promise.resolve('test');
+      })
+      .catch(() => {})
       .then(response => {
         expect(response).equal('test');
       });
@@ -94,24 +93,28 @@ describe('Validation', () => {
   it('should return a Promise and reject with the error', () => {
     const entityData = { name: 123 };
 
-    return validate(entityData).then(() => {
-    }, error => {
-      expect(error.name).equal('ValidationError');
-      expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
-    });
+    return validate(entityData).then(
+      () => {},
+      error => {
+        expect(error.name).equal('ValidationError');
+        expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
+      },
+    );
   });
 
   it('should return a Promise catch with the error', () => {
     const entityData = { name: 123 };
 
-    return validate(entityData).catch(error => {
-      expect(error.name).equal('ValidationError');
-      expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
-      return Promise.resolve('test');
-    }).then(response => {
-      // Just to make sure we can chain Promises
-      expect(response).equal('test');
-    });
+    return validate(entityData)
+      .catch(error => {
+        expect(error.name).equal('ValidationError');
+        expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
+        return Promise.resolve('test');
+      })
+      .then(response => {
+        // Just to make sure we can chain Promises
+        expect(response).equal('test');
+      });
   });
 
   it('properties passed ok', () => {
@@ -155,7 +158,7 @@ describe('Validation', () => {
     expect(error3.errors[0].code).equal(ERROR_CODES.ERR_PROP_REQUIRED);
   });
 
-  it('don\'t validate empty value', () => {
+  it("don't validate empty value", () => {
     const { error } = validate({ email: undefined });
     const { error: error2 } = validate({ email: null });
     const { error: error3 } = validate({ email: '' });
@@ -430,9 +433,7 @@ describe('Validation', () => {
         return false;
       }
 
-      return obj.every(item => (
-        item !== null && typeof item === 'object'
-      ));
+      return obj.every(item => item !== null && typeof item === 'object');
     };
 
     schema = new Schema({
@@ -468,14 +469,22 @@ describe('Joi Validation', () => {
   const validate = entityData => validation.validate(entityData, schema, 'MyEntityKind');
 
   beforeEach(() => {
-    schema = new Schema({
-      name: { joi: Joi.string().required() },
-      color: { joi: Joi.valid('a', 'b') },
-      birthyear: { joi: Joi.number().integer().min(1900).max(2013) },
-      email: { joi: Joi.string().email() },
-    }, {
-      joi: { options: { stripUnknown: false } },
-    });
+    schema = new Schema(
+      {
+        name: { joi: Joi.string().required() },
+        color: { joi: Joi.valid('a', 'b') },
+        birthyear: {
+          joi: Joi.number()
+            .integer()
+            .min(1900)
+            .max(2013),
+        },
+        email: { joi: Joi.string().email() },
+      },
+      {
+        joi: { options: { stripUnknown: false } },
+      },
+    );
   });
 
   it('should validate with Joi', () => {
@@ -493,17 +502,20 @@ describe('Joi Validation', () => {
   });
 
   it('should accept extra validation on top of the schema', () => {
-    schema = new Schema({
-      name: { joi: Joi.string() },
-      lastname: { joi: Joi.string() },
-    }, {
-      joi: {
-        extra: {
-          with: ['name', 'lastname'],
-          unknownMethod: 'shouldBeIgnored',
+    schema = new Schema(
+      {
+        name: { joi: Joi.string() },
+        lastname: { joi: Joi.string() },
+      },
+      {
+        joi: {
+          extra: {
+            with: ['name', 'lastname'],
+            unknownMethod: 'shouldBeIgnored',
+          },
         },
       },
-    });
+    );
 
     const { error } = validate({ name: 'John' });
 
@@ -511,15 +523,18 @@ describe('Joi Validation', () => {
   });
 
   it('should accept an "option" object', () => {
-    schema = new Schema({
-      name: { joi: Joi.string().required() },
-    }, {
-      joi: {
-        options: {
-          allowUnknown: true,
+    schema = new Schema(
+      {
+        name: { joi: Joi.string().required() },
+      },
+      {
+        joi: {
+          options: {
+            allowUnknown: true,
+          },
         },
       },
-    });
+    );
 
     const { error } = validate({ name: 'John', unknownProp: 'abc' });
 

@@ -2,14 +2,14 @@
 
 function Transaction() {
   const _this = this;
-  this.run = () => { };
-  this.get = () => { };
-  this.save = () => { };
-  this.delete = () => { };
+  this.run = () => {};
+  this.get = () => {};
+  this.save = () => {};
+  this.delete = () => {};
   this.commit = () => Promise.resolve();
   this.rollback = () => Promise.resolve();
   this.createQuery = () => ({
-    filter: () => { },
+    filter: () => {},
     scope: _this,
   });
   this.runQuery = () => Promise.resolve();

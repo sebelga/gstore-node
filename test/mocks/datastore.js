@@ -1,4 +1,3 @@
-
 'use strict';
 
 const { Datastore: GoogleDatastore } = require('@google-cloud/datastore');

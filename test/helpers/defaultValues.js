@@ -12,8 +12,8 @@ describe('Query Helpers', () => {
       const result = defaultValues.__handler__(value);
 
       /**
-             * we might have a slightly difference, that's ok :)
-             */
+       * we might have a slightly difference, that's ok :)
+       */
       const dif = Math.abs(result.getTime() - new Date().getTime());
 
       expect(dif).to.be.below(100);

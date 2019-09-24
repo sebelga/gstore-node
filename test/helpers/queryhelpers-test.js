@@ -20,13 +20,17 @@ describe('Query Helpers', () => {
     });
 
     it('and throw error if no query passed', () => {
-      const fn = () => { queryHelpers.default.buildQueryFromOptions(); };
+      const fn = () => {
+        queryHelpers.buildQueryFromOptions();
+      };
 
       expect(fn).to.throw(Error);
     });
 
     it('and throw error if query is not a gcloud Query', () => {
-      const fn = () => { queryHelpers.buildQueryFromOptions({}); };
+      const fn = () => {
+        queryHelpers.buildQueryFromOptions({});
+      };
 
       expect(fn).to.throw(Error);
     });

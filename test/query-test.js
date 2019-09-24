@@ -24,13 +24,15 @@ let ModelInstance;
 const setupCacheContext = () => {
   gstore.cache = gstoreWithCache.cache;
 
-  query = ModelInstance.query()
-    .filter('name', '=', 'John');
+  query = ModelInstance.query().filter('name', '=', 'John');
 
-  responseQueries = [mockEntities, {
-    moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
-    endCursor: 'abcdef',
-  }];
+  responseQueries = [
+    mockEntities,
+    {
+      moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+      endCursor: 'abcdef',
+    },
+  ];
 
   sinon.spy(gstore.cache.queries, 'read');
 };
@@ -87,10 +89,13 @@ describe('Query', () => {
 
   describe('gcloud-node queries', () => {
     beforeEach(() => {
-      responseQueries = [mockEntities, {
-        moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
-        endCursor: 'abcdef',
-      }];
+      responseQueries = [
+        mockEntities,
+        {
+          moreResults: ds.MORE_RESULTS_AFTER_LIMIT,
+          endCursor: 'abcdef',
+        },
+      ];
 
       query = ModelInstance.query();
       sinon.stub(query, '__originalRun').resolves(responseQueries);
@@ -120,63 +125,55 @@ describe('Query', () => {
 
     it('should throw error if calling unregistered query method', () => {
       const fn = () => {
-        query = ModelInstance.query()
-          .unkown('test', false);
+        query = ModelInstance.query().unkown('test', false);
         return query;
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('should run query', () => query.run().then(response => {
-      // We add manually the id in the mocks to be able to deep compare
-      mockEntities[0].id = 1234;
-      mockEntities[1].id = 'keyname';
+    it('should run query', () =>
+      query.run().then(response => {
+        // We add manually the id in the mocks to be able to deep compare
+        mockEntities[0].id = 1234;
+        mockEntities[1].id = 'keyname';
 
-      // we delete from the mock the property
-      // 'password' it has been defined with read: false
-      delete mockEntities[0].password;
+        // we delete from the mock the property
+        // 'password' it has been defined with read: false
+        delete mockEntities[0].password;
 
-      expect(query.__originalRun.called).equal(true);
-      expect(response.entities.length).equal(2);
-      assert.isUndefined(response.entities[0].password);
-      expect(response.entities).deep.equal(mockEntities);
-      expect(response.nextPageCursor).equal('abcdef');
+        expect(query.__originalRun.called).equal(true);
+        expect(response.entities.length).equal(2);
+        assert.isUndefined(response.entities[0].password);
+        expect(response.entities).deep.equal(mockEntities);
+        expect(response.nextPageCursor).equal('abcdef');
 
-      delete mockEntities[0].id;
-      delete mockEntities[1].id;
-    }));
+        delete mockEntities[0].id;
+        delete mockEntities[1].id;
+      }));
 
-    it('should add id to entities', () => (
-      query.run()
-        .then(response => {
-          expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
-          expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-        })
-    ));
+    it('should add id to entities', () =>
+      query.run().then(response => {
+        expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
+        expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
+      }));
 
-    it('should accept "readAll" option', () => (
-      query.run({ readAll: true })
-        .then(response => {
-          assert.isDefined(response.entities[0].password);
-        })
-    ));
+    it('should accept "readAll" option', () =>
+      query.run({ readAll: true }).then(response => {
+        assert.isDefined(response.entities[0].password);
+      }));
 
-    it('should accept "showKey" option', () => (
-      query.run({ showKey: true })
-        .then(response => {
-          assert.isDefined(response.entities[0].__key);
-        })
-    ));
+    it('should accept "showKey" option', () =>
+      query.run({ showKey: true }).then(response => {
+        assert.isDefined(response.entities[0].__key);
+      }));
 
-    it('should forward options to underlying Datastore.Query', () => (
-      query.run({ consistency: 'strong' })
-        .then(() => {
-          assert(query.__originalRun.called);
-          const { args } = query.__originalRun.getCall(0);
-          expect(args[0].consistency).equal('strong');
-        })
-    ));
+    it('should forward options to underlying Datastore.Query', () =>
+      query.run({ consistency: 'strong' }).then(() => {
+        assert(query.__originalRun.called);
+        const { args } = query.__originalRun.getCall(0);
+        expect(args[0].consistency).equal('strong');
+      }));
 
     it('should not add endCursor to response', () => {
       query.__originalRun.restore();
@@ -218,8 +215,7 @@ describe('Query', () => {
     });
 
     it('should still work with a callback', () => {
-      query = ModelInstance.query()
-        .filter('name', 'John');
+      query = ModelInstance.query().filter('name', 'John');
       sinon.stub(query, '__originalRun').resolves(responseQueries);
 
       return query.run((err, response) => {
@@ -239,55 +235,46 @@ describe('Query', () => {
         cleanupCacheContext();
       });
 
-      it('should get query from cache and pass down options', () => (
-        query.run({ ttl: 9999 })
-          .then(response => {
-            assert.ok(query.__originalRun.called);
-            expect(gstore.cache.queries.read.callCount).equal(1);
-            expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
-            expect(response.entities[0].name).deep.equal(mockEntities[0].name);
-            expect(response.entities[1].name).deep.equal(mockEntities[1].name);
-          })
-      ));
+      it('should get query from cache and pass down options', () =>
+        query.run({ ttl: 9999 }).then(response => {
+          assert.ok(query.__originalRun.called);
+          expect(gstore.cache.queries.read.callCount).equal(1);
+          expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
+          expect(response.entities[0].name).deep.equal(mockEntities[0].name);
+          expect(response.entities[1].name).deep.equal(mockEntities[1].name);
+        }));
 
-      it('should *not* get query from cache', () => (
-        gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
-          .then(() => (
-            query.run({ cache: false })
-              .then(() => {
-                assert.ok(query.__originalRun.called);
-              })
-          ))
-      ));
+      it('should *not* get query from cache', () =>
+        gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+          query.run({ cache: false }).then(() => {
+            assert.ok(query.__originalRun.called);
+          }),
+        ));
 
       it('should *not* get query from cache when ttl === -1', () => {
         const conf = { ...gstore.cache.config.ttl };
         gstore.cache.config.ttl.queries = -1;
 
-        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
-          .then(() => (
-            query.run()
-              .then(() => {
-                expect(gstore.cache.queries.read.callCount).equal(0);
-                assert.ok(query.__originalRun.called);
-                gstore.cache.config.ttl = conf; // put back original config
-              })
-          ));
+        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+          query.run().then(() => {
+            expect(gstore.cache.queries.read.callCount).equal(0);
+            assert.ok(query.__originalRun.called);
+            gstore.cache.config.ttl = conf; // put back original config
+          }),
+        );
       });
 
       it('should get query from the cache when ttl === -1 but option.cache is set to "true"', () => {
         const conf = { ...gstore.cache.config.ttl };
         gstore.cache.config.ttl.queries = -1;
 
-        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 })
-          .then(() => (
-            query.run({ cache: true })
-              .then(() => {
-                expect(gstore.cache.queries.read.callCount).equal(1);
-                assert.ok(!query.__originalRun.called);
-                gstore.cache.config.ttl = conf; // put back original config
-              })
-          ));
+        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+          query.run({ cache: true }).then(() => {
+            expect(gstore.cache.queries.read.callCount).equal(1);
+            assert.ok(!query.__originalRun.called);
+            gstore.cache.config.ttl = conf; // put back original config
+          }),
+        );
       });
     });
   });
@@ -336,25 +323,24 @@ describe('Query', () => {
     });
 
     describe('list', () => {
-      it('should work with no settings defined', () => (
+      it('should work with no settings defined', () =>
         ModelInstance.list().then(response => {
           expect(response.entities.length).equal(2);
           expect(response.nextPageCursor).equal('abcdef');
           assert.isUndefined(response.entities[0].password);
-        })
-      ));
+        }));
 
-      it('should add id to entities', () => (
+      it('should add id to entities', () =>
         ModelInstance.list().then(response => {
           expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
-        })
-      ));
+        }));
 
       it('should not add endCursor to response', () => {
         ds.createQuery.restore();
-        sinon.stub(ds, 'createQuery').callsFake(() => (
-          new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS })));
+        sinon
+          .stub(ds, 'createQuery')
+          .callsFake(() => new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS }));
 
         return ModelInstance.list().then(response => {
           assert.isUndefined(response.nextPageCursor);
@@ -434,90 +420,76 @@ describe('Query', () => {
           });
         });
 
-        it('should *not* get query from cache', () => (
+        it('should *not* get query from cache', () =>
           ModelInstance.list({ cache: false }).then(() => {
             expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
-          })
-        ));
+          }));
       });
     });
 
     describe('findAround()', () => {
-      it('should get 3 entities after a given date', () => (
-        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 })
-          .then(entities => {
-            expect(queryMock.filter.getCall(0).args)
-              .deep.equal(['createdOn', '>', '2016-1-1']);
-            expect(queryMock.order.getCall(0).args)
-              .deep.equal(['createdOn', { descending: true }]);
-            expect(queryMock.limit.getCall(0).args[0]).equal(3);
+      it('should get 3 entities after a given date', () =>
+        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).then(entities => {
+          expect(queryMock.filter.getCall(0).args).deep.equal(['createdOn', '>', '2016-1-1']);
+          expect(queryMock.order.getCall(0).args).deep.equal(['createdOn', { descending: true }]);
+          expect(queryMock.limit.getCall(0).args[0]).equal(3);
 
-            // Make sure to not show properties where read is set to false
-            assert.isUndefined(entities[0].password);
-          })
-      ));
+          // Make sure to not show properties where read is set to false
+          assert.isUndefined(entities[0].password);
+        }));
 
-      it('should get 3 entities before a given date', () => (
+      it('should get 3 entities before a given date', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 12 }).then(() => {
           expect(queryMock.filter.getCall(0).args).deep.equal(['createdOn', '<', '2016-1-1']);
           expect(queryMock.limit.getCall(0).args[0]).equal(12);
-        })
-      ));
+        }));
 
       it('should throw error if not all arguments are passed', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1')
-          .catch(err => {
-            expect(err.message).equal('[gstore.findAround()]: Not all the arguments were provided.');
-            done();
-          });
+        ModelInstance.findAround('createdOn', '2016-1-1').catch(err => {
+          expect(err.message).equal('[gstore.findAround()]: Not all the arguments were provided.');
+          done();
+        });
       });
 
       it('should validate that options passed is an object', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1', 'string')
-          .catch(err => {
-            expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
-            done();
-          });
+        ModelInstance.findAround('createdOn', '2016-1-1', 'string').catch(err => {
+          expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
+          done();
+        });
       });
 
       it('should validate that options has an "after" or "before" property', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1', {})
-          .catch(err => {
-            expect(err.message)
-              .equal('[gstore.findAround()]: You must set "after" or "before" in options.');
-            done();
-          });
+        ModelInstance.findAround('createdOn', '2016-1-1', {}).catch(err => {
+          expect(err.message).equal('[gstore.findAround()]: You must set "after" or "before" in options.');
+          done();
+        });
       });
 
       it('should validate that options has not both "after" & "before" properties', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 })
-          .catch(err => {
-            expect(err.message).equal('[gstore.findAround()]: You can\'t set both "after" and "before".');
-            done();
-          });
+        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }).catch(err => {
+          expect(err.message).equal('[gstore.findAround()]: You can\'t set both "after" and "before".');
+          done();
+        });
       });
 
-      it('should add id to entities', () => (
+      it('should add id to entities', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then(entities => {
           expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
-        })
-      ));
+        }));
 
-      it('should read all properties', () => (
-        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' })
-          .then(entities => {
+      it('should read all properties', () =>
+        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' }).then(
+          entities => {
             assert.isDefined(entities[0].password);
             expect(entities[0].className).equal('Entity');
-          })
-      ));
+          },
+        ));
 
-      it('should add entities key', () => (
-        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true })
-          .then(entities => {
-            assert.isDefined(entities[0].__key);
-          })
-      ));
+      it('should add entities key', () =>
+        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true }).then(entities => {
+          assert.isDefined(entities[0].__key);
+        }));
 
       it('should accept a namespace', () => {
         const namespace = 'com.new-domain.dev';
@@ -559,11 +531,10 @@ describe('Query', () => {
           });
         });
 
-        it('should *not* get query from cache', () => (
+        it('should *not* get query from cache', () =>
           ModelInstance.findAround('xxx', 'xxx', { after: 3, cache: false }).then(() => {
             expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
-          })
-        ));
+          }));
       });
     });
 
@@ -587,47 +558,40 @@ describe('Query', () => {
         });
       });
 
-      it('should run correct gcloud Query', () => (
+      it('should run correct gcloud Query', () =>
         ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
-          expect(queryMock.filter.getCall(0).args)
-            .deep.equal(['name', 'John']);
+          expect(queryMock.filter.getCall(0).args).deep.equal(['name', 'John']);
 
-          expect(queryMock.filter.getCall(1).args)
-            .deep.equal(['email', 'john@snow.com']);
-        })
-      ));
+          expect(queryMock.filter.getCall(1).args).deep.equal(['email', 'john@snow.com']);
+        }));
 
-      it('should return a Model instance', () => (
+      it('should return a Model instance', () =>
         ModelInstance.findOne({ name: 'John' }).then(entity => {
           expect(entity.entityKind).equal('BlogTestQuery');
           expect(entity.className).equal('Entity');
-        })
-      ));
+        }));
 
       it('should validate that params passed are object', done => {
-        ModelInstance.findOne('some string')
-          .catch(err => {
-            expect(err.message).equal('[gstore.findOne()]: "Params" has to be an object.');
-            done();
-          });
+        ModelInstance.findOne('some string').catch(err => {
+          expect(err.message).equal('[gstore.findOne()]: "Params" has to be an object.');
+          done();
+        });
       });
 
       it('should accept ancestors', () => {
         const ancestors = ['Parent', 'keyname'];
 
         return ModelInstance.findOne({ name: 'John' }, ancestors, () => {
-          expect(queryMock.hasAncestor.getCall(0).args[0].path)
-            .deep.equal(ancestors);
+          expect(queryMock.hasAncestor.getCall(0).args[0].path).deep.equal(ancestors);
         });
       });
 
       it('should accept a namespace', () => {
         const namespace = 'com.new-domain.dev';
 
-        return ModelInstance.findOne({ name: 'John' }, null, namespace)
-          .then(() => {
-            expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
-          });
+        return ModelInstance.findOne({ name: 'John' }, null, namespace).then(() => {
+          expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
+        });
       });
 
       it('should deal with err response', () => {
@@ -661,10 +625,7 @@ describe('Query', () => {
           if (args[0].name === 'John') {
             // And override them
             return Promise.resolve({
-              __override: [
-                { name: 'Mick', email: 'mick@jagger.com' },
-                ['Parent', 'default'],
-              ],
+              __override: [{ name: 'Mick', email: 'mick@jagger.com' }, ['Parent', 'default']],
             });
           }
           return Promise.resolve();
@@ -701,19 +662,17 @@ describe('Query', () => {
           cleanupCacheContext();
         });
 
-        it('should get query from cache and pass down options', () => (
+        it('should get query from cache and pass down options', () =>
           ModelInstance.findOne({ name: 'John' }, null, null, { ttl: 7777, cache: true }).then(() => {
             expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
             const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
             expect(args[1]).contains({ ttl: 7777, cache: true });
-          })
-        ));
+          }));
 
-        it('should *not* get query from cache', () => (
+        it('should *not* get query from cache', () =>
           ModelInstance.findOne({ name: 'John' }, null, null, { cache: false }).then(() => {
             expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
-          })
-        ));
+          }));
       });
     });
   });

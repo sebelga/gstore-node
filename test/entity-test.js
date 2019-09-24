@@ -123,15 +123,16 @@ describe('Entity', () => {
     });
 
     it('should set values from Joi schema', () => {
-      const generateFullName = context => (
-        `${context.name} ${context.lastname}`
-      );
+      const generateFullName = context => `${context.name} ${context.lastname}`;
 
-      schema = new Schema({
-        name: { joi: Joi.string() },
-        lastname: { joi: Joi.string().default('Jagger') },
-        fullname: { joi: Joi.string().default(generateFullName, 'generated fullname') },
-      }, { joi: true });
+      schema = new Schema(
+        {
+          name: { joi: Joi.string() },
+          lastname: { joi: Joi.string().default('Jagger') },
+          fullname: { joi: Joi.string().default(generateFullName, 'generated fullname') },
+        },
+        { joi: true },
+      );
 
       GstoreModel = gstore.model('EntityKind', schema);
 
@@ -142,11 +143,18 @@ describe('Entity', () => {
     });
 
     it('should not set default if Joi validation does not pass', () => {
-      schema = new Schema({
-        name: { joi: Joi.string().default('test').required() },
-        lastname: { joi: Joi.string().default('Jagger') },
-        age: { joi: Joi.number() },
-      }, { joi: true });
+      schema = new Schema(
+        {
+          name: {
+            joi: Joi.string()
+              .default('test')
+              .required(),
+          },
+          lastname: { joi: Joi.string().default('Jagger') },
+          age: { joi: Joi.number() },
+        },
+        { joi: true },
+      );
 
       GstoreModel = gstore.model('EntityKind', schema);
 
@@ -360,7 +368,7 @@ describe('Entity', () => {
 
       it('should not register unknown methods', () => {
         schema.callQueue = { model: {}, entity: {} };
-        schema.pre('unknown', () => { });
+        schema.pre('unknown', () => {});
         GstoreModel = gstore.model('BlogPost', schema);
         entity = new GstoreModel({});
 
@@ -683,21 +691,19 @@ describe('Entity', () => {
         sinon.spy(entity.gstore.cache.keys, 'read');
         sinon.stub(ds, 'get').resolves([mockData]);
 
-        return gstore.cache.keys.set(key, value)
-          .then(() => (
-            entity.datastoreEntity({ ttl: 123456 })
-              .then(response => {
-                assert.ok(!ds.get.called);
-                expect(response.entityData).include(value);
-                assert.ok(entity.gstore.cache.keys.read.called);
-                const { args } = entity.gstore.cache.keys.read.getCall(0);
-                expect(args[0]).equal(key);
-                expect(args[1].ttl).equal(123456);
+        return gstore.cache.keys.set(key, value).then(() =>
+          entity.datastoreEntity({ ttl: 123456 }).then(response => {
+            assert.ok(!ds.get.called);
+            expect(response.entityData).include(value);
+            assert.ok(entity.gstore.cache.keys.read.called);
+            const { args } = entity.gstore.cache.keys.read.getCall(0);
+            expect(args[0]).equal(key);
+            expect(args[1].ttl).equal(123456);
 
-                entity.gstore.cache.keys.read.restore();
-                ds.get.restore();
-              })
-          ));
+            entity.gstore.cache.keys.read.restore();
+            ds.get.restore();
+          }),
+        );
       });
 
       it('should **not** get value from cache', () => {
@@ -708,17 +714,15 @@ describe('Entity', () => {
         sinon.spy(entity.gstore.cache.keys, 'read');
         sinon.stub(ds, 'get').resolves([mockData]);
 
-        return gstore.cache.keys.set(key, value)
-          .then(() => (
-            entity.datastoreEntity({ cache: false })
-              .then(() => {
-                assert.ok(ds.get.called);
-                assert.ok(!entity.gstore.cache.keys.read.called);
+        return gstore.cache.keys.set(key, value).then(() =>
+          entity.datastoreEntity({ cache: false }).then(() => {
+            assert.ok(ds.get.called);
+            assert.ok(!entity.gstore.cache.keys.read.called);
 
-                entity.gstore.cache.keys.read.restore();
-                ds.get.restore();
-              })
-          ));
+            entity.gstore.cache.keys.read.restore();
+            ds.get.restore();
+          }),
+        );
       });
     });
   });
@@ -742,7 +746,8 @@ describe('Entity', () => {
 
       const blog = new GstoreModel({});
 
-      return blog.model('Image')
+      return blog
+        .model('Image')
         .get()
         .then(_entity => {
           expect(_entity).equal(mockEntities[0]);
@@ -830,11 +835,10 @@ describe('Entity', () => {
       entity = new GstoreModel(data);
     });
 
-    it('should return the entity saved', () => (
+    it('should return the entity saved', () =>
       entity.save().then(_entity => {
         expect(_entity.className).equal('Entity');
-      })
-    ));
+      }));
 
     it('should validate() before', () => {
       const validateSpy = sinon.spy(entity, 'validate');
@@ -855,7 +859,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should NOT save to Datastore if it didn\'t pass property validation', done => {
+    it("should NOT save to Datastore if it didn't pass property validation", done => {
       entity = new GstoreModel({ unknown: 'John' });
 
       entity
@@ -872,7 +876,7 @@ describe('Entity', () => {
         });
     });
 
-    it('should NOT save to Datastore if it didn\'t pass value validation', done => {
+    it("should NOT save to Datastore if it didn't pass value validation", done => {
       entity = new GstoreModel({ website: 'mydomain' });
 
       entity.save().catch(err => {
@@ -899,24 +903,23 @@ describe('Entity', () => {
       });
     });
 
-    it('should set "upsert" method by default', () => (
+    it('should set "upsert" method by default', () =>
       entity.save().then(() => {
         expect(entity.gstore.ds.save.getCall(0).args[0].method).equal('upsert');
-      })
-    ));
+      }));
 
     describe('options', () => {
-      it('should accept a "method" parameter in options', () => (
+      it('should accept a "method" parameter in options', () =>
         entity.save(null, { method: 'insert' }).then(() => {
           expect(entity.gstore.ds.save.getCall(0).args[0].method).equal('insert');
-        })
-      ));
+        }));
 
       it('should only allow "update", "insert", "upsert" as method', done => {
         entity.save(null, { method: 'something' }).catch(e => {
           expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
 
-          entity.save(null, { method: 'update' })
+          entity
+            .save(null, { method: 'update' })
             .then(() => entity.save(null, { method: 'upsert' }))
             .then(() => {
               done();
@@ -952,13 +955,12 @@ describe('Entity', () => {
       const OtherModel = gstore.model('TransactionHooks', schema, gstore);
       entity = new OtherModel({});
 
-      return entity.save(transaction)
-        .then(_entity => {
-          expect(spyPreHook.called).equal(true);
-          expect(transaction.save.called).equal(true);
-          expect(spyPreHook.calledBefore(transaction.save)).equal(true);
-          assert.isDefined(_entity.entityData);
-        });
+      return entity.save(transaction).then(_entity => {
+        expect(spyPreHook.called).equal(true);
+        expect(transaction.save.called).equal(true);
+        expect(spyPreHook.calledBefore(transaction.save)).equal(true);
+        assert.isDefined(_entity.entityData);
+      });
     });
 
     it('should *not* save entity in a transaction if there are "pre" hooks', () => {
@@ -1017,13 +1019,11 @@ describe('Entity', () => {
       expect(transaction2.save.called).equal(false);
     });
 
-    it('should throw error if transaction not instance of Transaction', () => (
-      entity.save({ id: 0 }, {})
-        .catch(err => {
-          assert.isDefined(err);
-          expect(err.message).equal('Transaction needs to be a gcloud Transaction');
-        })
-    ));
+    it('should throw error if transaction not instance of Transaction', () =>
+      entity.save({ id: 0 }, {}).catch(err => {
+        assert.isDefined(err);
+        expect(err.message).equal('Transaction needs to be a gcloud Transaction');
+      }));
 
     it('should call pre hooks', () => {
       const spyPre = sinon.stub().resolves();
@@ -1073,7 +1073,8 @@ describe('Entity', () => {
       GstoreModel = gstore.model('Blog', schema);
       entity = new GstoreModel({ name: 'John' });
 
-      return entity.save(transaction)
+      return entity
+        .save(transaction)
         .then(() => transaction.execPostHooks())
         .then(() => {
           expect(spyPost.called).equal(true);
@@ -1090,8 +1091,7 @@ describe('Entity', () => {
       GstoreModel = gstore.model('Blog', schema);
       entity = new GstoreModel({ name: 'John Jagger' });
 
-      entity.save(transaction)
-        .then(() => transaction.execPostHooks());
+      entity.save(transaction).then(() => transaction.execPostHooks());
     });
 
     it('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
@@ -1102,10 +1102,9 @@ describe('Entity', () => {
       GstoreModel = gstore.model('Blog', schema);
       entity = new GstoreModel({ name: 'John' });
 
-      return entity.save(transaction)
-        .then(() => {
-          expect(spyPost.called).equal(false);
-        });
+      return entity.save(transaction).then(() => {
+        expect(spyPost.called).equal(false);
+      });
     });
 
     it('should update modifiedOn to new Date if property in Schema', () => {
@@ -1170,13 +1169,12 @@ describe('Entity', () => {
         const err = new Error('Houston something bad happened');
         sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
-        entity.save()
-          .catch(e => {
-            expect(e.__entity.name).equal('John');
-            expect(e.__cacheError).equal(err);
-            gstore.cache.queries.clearQueriesByKind.restore();
-            done();
-          });
+        entity.save().catch(e => {
+          expect(e.__entity.name).equal('John');
+          expect(e.__cacheError).equal(err);
+          gstore.cache.queries.clearQueriesByKind.restore();
+          done();
+        });
       });
     });
   });
