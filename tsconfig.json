@@ -1,24 +1,27 @@
 {
   "compilerOptions": {
     "moduleResolution": "node",
-    "target": "ES2015",
+    "target": "es6",
     "module": "commonjs",
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext"],
-    "outDir": "dist/lib",
     "strict": true,
     "removeComments": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "lib",
     "types": [
       "node",
       "jest"
     ],
-    "allowJs": true
+    "allowJs": false
   },
   "include": [
     "src",
     "typings",
-    ".eslintrc.js"
+    "src/.eslintrc.js"
   ]
 }

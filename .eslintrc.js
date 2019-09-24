@@ -1,34 +1,25 @@
+'use strict';
+
 module.exports = {
-  parser: '@typescript-eslint/parser',
   root: true,
   parserOptions: {
-    ecmaVersion: 2018,
-    sourceType: 'module',
-    project: './tsconfig.json',
+    sourceType: 'script',
   },
-  extends: [
-    'airbnb-base',
-    'plugin:@typescript-eslint/eslint-recommended',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:@typescript-eslint/recommended-requiring-type-checking',
-    'prettier/@typescript-eslint',
-    'plugin:prettier/recommended',
-  ],
+  extends: ['airbnb-base', 'plugin:prettier/recommended'],
   env: {
     node: true,
     mocha: true,
   },
-  plugins: ['@typescript-eslint', 'mocha'],
+  plugins: ['mocha'],
   settings: {
     'import/resolver': {
       node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        extensions: ['.js', '.jsx'],
       },
     },
   },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'off',
+    strict: ['error', 'global'],
     'arrow-parens': ['error', 'as-needed'],
     indent: [
       'error',
@@ -54,7 +45,6 @@ module.exports = {
     'prefer-spread': 'off',
     'no-restricted-globals': 'off',
     'no-underscore-dangle': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
     'mocha/no-exclusive-tests': 'error',
