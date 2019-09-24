@@ -521,8 +521,8 @@ export const generateModel = <T extends object, M extends object>(
             .commit()
             .then(() =>
               transaction!.execPostHooks().catch((err: any) => {
-                (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] = (
-                  (entityDataUpdated as any)[entityDataUpdated.gstore!.ERR_HOOKS] || []
+                (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] = (
+                  (entityDataUpdated as any)[entityDataUpdated.gstore.ERR_HOOKS] || []
                 ).push(err);
               }),
             )
