@@ -6,7 +6,7 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext"],
     "strict": true,
-    "removeComments": true,
+    "removeComments": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "declaration": true,

@@ -2,7 +2,7 @@
   "name": "gstore-node",
   "version": "7.1.0",
   "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
-  "main": "index.js",
+  "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "rm -rf ./lib && tsc",
@@ -52,12 +52,6 @@
       "url": "https://github.com/jfbenckhuijsen"
     }
   ],
-  "nyc": {
-    "reporter": [
-      "lcov",
-      "text"
-    ]
-  },
   "license": "MIT",
   "config": {
     "commitizen": {

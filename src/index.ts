@@ -1,14 +1,10 @@
-/* eslint-disable prefer-template, max-classes-per-file */
-
 import is from 'is';
-
 import extend from 'extend';
 import hooks from 'promised-hooks';
 import NsqlCache, { NsqlCacheConfig } from 'nsql-cache';
 import dsAdapter from 'nsql-cache-datastore';
-import DataLoader from 'dataloader'; // eslint-disable-line import/no-extraneous-dependencies
+import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
-
 // import pkg from '../package.json';
 import Schema from './schema';
 import Entity from './entity';
@@ -46,16 +42,17 @@ export class Gstore {
   public models: { [key: string]: Model<any> };
 
   /**
-   * Alias to Schema class
+   * Gstore Schema class
    */
   public Schema: typeof Schema;
 
+  /**
+   * Gstore instance configuration
+   */
   public config: GstoreConfig;
 
   /**
    * The underlying gstore-cache instance
-   *
-   * @type {GstoreCache}
    */
   public cache: NsqlCache | undefined;
 
@@ -101,10 +98,16 @@ export class Gstore {
     this.ERR_HOOKS = hooks.ERRORS;
   }
 
+  /**
+   * Initalize a gstore-node Model
+   *
+   * @param {string} entityKind The Google Entity Kind
+   * @param {Schema} schema A gstore schema instance
+   * @returns {Model} A gstore Model
+   */
   model<T extends object, M extends object>(entityKind: string, schema?: Schema<T, M>): Model<T, M> {
-    // We might be passing a different schema for
-    // an existing model entityKind. in this case warn the user,
     if (this.models[entityKind]) {
+      // Don't allow overriding Model schema
       if (schema instanceof Schema && schema !== undefined) {
         throw new Error(`Trying to override ${entityKind} Model Schema`);
       }
@@ -123,7 +126,7 @@ export class Gstore {
   }
 
   /**
-   * Alias to gcloud datastore Transaction method
+   * Initialize a @google-cloud/datastore Transaction
    */
   transaction(): Transaction {
     return this.ds.transaction();
@@ -138,6 +141,15 @@ export class Gstore {
     return names;
   }
 
+  /**
+   * Alias to the underlying @google-cloud/datastore `save()` method
+   * but instead of passing entity _keys_ this methods accepts one or multiple gstore **_entity_** instance(s).
+   *
+   * @param {(Entity | Entity[])} entity The entity(ies) to delete (any Entity Kind). Can be one or many (Array).
+   * @param {Transaction} [transaction] An Optional transaction to save the entities into
+   * @returns {Promise<any>}
+   * @link https://sebloix.gitbook.io/gstore-node/gstore-methods/save
+   */
   save(
     entities: Entity | Entity[],
     transaction?: Transaction,
@@ -154,9 +166,7 @@ export class Gstore {
       throw new Error('No entities passed');
     }
 
-    /**
-     * Validate entities before saving
-     */
+    // Validate entities before saving
     if (options.validate) {
       let error;
       const validateEntity = (entity: Entity): void => {
@@ -187,7 +197,11 @@ export class Gstore {
     return this.ds.save(entitiesSerialized);
   }
 
-  // Connect to Google Datastore instance
+  /**
+   * Connect gstore node to the Datastore instance
+   *
+   * @param {Datastore} datastore A Datastore instance
+   */
   connect(datastore: Datastore): void {
     if (!datastore.constructor || datastore.constructor.name !== 'Datastore') {
       throw new Error('No @google-cloud/datastore instance provided.');
@@ -209,12 +223,19 @@ export class Gstore {
     }
   }
 
+  /**
+   * Create a DataLoader instance.
+   * Follow the link below for more info about Dataloader.
+   *
+   * @returns {DataLoader} The DataLoader instance
+   * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/dataloader
+   */
   createDataLoader(): DataLoader<EntityKey[], EntityData> {
     return createDataLoader(this.ds);
   }
 
   /**
-   * Expose the defaultValues constants
+   * Default values for schema properties
    */
   get defaultValues(): DefaultValues {
     return this.__defaultValues;
@@ -224,6 +245,9 @@ export class Gstore {
     return this.__pkgVersion;
   }
 
+  /**
+   * The unerlying google-cloud Datastore instance
+   */
   get ds(): Datastore {
     if (this.__ds === undefined) {
       throw new Error('Trying to access Datastore instance but none was provided.');
