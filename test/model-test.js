@@ -403,7 +403,7 @@ describe('Model', () => {
       GstoreModel.get(123, null, null, transaction).then(_entity => {
         expect(transaction.get.called).equal(true);
         expect(ds.get.called).equal(false);
-        expect(_entity.className).equal('Entity');
+        expect(_entity.__className).equal('Entity');
       }));
 
     it('should throw error if transaction not an instance of glcoud Transaction', () =>
@@ -651,7 +651,7 @@ describe('Model', () => {
 
     it('should return an entity instance', () =>
       GstoreModel.update(123).then(entity => {
-        expect(entity.className).equal('Entity');
+        expect(entity.__className).equal('Entity');
       }));
 
     it('should first get the entity by Key', () =>
@@ -769,7 +769,7 @@ describe('Model', () => {
         expect(ds.transaction.called).equal(false);
         expect(transaction.get.called).equal(true);
         expect(transaction.save.called).equal(true);
-        expect(entity.className).equal('Entity');
+        expect(entity.__className).equal('Entity');
       }));
 
     it('should throw error if transaction passed is not instance of gcloud Transaction', () =>
@@ -1294,7 +1294,7 @@ describe('Model', () => {
 
       const entity = new GstoreModel({});
 
-      expect(entity.excludeFromIndexes).deep.equal({
+      expect(entity.__excludeFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
         newProp: ['newProp'],
@@ -1309,7 +1309,7 @@ describe('Model', () => {
 
       const entity = new GstoreModel({});
 
-      expect(entity.excludeFromIndexes).deep.equal({
+      expect(entity.__excludeFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
       });

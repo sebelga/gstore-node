@@ -41,3 +41,12 @@ export interface PromiseWithPopulate<T> extends Promise<T> {
     properties?: U extends Array<string> ? undefined : string | string[],
   ) => PromiseWithPopulate<T>;
 }
+
+/**
+ * ---------------------------------------------------
+ * Google Datastore Types
+ * ---------------------------------------------------
+ */
+
+// From '@google-cloud/datastore/build/src/query';
+export type DatastoreOperator = '=' | '<' | '>' | '<=' | '>=' | 'HAS_ANCESTOR';

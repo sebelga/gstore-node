@@ -359,7 +359,7 @@ describe('Query', () => {
         return ModelInstance.list().then(response => {
           expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
           expect(queryMock.offset.getCall(0).args[0]).equal(querySettings.offset);
-          expect(response.entities[0].className).equal('Entity');
+          expect(response.entities[0].__className).equal('Entity');
         });
       });
 
@@ -482,7 +482,7 @@ describe('Query', () => {
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' }).then(
           entities => {
             assert.isDefined(entities[0].password);
-            expect(entities[0].className).equal('Entity');
+            expect(entities[0].__className).equal('Entity');
           },
         ));
 
@@ -568,7 +568,7 @@ describe('Query', () => {
       it('should return a Model instance', () =>
         ModelInstance.findOne({ name: 'John' }).then(entity => {
           expect(entity.entityKind).equal('BlogTestQuery');
-          expect(entity.className).equal('Entity');
+          expect(entity.__className).equal('Entity');
         }));
 
       it('should validate that params passed are object', done => {

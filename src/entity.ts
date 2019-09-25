@@ -2,6 +2,7 @@ import is from 'is';
 import hooks from 'promised-hooks';
 import arrify from 'arrify';
 import { Transaction } from '@google-cloud/datastore';
+import DataLoader from 'dataloader';
 
 import defaultValues from './helpers/defaultValues';
 import helpers from './helpers';
@@ -26,30 +27,36 @@ const { validation, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
 
 export class Entity<T extends object = GenericObject> {
+  /* The entity Key */
+  public entityKey: EntityKey;
+
+  /* The entity data */
+  public entityData: { [P in keyof T]: T[P] } = {} as any;
+
+  /**
+   * If you provided a dataloader instance when saving the entity, it will
+   * be added as property. You will then have access to it in your "pre" save() hooks.
+   */
+  public dataloader: DataLoader<EntityKey[], EntityData> | undefined;
+
+  public context: GenericObject;
+
   public __gstore: Gstore | undefined; // Added when creating the Model
 
   public __schema: Schema<T> | undefined; // Added when creating the Model
 
   public __entityKind: string | undefined; // Added when creating the Model
 
-  public entityKey: EntityKey;
+  public __className: string;
 
-  public entityData: { [P in keyof T]: T[P] } = {} as any;
-
-  public className: string;
-
-  public dataloader: any;
-
-  public excludeFromIndexes: { [P in keyof T]?: string[] };
-
-  public context: GenericObject;
+  public __excludeFromIndexes: { [P in keyof T]?: string[] };
 
   public __hooksEnabled = true;
 
   constructor(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
-    this.className = 'Entity';
+    this.__className = 'Entity';
 
-    this.excludeFromIndexes = {};
+    this.__excludeFromIndexes = {};
 
     /**
      * Object to store custom data for the entity.
@@ -82,6 +89,14 @@ export class Entity<T extends object = GenericObject> {
     this.__registerHooksFromSchema();
   }
 
+  /**
+   * Save the entity in the Datastore
+   *
+   * @param {Transaction} transaction The optional transaction to save the entity into
+   * @param options Additional configuration
+   * @returns {Promise<Entity<T>>}
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/save
+   */
   save(transaction?: Transaction, opts?: SaveOptions): Promise<Entity<T>> {
     this.__hooksEnabled = true;
 
@@ -91,7 +106,9 @@ export class Entity<T extends object = GenericObject> {
       ...opts,
     } as SaveOptions;
 
-    // Validations
+    // ------------------------ HANDLERS ---------------------------------
+    // -------------------------------------------------------------------
+
     const validateEntityData = (): Partial<ValidateResponse> => {
       if (this.schema.options.validateBeforeSave) {
         return this.validate();
@@ -122,7 +139,6 @@ export class Entity<T extends object = GenericObject> {
       return { error: entityDataError || methodError! };
     };
 
-    // Serialization
     /**
      * Process some basic formatting to the entity data before save
      * - automatically set the modifiedOn property to current date (if exists on schema)
@@ -156,7 +172,6 @@ export class Entity<T extends object = GenericObject> {
       return this.entityData;
     };
 
-    // Handlers
     const onEntitySaved = (): Promise<Entity<T>> => {
       /**
        * Make sure to clear the cache for this Entity Kind
@@ -187,7 +202,7 @@ export class Entity<T extends object = GenericObject> {
      * when transaction succeeds by calling transaction.execPostHooks() (returns a Promises)
      */
     const attachPostHooksToTransaction = (): void => {
-      // disable (post) hooks, we will only trigger them on transaction succceed
+      // Disable the "post" hooks as we will only run them after the transaction succcees
       this.__hooksEnabled = false;
       (this.constructor as Model).__hooksTransaction.call(
         this,
@@ -196,14 +211,15 @@ export class Entity<T extends object = GenericObject> {
       );
     };
 
-    // Sanitize
+    // ------------------------ END HANDLERS --------------------------------
+
     if (options.sanitizeEntityData) {
+      // this.entityData = (this.constructor as Model<T>).sanitize.call(this.constructor, this.entityData, {
       this.entityData = (this.constructor as Model<T>).sanitize.call(this.constructor, this.entityData, {
         disabled: ['write'],
       });
     }
 
-    // Validate
     const { error } = validateDataAndMethod();
     if (error) {
       return Promise.reject(error);
@@ -228,15 +244,29 @@ export class Entity<T extends object = GenericObject> {
     return this.gstore.ds.save(datastoreEntity).then(onEntitySaved);
   }
 
+  /**
+   * Validate the entity data. It returns an object with an `error` and a `value` property.
+   * If the error is `null`, the validation has passed.
+   * The `value` returned is the entityData sanitized (unknown properties removed).
+   *
+   * @returns {({ error: ValidationError, value: any })}
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/validate
+   */
   validate(): ValidateResponse {
     const { entityData, schema, entityKind, gstore } = this;
 
     return validation.validate(entityData, schema, entityKind, gstore.ds);
   }
 
-  plain(
-    options: { readAll?: boolean; virtuals?: boolean; showKey?: boolean } | undefined = {},
-  ): Partial<EntityData<T>> {
+  /**
+   * Returns a JSON object of the entity data along with the entity id/name.
+   * The properties on the Schema where "read" has been set to "false" won't be added
+   * unless `readAll: true` is passed in the options.
+   *
+   * @param options Additional configuration
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/plain
+   */
+  plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> {
     if (!is.object(options)) {
       throw new Error('Options must be an Object');
     }
@@ -275,8 +305,17 @@ export class Entity<T extends object = GenericObject> {
   }
 
   /**
-   * Return a Model from Gstore
-   * @param name : model name
+   * Access any gstore Model from the entity instance.
+   *
+   * @param {string} entityKind The entity kind
+   * @returns {Model} The Model
+   * @example
+  ```
+  const user = new User({ name: 'john', pictId: 123});
+  const ImageModel = user.model('Image');
+  ImageModel.get(user.pictId).then(...);
+  ```
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/model
    */
   model(name: string): Model {
     return this.gstore.model(name);
@@ -286,7 +325,7 @@ export class Entity<T extends object = GenericObject> {
   /**
    * Fetch entity from Datastore
    *
-   * @param {Function} cb Callback
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/datastoreentity
    */
   datastoreEntity(options = {}): Promise<Entity<T> | null> {
     const onEntityFetched = (result: [EntityData<T> | null]): Entity<T> | null => {
@@ -312,6 +351,13 @@ export class Entity<T extends object = GenericObject> {
     return this.gstore.ds.get(this.entityKey).then(onEntityFetched);
   }
 
+  /**
+   * Populate entity references (whose properties are an entity Key) and merge them in the entity data.
+   *
+   * @param refs The entity references to fetch from the Datastore. Can be one (string) or multiple (array of string)
+   * @param properties The properties to return from the reference entities. If not specified, all properties will be returned
+   * @link https://sebloix.gitbook.io/gstore-node/entity/methods/populate
+   */
   populate(path?: string, propsToSelect?: string[]): PromiseWithPopulate<T> {
     const refsToPopulate: PopulateRef[][] = [];
 
@@ -327,6 +373,9 @@ export class Entity<T extends object = GenericObject> {
     return this.entityKey.id || this.entityKey.name!;
   }
 
+  /**
+   * The gstore instance
+   */
   get gstore(): Gstore {
     if (this.__gstore === undefined) {
       throw new Error('No gstore instance attached to entity');
@@ -334,10 +383,9 @@ export class Entity<T extends object = GenericObject> {
     return this.__gstore;
   }
 
-  set gstore(gstore: Gstore) {
-    this.__gstore = gstore;
-  }
-
+  /**
+   * The entity Model Schema
+   */
   get schema(): Schema<T> {
     if (this.__schema === undefined) {
       throw new Error('No schema instance attached to entity');
@@ -345,19 +393,14 @@ export class Entity<T extends object = GenericObject> {
     return this.__schema;
   }
 
-  set schema(schema: Schema<T>) {
-    this.__schema = schema;
-  }
-
+  /**
+   * The Datastore entity kind
+   */
   get entityKind(): string {
     if (this.__entityKind === undefined) {
       throw new Error('No entity kind attached to entity');
     }
     return this.__entityKind;
-  }
-
-  set entityKind(entityKind: string) {
-    this.__entityKind = entityKind;
   }
 
   __buildEntityData(data: GenericObject): void {
@@ -417,23 +460,23 @@ export class Entity<T extends object = GenericObject> {
       if (prop.excludeFromIndexes === true) {
         if (isArray) {
           // We exclude both the array values + all the child properties of object items
-          this.excludeFromIndexes[key as keyof T] = [`${key}[]`, `${key}[].*`];
+          this.__excludeFromIndexes[key as keyof T] = [`${key}[]`, `${key}[].*`];
         } else if (isObject) {
           // We exclude the emmbeded entity + all its properties
-          this.excludeFromIndexes[key as keyof T] = [key, `${key}.*`];
+          this.__excludeFromIndexes[key as keyof T] = [key, `${key}.*`];
         } else {
-          this.excludeFromIndexes[key as keyof T] = [key];
+          this.__excludeFromIndexes[key as keyof T] = [key];
         }
       } else if (prop.excludeFromIndexes !== false) {
         const excludedArray = arrify(prop.excludeFromIndexes) as string[];
         if (isArray) {
           // The format to exclude a property from an embedded entity inside
           // an array is: "myArrayProp[].embeddedKey"
-          this.excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}[].${propExcluded}`);
+          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}[].${propExcluded}`);
         } else if (isObject) {
           // The format to exclude a property from an embedded entity
           // is: "myEmbeddedEntity.key"
-          this.excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}.${propExcluded}`);
+          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}.${propExcluded}`);
         }
       }
     });
@@ -547,4 +590,29 @@ interface SaveOptions {
   method: DatastoreSaveMethod;
   sanitizeEntityData: boolean;
   cache?: any;
+}
+
+interface PlainOptions {
+  /**
+   * Output all the entity data properties, regardless of the Schema `read` setting.
+   *
+   * @type {boolean}
+   * @default false
+   */
+  readAll?: boolean;
+  /**
+   * Add the _virtual_ properties defined for the entity on the Schema.
+   *
+   * @type {boolean}
+   * @default false
+   * @link https://sebloix.gitbook.io/gstore-node/schema/methods/virtual
+   */
+  virtuals?: boolean;
+  /**
+   * Add the full entity _Key_ object at the a "__key" property
+   *
+   * @type {boolean}
+   * @default false
+   */
+  showKey?: boolean;
 }

@@ -22,6 +22,11 @@ interface CacheConfig {
 
 interface GstoreConfig {
   cache?: boolean | CacheConfig;
+  /**
+   * If set to `true` (defaut), when fetching an entity by key and the entity is not found in the Datastore,
+   * gstore will throw an `"ERR_ENTITY_NOT_FOUND"` error.
+   * If set to `false`, `null` will be returned
+   */
   errorOnEntityNotFound: boolean;
 }
 const DEFAULT_GSTORE_CONFIG = {
@@ -258,6 +263,11 @@ export class Gstore {
 
 export const instances = {
   __refs: new Map<string, Gstore>(),
+  /**
+   * Retrieve a previously saved gstore instance.
+   *
+   * @param id The instance id
+   */
   get(id: string): Gstore {
     const instance = this.__refs.get(id);
     if (!instance) {
@@ -265,6 +275,12 @@ export const instances = {
     }
     return instance;
   },
+  /**
+   * Save a gstore instance.
+   *
+   * @param id A unique name for the gstore instance
+   * @param instance A gstore instance
+   */
   set(id: string, instance: Gstore): void {
     this.__refs.set(id, instance);
   },

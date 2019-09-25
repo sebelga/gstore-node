@@ -2,20 +2,22 @@ import optional from 'optional';
 import extend from 'extend';
 import is from 'is';
 
-// TODO: Open PR in @google-cloud repo to expose those types
-import { Operator } from '@google-cloud/datastore/build/src/query';
-
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';
-import { FunctionType, FuncReturningPromise, CustomEntityFunction, GenericObject } from './types';
+import {
+  FunctionType,
+  FuncReturningPromise,
+  CustomEntityFunction,
+  GenericObject,
+  EntityFormatType,
+  JSONFormatType,
+} from './types';
+import { QueryListOptions } from './query';
 
 const Joi = optional('@hapi/joi') || optional('joi');
 
-type EntityFormatType = 'ENTITY';
-type JSONFormatType = 'JSON';
-
-const IS_QUERY_HOOK: { [key: string]: boolean } = {
+const IS_QUERY_METHOD: { [key: string]: boolean } = {
   update: true,
   delete: true,
   findOne: true,
@@ -75,10 +77,9 @@ const RESERVED_PROPERTY_NAMES: { [key: string]: boolean } = {
 };
 
 /**
- * gstore-node Schema
+ * gstore Schema
  */
 class Schema<T extends object = { [key: string]: any }, M extends object = { [key: string]: CustomEntityFunction<T> }> {
-  // public readonly methods: { [propName: string]: CustomEntityFunction<T> };
   public readonly methods: { [P in keyof M]: CustomEntityFunction<T> };
 
   public readonly paths: { [P in keyof T]: SchemaPathDefinition };
@@ -168,7 +169,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
    *
    * @param {string} propName The entity property
    * @param {SchemaPathDefinition} [definition] The property definition
-   * @link https://sebloix.gitbook.io/gstore-node/schema/schema-methods/path
+   * @link https://sebloix.gitbook.io/gstore-node/schema/methods/path
    */
   path(propName: string, definition: SchemaPathDefinition): Schema<T> | SchemaPathDefinition | undefined {
     if (typeof definition === 'undefined') {
@@ -198,7 +199,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
    * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/pre-hooks
    */
   pre(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
-    const queue = IS_QUERY_HOOK[method] ? this.__callQueue.model : this.__callQueue.entity;
+    const queue = IS_QUERY_METHOD[method] ? this.__callQueue.model : this.__callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
       queue[method] = {
@@ -219,7 +220,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
    * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/post-hooks
    */
   post(method: string, fn: FuncReturningPromise | FuncReturningPromise[]): number {
-    const queue = IS_QUERY_HOOK[method] ? this.__callQueue.model : this.__callQueue.entity;
+    const queue = IS_QUERY_METHOD[method] ? this.__callQueue.model : this.__callQueue.entity;
 
     if (!{}.hasOwnProperty.call(queue, method)) {
       queue[method] = {
@@ -325,14 +326,27 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
     return joiSchema;
   }
 
+  /**
+   * Custom Schema Types
+   */
   static Types = {
+    /**
+     * Datastore Double object. For long doubles, a string can be provided.
+     * @link https://googleapis.dev/nodejs/datastore/latest/Double.html
+     */
     Double: 'double',
+    /**
+     * Datastore Geo Point object.
+     * @link https://googleapis.dev/nodejs/datastore/latest/GeoPoint.html
+     */
     GeoPoint: 'geoPoint',
+    /**
+     * Used to reference another entity. See the `populate()` doc.
+     * @link https://sebloix.gitbook.io/gstore-node/populate
+     */
     Key: 'entityKey',
   };
 }
-
-export default Schema;
 
 export interface SchemaPathDefinition {
   type?: PropType;
@@ -363,110 +377,18 @@ export interface SchemaOptions {
   joi?: boolean | JoiConfig;
 }
 
-export interface QueryListOptions extends QueryOptions {
-  /**
-   * Optional namespace for the Query
-   *
-   * @type {string}
-   */
-  namespace?: string;
-  /**
-   * @type {number}
-   */
-  limit?: number;
-  /**
-   * Descending is optional and default to "false"
-   *
-   * @example ```{ property: 'userName', descending: true }```
-   * @type {({ property: 'string', descending?: boolean } | { property: 'string', descending?: boolean }[])}
-   */
-  order?: { property: string; descending?: boolean } | { property: string; descending?: boolean }[];
-  /**
-   * @type {(string | string[])}
-   */
-  select?: string | string[];
-  /**
-   * @type {([string, any] | [string, string, any] | (any)[][])}
-   */
-  filters?: [string, unknown] | [string, Operator, unknown] | (unknown)[][];
-  /**
-   * @type {Array<any>}
-   */
-  ancestors?: Array<string | number>;
-  /**
-   * @type {string}
-   */
-  start?: string;
-  /**
-   * @type {number}
-   */
-  offset?: number;
-}
-
-export interface QueryOptions {
-  /**
-   * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation.
-   * Learn more about strong and eventual consistency in the link below
-   *
-   * @type {('strong' | 'eventual')}
-   * @link https://cloud.google.com/datastore/docs/articles/balancing-strong-and-eventual-consistency-with-google-cloud-datastore
-   */
-  consistency?: 'strong' | 'eventual';
-  /**
-   * If set to true will return all the properties of the entity,
-   * regardless of the *read* parameter defined in the Schema
-   *
-   * @type {boolean}
-   * @default false
-   */
-  readAll?: boolean;
-  /**
-   * Response format for the entities. Either plain object or entity instances
-   *
-   * @type {string}
-   * @default 'JSON'
-   */
-  format?: JSONFormatType | EntityFormatType;
-  /**
-   * Add a "__key" property to the entity data with the complete Key from the Datastore.
-   *
-   * @type {boolean}
-   * @default false
-   */
-  showKey?: boolean;
-  /**
-   * If set to true, it will read from the cache and prime the cache with the response of the query.
-   *
-   * @type {boolean}
-   * @default The "global" cache configuration.
-   */
-  cache?: boolean;
-  /**
-   * Custom TTL value for the cache. For multi-store it can be an object of ttl values
-   *
-   * @type {(number | { [propName: string]: number })}
-   * @default The cache.ttl.queries value
-   */
-  ttl?: number | { [propName: string]: number };
-}
-
 export type Validator = string | { rule: string | ((...args: any[]) => boolean); args: any[] };
 
 export type PropType =
-  | 'string'
-  | 'int'
-  | 'double'
-  | 'boolean'
-  | 'datetime'
-  | 'array'
-  | 'object'
-  | 'geoPoint'
-  | 'buffer'
-  | 'entityKey'
   | NumberConstructor
   | StringConstructor
   | ObjectConstructor
   | ArrayConstructor
   | BooleanConstructor
   | DateConstructor
-  | typeof Buffer;
+  | typeof Buffer
+  | 'double'
+  | 'geoPoint'
+  | 'entityKey';
+
+export default Schema;

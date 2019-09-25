@@ -64,7 +64,7 @@ const buildQueryFromOptions = <T>(query: GstoreQuery<T>, options: QueryListOptio
         value = is.fn(value) ? value() : value;
         const f = filter.slice(0, -1).concat([value]);
 
-        query.filter.apply(query, f);
+        (query.filter as any)(...f);
       });
     }
   }
@@ -85,17 +85,17 @@ const createDatastoreQueryForModel = <T extends object, M extends object>(
     throw Error('Transaction needs to be a gcloud Transaction');
   }
 
-  const createQueryArgs: any = [model.entityKind];
+  const createQueryArgs: any[] = [model.entityKind];
 
   if (namespace) {
     createQueryArgs.unshift(namespace);
   }
 
   if (transaction) {
-    return transaction.createQuery.apply(transaction, createQueryArgs);
+    return (transaction.createQuery as any)(...createQueryArgs);
   }
 
-  return model.gstore.ds.createQuery.apply(model.gstore.ds, createQueryArgs);
+  return model.gstore.ds.createQuery(...createQueryArgs);
 };
 
 export default {

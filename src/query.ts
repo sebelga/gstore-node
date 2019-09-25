@@ -2,14 +2,20 @@ import extend from 'extend';
 import is from 'is';
 
 import { Transaction, Query as DatastoreQuery } from '@google-cloud/datastore';
-import { Operator } from '@google-cloud/datastore/build/src/query';
 
 import Model from './model';
 import Entity from './entity';
 import helpers from './helpers';
 import { GstoreError, ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
-import { PopulateRef, EntityData, EntityFormatType, JSONFormatType, PromiseWithPopulate } from './types';
+import {
+  PopulateRef,
+  EntityData,
+  EntityFormatType,
+  JSONFormatType,
+  PromiseWithPopulate,
+  DatastoreOperator,
+} from './types';
 
 const { queryHelpers, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
@@ -22,14 +28,6 @@ class Query<T extends object, M extends object> {
     this.Model = model;
   }
 
-  /**
-   * Initialize a query on the Model Entity Kind
-   *
-   * @param {String} namespace Namespace for the Query
-   * @param {Object<Transaction>} transaction The transactioh to execute the query in (optional)
-   *
-   * @returns {Object} The query to be run
-   */
   initQuery<R = QueryResponse<T>>(namespace?: string, transaction?: Transaction): GstoreQuery<T, R> {
     const query: DatastoreQuery = createDatastoreQueryForModel(this.Model, namespace, transaction);
 
@@ -101,20 +99,14 @@ class Query<T extends object, M extends object> {
   }
 
   list(options: QueryListOptions = {}): PromiseWithPopulate<QueryResponse<T>> {
-    // const Model = this.Model || this;
-
-    /**
-     * If global options set in schema, we extend it with passed options
-     */
+    // If global options set in schema, we extend it with passed options
     if ({}.hasOwnProperty.call(this.Model.schema.shortcutQueries, 'list')) {
       options = extend({}, this.Model.schema.shortcutQueries.list, options);
     }
 
     let query = this.initQuery<QueryResponse<T>>(options.namespace);
 
-    /**
-     * Build Datastore Query from options passed
-     */
+    // Build Datastore Query from options passed
     query = buildQueryFromOptions(query, options, this.Model.gstore.ds);
 
     const { limit, offset, order, select, ancestors, filters, start, ...rest } = options;
@@ -180,11 +172,11 @@ class Query<T extends object, M extends object> {
    * @returns {Promise<any>}
    * @example
    ```
-      // Find the next 20 post after March 1st 2018
-      BlogPost.findAround('publishedOn', '2018-03-01', { after: 20 })
-      ```
-      * @link https://sebloix.gitbook.io/gstore-node/queries/findaround.html
-      */
+   // Find the next 20 post after March 1st 2018
+   BlogPost.findAround('publishedOn', '2018-03-01', { after: 20 })
+   ```
+   * @link https://sebloix.gitbook.io/gstore-node/queries/findaround
+   */
   findAround<U extends QueryFindAroundOptions, E = U['format'] extends EntityFormatType ? Array<Entity<T>> : Array<T>>(
     property: string,
     value: any,
@@ -239,6 +231,7 @@ type QueryRunFunc<T, R = any> = (
   options?: QueryOptions,
   responseHandler?: (res: QueryResponse<T>) => R,
 ) => PromiseWithPopulate<R>;
+
 export interface QueryOptions {
   /**
    * Specify either strong or eventual. If not specified, default values are chosen by Datastore for the operation.
@@ -259,7 +252,7 @@ export interface QueryOptions {
   /**
    * Response format for the entities. Either plain object or entity instances
    *
-   * @type {string}
+   * @type {'JSON' | 'ENTITY'}
    * @default 'JSON'
    */
   format?: JSONFormatType | EntityFormatType;
@@ -288,40 +281,38 @@ export interface QueryOptions {
 
 export interface QueryListOptions extends QueryOptions {
   /**
-   * Optional namespace for the Query
-   *
-   * @type {string}
+   * Optional namespace for the query.
    */
   namespace?: string;
   /**
-   * @type {number}
+   * The total number of entities to return from the query.
    */
   limit?: number;
   /**
    * Descending is optional and default to "false"
    *
    * @example ```{ property: 'userName', descending: true }```
-   * @type {({ property: 'string', descending?: boolean } | { property: 'string', descending?: boolean }[])}
    */
   order?: { property: string; descending?: boolean } | { property: string; descending?: boolean }[];
   /**
-   * @type {(string | string[])}
+   * Retrieve only select properties from the matched entities.
    */
   select?: string | string[];
   /**
-   * @type {([string, any] | [string, string, any] | (any)[][])}
+   * Supported comparison operators are =, <, >, <=, and >=.
+   * "Not equal" and IN operators are currently not supported.
    */
-  filters?: [string, any] | [string, Operator, any] | (any)[][];
+  filters?: [string, any] | [string, DatastoreOperator, any] | (any)[][];
   /**
-   * @type {Array<any>}
+   * Filter a query by ancestors.
    */
   ancestors?: Array<string | number>;
   /**
-   * @type {string}
+   * Set a starting cursor to a query.
    */
   start?: string;
   /**
-   * @type {number}
+   * Set an offset on a query.
    */
   offset?: number;
 }

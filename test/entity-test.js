@@ -72,7 +72,7 @@ describe('Entity', () => {
       assert.isDefined(entity.schema);
       assert.isDefined(entity.pre);
       assert.isDefined(entity.post);
-      expect(entity.excludeFromIndexes).deep.equal({});
+      expect(entity.__excludeFromIndexes).deep.equal({});
     });
 
     it('should add data passed to entityData', () => {
@@ -203,7 +203,7 @@ describe('Entity', () => {
 
       entity = new GstoreModel({ name: 'John' });
 
-      expect(entity.excludeFromIndexes).deep.equal({
+      expect(entity.__excludeFromIndexes).deep.equal({
         name: ['name'],
         age: ['age'],
         embedded: ['embedded.prop1', 'embedded.prop2'],
@@ -609,7 +609,7 @@ describe('Entity', () => {
       return entity.datastoreEntity().then(_entity => {
         expect(ds.get.called).equal(true);
         expect(ds.get.getCall(0).args[0]).equal(entity.entityKey);
-        expect(_entity.className).equal('Entity');
+        expect(_entity.__className).equal('Entity');
         expect(_entity.entityData).equal(mockData);
 
         ds.get.restore();
@@ -837,7 +837,7 @@ describe('Entity', () => {
 
     it('should return the entity saved', () =>
       entity.save().then(_entity => {
-        expect(_entity.className).equal('Entity');
+        expect(_entity.__className).equal('Entity');
       }));
 
     it('should validate() before', () => {
@@ -892,9 +892,9 @@ describe('Entity', () => {
       return entity.save().then(() => {
         expect(entity.gstore.ds.save.calledOnce).equal(true);
         expect(spySerializerToDatastore.called).equal(true);
-        expect(spySerializerToDatastore.getCall(0).args[0].className).equal('Entity');
+        expect(spySerializerToDatastore.getCall(0).args[0].__className).equal('Entity');
         expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(entity.entityData);
-        expect(spySerializerToDatastore.getCall(0).args[0].excludeFromIndexes).equal(entity.excludeFromIndexes);
+        expect(spySerializerToDatastore.getCall(0).args[0].__excludeFromIndexes).equal(entity.__excludeFromIndexes);
         assert.isDefined(entity.gstore.ds.save.getCall(0).args[0].key);
         expect(entity.gstore.ds.save.getCall(0).args[0].key.constructor.name).equal('Key');
         assert.isDefined(entity.gstore.ds.save.getCall(0).args[0].data);

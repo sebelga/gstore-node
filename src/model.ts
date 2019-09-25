@@ -41,7 +41,7 @@ export interface Model<
   new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T> & T & M;
 
   /**
-   * gstore-node instance
+   * The gstore instance
    */
   gstore: Gstore;
 
@@ -51,27 +51,20 @@ export interface Model<
   schema: Schema<T>;
 
   /**
-   * The Model Datastore Entity Kind
+   * The Model Datastore entity kind
    */
   entityKind: string;
 
   __hooksEnabled: boolean;
 
-  // The static "pre" method is added by the "promised-hooks" lib
-  // static pre: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
-
-  // The static "post" method is added by the "promised-hooks" lib
-  // static post: (method: string, fn: FuncReturningPromise | FuncReturningPromise[]) => any;
-
   /**
    * Generates one or several entity key(s) for the Model.
    *
-   * @static
    * @param {(string | number)} id Entity id or name
    * @param {(Array<string | number>)} [ancestors] The entity Ancestors
    * @param {string} [namespace] The entity Namespace
    * @returns {entity.Key}
-   * @link https://sebloix.gitbook.io/gstore-node/model/key.html
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/key
    */
   key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
     id: U,
@@ -80,7 +73,7 @@ export interface Model<
   ): R;
 
   /**
-   * Fetch an Entity by KEY from the Datastore
+   * Fetch an Entity from the Datastore by _key_.
    *
    * @param {(string | number | string[] | number[])} id The entity ID
    * @param {(Array<string | number>)} [ancestors] The entity Ancestors
@@ -99,9 +92,9 @@ export interface Model<
   ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
 
   /**
-   * Update an Entity in the Datastore
+   * Update an Entity in the Datastore. This method _partially_ updates an entity data in the Datastore
+   * by doing a get() + merge the data + save() inside a Transaction. Unless you set `replace: true` in the parameter options.
    *
-   * @static
    * @param {(string | number)} id Entity id or name
    * @param {*} data The data to update (it will be merged with the data in the Datastore
    * unless options.replace is set to "true")
@@ -124,7 +117,6 @@ export interface Model<
   /**
    * Delete an Entity from the Datastore
    *
-   * @static
    * @param {(string | number)} id Entity id or name
    * @param {(Array<string | number>)} [ancestors] The entity Ancestors
    * @param {string} [namespace] The entity Namespace
@@ -149,7 +141,6 @@ export interface Model<
    * One or multiple keys can also be passed to delete them from the cache. We normally don't have to call this method
    * as gstore-node does it automatically each time an entity is added/edited or deleted.
    *
-   * @static
    * @param {(entity.Key | entity.Key[])} [keys] Optional entity Keys to remove from the cache with the Queries
    * @returns {Promise<void>}
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/clearcache
@@ -161,72 +152,74 @@ export interface Model<
    * then all the properties not declared in the Schema will be included in the indexes.
    * This method allows you to dynamically exclude from indexes certain properties.
    *
-   * @static
    * @param {(string | string[])} propName Property name (can be one or an Array of properties)
-   * @link https://sebloix.gitbook.io/gstore-node/model/other-methods.html
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/exclude-from-indexes
    */
   excludeFromIndexes(propName: string | string[]): void;
 
   /**
-   * Sanitize the data. It will remove all the properties marked as "write: false" and convert "null" (string) to `null`
+   * Sanitize the entity data. It will remove all the properties marked as "write: false" on the schema.
+   * It will also convert "null" (string) to `null` value.
    *
-   * @param {*} data The data to sanitize
-   * @returns {*} The data sanitized
-   * @link https://sebloix.gitbook.io/gstore-node/model/sanitize.html
+   * @param {*} data The entity data to sanitize
+   * @link https://sebloix.gitbook.io/gstore-node/model/methods/sanitize
    */
   sanitize(data: { [propName: string]: any }, options: { disabled: string[] }): EntityData<T>;
 
   /**
-   * Register a middleware to be executed before "save()", "delete()", "findOne()" or any of your custom method.
-   * The callback will receive the original argument(s) passed to the target method.
-   * You can modify them in your resolve passing an object with an __override property containing the new parameter(s)
-   * for the target method.
+   * Initialize a Datastore Query for the Model's entity kind.
    *
-   * @param {string} method The target method to add the hook to
-   * @param {(...args: any[]) => Promise<any>} callback Function to execute before the target method.
-   * It must return a Promise
-   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/pre-hooks.html
-   */
-  pre(method: string, callback: FuncReturningPromise | FuncReturningPromise[]): void;
-
-  /**
-   * Register a "post" middelware to execute after a target method.
+   * @param {String} namespace Namespace for the Query
+   * @param {Object<Transaction>} transaction The transactioh to execute the query in (optional)
    *
-   * @param {string} method The target method to add the hook to
-   * @param {(response: any) => Promise<any>} callback Function to execute after the target method.
-   * It must return a Promise
-   * @link https://sebloix.gitbook.io/gstore-node/middleware-hooks/post-hooks.html
+   * @returns {Object} The Datastore query object.
+   * @link https://sebloix.gitbook.io/gstore-node/queries/google-cloud-queries
    */
-  post(method: string, callback: FuncReturningPromise | FuncReturningPromise[]): void;
-
   query: Query<T, M>['initQuery'];
 
+  /**
+   * Shortcut for listing entities from a Model. List queries are meant to quickly list entities
+   * with predefined settings without having to manually create a query.
+   *
+   * @param {QueryListOptions} [options]
+   * @returns {Promise<EntityData[]>}
+   * @link https://sebloix.gitbook.io/gstore-node/queries/list
+   */
   list: Query<T, M>['list'];
 
+  /**
+   * Quickly find an entity by passing key/value pairs.
+   *
+   * @param keyValues Key / Values pairs
+   * @param ancestors Optional Ancestors to add to the Query
+   * @param namespace Optional Namespace to run the Query into
+   * @param options Additional configuration.
+   * @example
+    ```
+    UserModel.findOne({ email: 'john[at]snow.com' }).then(...);
+    ```
+   * @link https://sebloix.gitbook.io/gstore-node/queries/findone
+   */
   findOne: Query<T, M>['findOne'];
 
+  /**
+   * Find entities before or after an entity based on a property and a value.
+   *
+   * @param {string} propName The property to look around
+   * @param {*} value The property value
+   * @param {({ before: number, readAll?:boolean, format?: 'JSON' | 'ENTITY', showKey?: boolean } | { after: number, readAll?:boolean, format?: 'JSON' | 'ENTITY', showKey?: boolean } & QueryOptions)} options Additional configuration
+   * @returns {Promise<any>}
+   * @example
+   ```
+    // Find the next 20 post after March 1st 2019
+    BlogPost.findAround('publishedOn', '2019-03-01', { after: 20 })
+    ```
+    * @link https://sebloix.gitbook.io/gstore-node/queries/findaround
+   */
   findAround: Query<T, M>['findAround'];
 
-  /**
-   * Generate a new Gstore Model directly from a Model.
-   * This model won't be cached in the gstore.models {} map.
-   *
-   * @param kind The Entity Kind
-   * @param schema The Gstore Schema
-   * @param gstore The Gstore instance
-   */
   __compile(kind: string, schema: Schema<T, M>): Model<T, M>;
 
-  /**
-   * Creates an entity instance from a Model
-   * @param data (entity data)
-   * @param id
-   * @param ancestors
-   * @param namespace
-   * @param key (gcloud entity Key)
-   * @returns {Entity} Entity --> Model instance
-   * @private
-   */
   __model(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
@@ -238,10 +231,6 @@ export interface Model<
   __hooksTransaction(transaction: Transaction, postHooks: FuncReturningPromise[]): void;
 
   __scopeHook(hook: string, args: GenericObject, hookName: string, hookType: 'pre' | 'post'): any;
-
-  // __generateMeta(): GenericObject;
-
-  // __registerHooksFromSchema(): Model;
 }
 
 /**
@@ -759,12 +748,6 @@ export const generateModel = <T extends object, M extends object>(
       return Promise.all(handlers).then(() => ({ success: true }));
     }
 
-    /**
-     * Dynamic properties (in non explicitOnly Schemas) are indexes by default
-     * This method allows to exclude from indexes those properties if needed
-     * @param properties {Array} or {String}
-     * @param cb
-     */
     static excludeFromIndexes(properties: string | string[]): void {
       properties = arrify(properties);
 
@@ -777,10 +760,6 @@ export const generateModel = <T extends object, M extends object>(
       });
     }
 
-    /**
-     * Sanitize user data before saving to Datastore
-     * @param data : userData
-     */
     static sanitize(
       data: GenericObject,
       options: { disabled: string[] } = { disabled: [] },
@@ -894,15 +873,7 @@ export const generateModel = <T extends object, M extends object>(
       return handler(key);
     }
 
-    /**
-     * Helper to know if the cache is "on" to fetch entities or run a query
-     *
-     * @static
-     * @private
-     * @param {any} options The query options object
-     * @param {string} [type='keys'] The type of fetching. Can either be 'keys' or 'queries'
-     * @returns {boolean}
-     */
+    // Helper to know if the cache is "on" when fetching entities
     static __hasCache(options: { cache?: any } = {}, type = 'keys'): boolean {
       if (typeof this.gstore.cache === 'undefined') {
         return false;
@@ -1060,9 +1031,7 @@ export const generateModel = <T extends object, M extends object>(
       return populateFn;
     }
 
-    /**
-     * Add "post" hooks to a transaction
-     */
+    // Add "post" hooks to a transaction
     static __hooksTransaction(transaction: Transaction, postHooks: FuncReturningPromise[]): void {
       const _this = this; // eslint-disable-line @typescript-eslint/no-this-alias
       postHooks = arrify(postHooks);
@@ -1086,15 +1055,8 @@ export const generateModel = <T extends object, M extends object>(
       };
     }
 
-    /**
-     * Helper to change the function scope for a hook if necessary
-     * This is called by the promised-hooks lib....
-     *
-     * TODO: Refactor this (in promised hookd) to make it explicit that the handler is being called
-     *
-     * @param {String} hook The name of the hook (save, delete...)
-     * @param {Array} args The arguments passed to the original method
-     */
+    // Helper to change the function scope (the "this" value) for a hook if necessary
+    // TODO: Refactor this in promised-hook to make this behaviour more declarative.
     static __scopeHook(hook: string, args: GenericObject, hookName: string, hookType: 'pre' | 'post'): any {
       const _this = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
@@ -1167,11 +1129,11 @@ export const generateModel = <T extends object, M extends object>(
   model.findOne = findOne.bind(query);
   model.findAround = findAround.bind(query);
 
+  // TODO: Refactor how the Model/Entity relationship!
   // Attach props to prototype
-  // TODO: Refactor how the Model/ENtity relationship!
-  model.prototype.gstore = gstore;
-  model.prototype.schema = schema;
-  model.prototype.entityKind = kind;
+  model.prototype.__gstore = gstore;
+  model.prototype.__schema = schema;
+  model.prototype.__entityKind = kind;
 
   // Wrap the Model to add "pre" and "post" hooks functionalities
   hooks.wrap(model);
@@ -1190,30 +1152,29 @@ interface GetOptions {
    */
   preserveOrder?: boolean;
   /**
-   * An optional Dataloader instance.
+   * An optional Dataloader instance. Read more about Dataloader in the docs.
    *
-   * @type {*}
-   * @link https://sebloix.gitbook.io/gstore-node/dataloader.html#dataloader
+   * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/dataloader
    */
   dataloader?: any;
   /**
-   * Only if the cache has been activated.
-   * Fetch the entity from the cache first.
-   * If you want to bypass the cache and go to the Datastore directly, set `cache: false`.
+   * Only if the cache has been turned "on" when initializing gstore.
+   * Fetch the entity from the cache first. If you want to bypass the cache
+   * and fetch the entiy from the Datastore, set `cache: false`.
    *
    * @type {boolean}
    * @default The "global" cache configuration
-   * @link https://sebloix.gitbook.io/gstore-node/cache.html
+   * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache
    */
   cache?: boolean;
   /**
-   * Only if the cache has been activated.
+   * Only if the cache has been turned "on" when initializing gstore.
    * After the entty has been fetched from the Datastore it will be added to the cache.
-   * You can specify here a custom ttl (Time To Live) for the entity.
+   * You can specify here a custom ttl (Time To Live) for the cache of the entity.
    *
    * @type {(number | { [propName: string] : number })}
    * @default The "ttl.keys" cache configuration
-   * @link https://sebloix.gitbook.io/gstore-node/cache.html
+   * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache
    */
   ttl?: number | { [propName: string]: number };
 }
@@ -1241,9 +1202,3 @@ interface PopulateOptions extends GetOptions {
 }
 
 export default Model;
-
-type User = { name: string; lastName: string; age: number };
-
-export interface CustomMethods {
-  hasTexts(someFlag: boolean): Promise<boolean>;
-}

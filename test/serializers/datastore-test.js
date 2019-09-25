@@ -32,9 +32,9 @@ describe('Datastore serializer', () => {
 
     beforeEach(() => {
       const schema = new Schema({
-        name: { type: 'string' },
-        email: { type: 'string', read: false },
-        createdOn: { type: 'datetime' },
+        name: { type: String },
+        email: { type: String, read: false },
+        createdOn: { type: Date },
       });
       Model = gstore.model('Blog', schema, {});
 
@@ -72,7 +72,7 @@ describe('Datastore serializer', () => {
     it('should convert to entity instances', () => {
       const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { format: QUERIES_FORMATS.ENTITY });
 
-      expect(serialized.className).equal('Entity');
+      expect(serialized.__className).equal('Entity');
     });
 
     it('should convert Datetime prop to Date object if returned as number', () => {

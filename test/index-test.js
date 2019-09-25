@@ -162,7 +162,7 @@ describe('gstore-node', () => {
       return gstore.save([entity1, entity2]).then(() => {
         const { args } = ds.save.getCall(0);
         const firstEntity = args[0][0];
-        assert.isUndefined(firstEntity.className);
+        assert.isUndefined(firstEntity.__className);
         expect(Object.keys(firstEntity)).deep.equal(['key', 'data', 'excludeLargeProperties']);
       });
     });

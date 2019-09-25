@@ -18,7 +18,7 @@ type DatastoreFormat = {
 const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: Entity<T>): string[] =>
   Object.entries(data)
     .filter(([, value]) => value !== null)
-    .map(([key]) => entity.excludeFromIndexes[key as keyof T] as string[])
+    .map(([key]) => entity.__excludeFromIndexes[key as keyof T] as string[])
     .filter(v => v !== undefined)
     .reduce((acc: string[], arr) => [...acc, ...arr], []);
 
@@ -79,7 +79,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
 
         if ({}.hasOwnProperty.call(schema.paths, k)) {
           // During queries @google-cloud converts datetime to number
-          if (schema.paths[k].type === 'datetime' && is.number(value)) {
+          if (schema.paths[k].type && (schema.paths[k].type! as Function).name === 'Date' && is.number(value)) {
             value = new Date(value / 1000);
           }
 
@@ -145,7 +145,7 @@ const entitiesToDatastore = <T extends Entity | Entity[], R = T extends Entity ?
   const isMultiple = is.array(entities);
   const entitiesToArray = arrify(entities);
 
-  if (entitiesToArray[0].className !== 'Entity') {
+  if (entitiesToArray[0].__className !== 'Entity') {
     // Not an entity instance, nothing to do here...
     return (entities as unknown) as R;
   }
