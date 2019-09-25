@@ -1420,7 +1420,7 @@ describe('Model', () => {
     });
   });
 
-  describe.skip('populate()', () => {
+  describe('populate()', () => {
     let entity;
     let key0;
     let key1;

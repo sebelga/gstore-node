@@ -1247,27 +1247,3 @@ type User = { name: string; lastName: string; age: number };
 export interface CustomMethods {
   hasTexts(someFlag: boolean): Promise<boolean>;
 }
-
-// Some tests of Typescript...
-
-// const schema = new Schema<User, CustomMethods>({
-//   name: { type: String },
-//   lastName: { type: String },
-//   age: { type: Number },
-// });
-
-// schema.methods.hasTexts = function getText(): void {
-//   this.model('Text').get(this.entityData.age);
-//   this.model('Yeah');
-// };
-
-// const UserModel = generateModel('User', schema, new Gstore());
-
-// const user = new UserModel({
-//   name: 'John',
-//   lastName: 'Snow',
-//   age: 28,
-// });
-
-// const { age } = user;
-// user.hasTexts().then(response => {});
