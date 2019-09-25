@@ -5,4 +5,8 @@ module.exports = {
   rules: {
     'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
   },
+  env: {
+    node: true,
+    mocha: true,
+  },
 };

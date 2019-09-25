@@ -3,7 +3,7 @@
 const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../lib');
+const { Gstore } = require('../../lib');
 
 const gstore = new Gstore();
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
@@ -36,11 +36,14 @@ const getUser = () => {
   return user;
 };
 
-const cleanUp = () => ds.delete(allKeys).then(() => UserModel.deleteAll())
-  .catch(err => {
+const cleanUp = () =>
+  ds
+    .delete(allKeys)
+    .then(() => UserModel.deleteAll())
+    .catch(err => {
                 console.log('Error cleaning up'); // eslint-disable-line
                 console.log(err); // eslint-disable-line
-  });
+    });
 
 describe('Gstore (Integration Tests)', () => {
   before(() => {
@@ -52,13 +55,11 @@ describe('Gstore (Integration Tests)', () => {
   describe('save()', () => {
     it('should convert entities to Datastore format and save them', () => {
       const users = [getUser(), getUser()];
-      return gstore.save(users)
-        .then(() => (
-          UserModel.list()
-            .then(({ entities: { 0: entity } }) => {
-              expect([users[0].name, users[1].name]).include(entity.name);
-            })
-        ));
+      return gstore.save(users).then(() =>
+        UserModel.list().then(({ entities: { 0: entity } }) => {
+          expect([users[0].name, users[1].name]).include(entity.name);
+        }),
+      );
     });
   });
 });

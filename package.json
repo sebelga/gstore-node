@@ -18,7 +18,7 @@
     "release": "standard-version",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test --recursive --colors --exit",
-    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test-integration --recursive --colors --exit"
+    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test/integration --recursive --colors --exit"
   },
   "engines": {
     "node": ">=10.0"

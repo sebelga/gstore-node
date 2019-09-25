@@ -3,7 +3,7 @@
 const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../lib');
+const { Gstore } = require('../../lib');
 
 const gstore = new Gstore();
 const gstoreWithCache = new Gstore({ cache: { config: { ttl: { queries: 600 } } } });
@@ -59,27 +59,31 @@ const getUser = address => {
 };
 
 const addresses = [getAddress(), getAddress(), getAddress(), getAddress()];
-const users = [
-  getUser(addresses[0]),
-  getUser(addresses[1]),
-  getUser(addresses[2]),
-  getUser(addresses[3]),
-];
-const mapAddressToId = addresses.reduce((acc, address) => ({
-  ...acc,
-  [address.entityKey.name]: address,
-}), {});
+const users = [getUser(addresses[0]), getUser(addresses[1]), getUser(addresses[2]), getUser(addresses[3])];
+const mapAddressToId = addresses.reduce(
+  (acc, address) => ({
+    ...acc,
+    [address.entityKey.name]: address,
+  }),
+  {},
+);
 
-const mapUserToId = users.reduce((acc, user) => ({
-  ...acc,
-  [user.entityKey.name]: user,
-}), {});
+const mapUserToId = users.reduce(
+  (acc, user) => ({
+    ...acc,
+    [user.entityKey.name]: user,
+  }),
+  {},
+);
 
-const cleanUp = () => ds.delete(allKeys).then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll()]))
-  .catch(err => {
+const cleanUp = () =>
+  ds
+    .delete(allKeys)
+    .then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll()]))
+    .catch(err => {
         console.log('Error cleaning up'); // eslint-disable-line
         console.log(err); // eslint-disable-line
-  });
+    });
 
 describe('Queries (Integration Tests)', () => {
   before(() => {
@@ -90,21 +94,21 @@ describe('Queries (Integration Tests)', () => {
   after(() => cleanUp());
 
   describe('Setup', () => {
-    it('Return all the User and Addresses entities', () => (
-      UserModel.query().run()
+    it('Return all the User and Addresses entities', () =>
+      UserModel.query()
+        .run()
         .then(({ entities }) => {
           expect(entities.length).equal(users.length);
         })
         .then(() => AddressModel.query().run())
         .then(({ entities }) => {
           expect(entities.length).equal(addresses.length);
-        })
-    ));
+        }));
   });
 
   describe('list()', () => {
     describe('populate()', () => {
-      it('should populate the address of all users', () => (
+      it('should populate the address of all users', () =>
         UserModel.list()
           .populate()
           .then(({ entities }) => {
@@ -117,10 +121,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should also work with ENTITY format', () => (
+      it('should also work with ENTITY format', () =>
         UserModel.list({ format: 'ENTITY' })
           .populate()
           .then(({ entities }) => {
@@ -133,10 +136,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should allow to select specific reference entity fields', () => (
+      it('should allow to select specific reference entity fields', () =>
         UserModel.list()
           .populate('address', 'country')
           .then(({ entities }) => {
@@ -149,8 +151,7 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.country).equal(address.country);
               assert.isUndefined(entity.address.city);
             });
-          })
-      ));
+          }));
 
       context('when cache is active', () => {
         before(() => {
@@ -163,7 +164,7 @@ describe('Queries (Integration Tests)', () => {
           gstore.cache.reset();
         });
 
-        it('should also populate() fields', () => (
+        it('should also populate() fields', () =>
           UserModel.list()
             .populate()
             .then(({ entities }) => {
@@ -176,15 +177,14 @@ describe('Queries (Integration Tests)', () => {
                 expect(entity.address.city).equal(address.city);
                 expect(entity.address.country).equal(address.country);
               });
-            })
-        ));
+            }));
       });
     });
   });
 
   describe('findOne()', () => {
     describe('populate()', () => {
-      it('should populate the address of all users', () => (
+      it('should populate the address of all users', () =>
         UserModel.findOne({ name: users[0].name })
           .populate()
           .then(entity => {
@@ -192,10 +192,9 @@ describe('Queries (Integration Tests)', () => {
             const address = mapAddressToId[addressId];
             expect(entity.address.city).equal(address.city);
             expect(entity.address.country).equal(address.country);
-          })
-      ));
+          }));
 
-      it('should allow to select specific reference entity fields', () => (
+      it('should allow to select specific reference entity fields', () =>
         UserModel.findOne({ name: users[0].name })
           .populate('address', 'country')
           .then(entity => {
@@ -203,14 +202,13 @@ describe('Queries (Integration Tests)', () => {
             const address = mapAddressToId[addressId];
             expect(entity.address.country).equal(address.country);
             assert.isUndefined(entity.address.city);
-          })
-      ));
+          }));
     });
   });
 
   describe('findAround()', () => {
     describe('populate()', () => {
-      it('should populate the address of all users', () => (
+      it('should populate the address of all users', () =>
         UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10 })
           .populate()
           .then(entities => {
@@ -223,10 +221,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should also work with ENTITY format', () => (
+      it('should also work with ENTITY format', () =>
         UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10, format: 'ENTITY' })
           .populate()
           .then(entities => {
@@ -239,10 +236,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should allow to select specific reference entity fields', () => (
+      it('should allow to select specific reference entity fields', () =>
         UserModel.findAround('createdAt', new Date('2019-01-01'), { after: 10 })
           .populate('address', 'country')
           .then(entities => {
@@ -255,14 +251,13 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.country).equal(address.country);
               assert.isUndefined(entity.address.city);
             });
-          })
-      ));
+          }));
     });
   });
 
   describe('datastore Queries()', () => {
     describe('populate()', () => {
-      it('should populate the address of all users', () => (
+      it('should populate the address of all users', () =>
         UserModel.query()
           .filter('createdAt', '>', new Date('2019-01-01'))
           .run()
@@ -277,10 +272,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should also work with ENTITY format', () => (
+      it('should also work with ENTITY format', () =>
         UserModel.query()
           .filter('createdAt', '>', new Date('2019-01-01'))
           .run({ format: 'ENTITY' })
@@ -295,10 +289,9 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.address.city).equal(address.city);
               expect(entity.address.country).equal(address.country);
             });
-          })
-      ));
+          }));
 
-      it('should allow to select specific reference entity fields', () => (
+      it('should allow to select specific reference entity fields', () =>
         UserModel.query()
           .filter('createdAt', '>', new Date('2019-01-01'))
           .run()
@@ -315,8 +308,7 @@ describe('Queries (Integration Tests)', () => {
               expect(entity.unknown).equal(null);
               assert.isUndefined(entity.address.city);
             });
-          })
-      ));
+          }));
     });
   });
 });

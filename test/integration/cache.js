@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-expressions */
-
 'use strict';
 
 const redisStore = require('cache-manager-redis-store');
@@ -7,7 +5,7 @@ const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
 
-const { Gstore } = require('../lib');
+const { Gstore } = require('../../lib');
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 const chance = new Chance();

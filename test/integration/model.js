@@ -8,8 +8,8 @@ const Chance = require('chance');
 const Joi = require('@hapi/joi');
 const { Datastore } = require('@google-cloud/datastore');
 
-const { Gstore } = require('../lib');
-const Entity = require('../lib/entity');
+const { Gstore } = require('../../lib');
+const Entity = require('../../lib/entity');
 
 const gstore = new Gstore();
 const chance = new Chance();
@@ -73,43 +73,45 @@ describe('Model (Integration Tests)', () => {
     const addCompany = () => {
       const name = randomName();
       const company = new CompanyModel({ name });
-      return company.save()
-        .then(({ entityKey }) => {
-          addKey(entityKey);
-          return { name, entityKey };
-        });
+      return company.save().then(({ entityKey }) => {
+        addKey(entityKey);
+        return { name, entityKey };
+      });
     };
 
     const addUser = (company = null) => {
       const name = randomName();
-      const user = new UserModel({
-        name, company, email: chance.email(), private: randomName(),
-      }, randomName());
-      return user.save()
-        .then(({ entityKey }) => {
-          addKey(entityKey);
-          return { name, entityKey };
-        });
+      const user = new UserModel(
+        {
+          name,
+          company,
+          email: chance.email(),
+          private: randomName(),
+        },
+        randomName(),
+      );
+      return user.save().then(({ entityKey }) => {
+        addKey(entityKey);
+        return { name, entityKey };
+      });
     };
 
     const addPost = (userKey = null, publicationKey = null) => {
       const title = randomName();
       const post = new PostModel({ title, user: userKey, publication: publicationKey }, randomName());
-      return post.save()
-        .then(({ entityKey }) => {
-          addKey(entityKey);
-          return { title, entityKey };
-        });
+      return post.save().then(({ entityKey }) => {
+        addKey(entityKey);
+        return { title, entityKey };
+      });
     };
 
     const addPublication = (userKey = null) => {
       const title = randomName();
       const publication = new PublicationModel({ title, user: userKey });
-      return publication.save()
-        .then(({ entityKey }) => {
-          addKey(entityKey);
-          return { title, entityKey };
-        });
+      return publication.save().then(({ entityKey }) => {
+        addKey(entityKey);
+        return { title, entityKey };
+      });
     };
 
     describe('populate()', () => {
@@ -247,16 +249,28 @@ describe('Model (Integration Tests)', () => {
 
   describe('update()', () => {
     describe('transaction()', () => {
-      const userSchema = new Schema({
-        name: { joi: Joi.string().required() },
-        lastname: { joi: Joi.string() },
-        password: { joi: Joi.string() },
-        coins: { joi: Joi.number().integer().min(0) },
-        email: { joi: Joi.string().email() },
-        createdAt: { joi: Joi.date() },
-        access_token: { joi: [Joi.string(), Joi.number()] },
-        birthyear: { joi: Joi.number().integer().min(1900).max(2013) },
-      }, { joi: true });
+      const userSchema = new Schema(
+        {
+          name: { joi: Joi.string().required() },
+          lastname: { joi: Joi.string() },
+          password: { joi: Joi.string() },
+          coins: {
+            joi: Joi.number()
+              .integer()
+              .min(0),
+          },
+          email: { joi: Joi.string().email() },
+          createdAt: { joi: Joi.date() },
+          access_token: { joi: [Joi.string(), Joi.number()] },
+          birthyear: {
+            joi: Joi.number()
+              .integer()
+              .min(1900)
+              .max(2013),
+          },
+        },
+        { joi: true },
+      );
 
       const User = gstore.model('ModelTestsTransaction-User', userSchema);
 
@@ -264,31 +278,50 @@ describe('Model (Integration Tests)', () => {
         function transferCoins(fromUser, toUser, amount) {
           return new Promise((resolve, reject) => {
             const transaction = gstore.transaction();
-            return transaction.run()
+            return transaction
+              .run()
               .then(async () => {
-                await User.update(fromUser.entityKey.name, {
-                  coins: fromUser.coins - amount,
-                }, null, null, transaction);
+                await User.update(
+                  fromUser.entityKey.name,
+                  {
+                    coins: fromUser.coins - amount,
+                  },
+                  null,
+                  null,
+                  transaction,
+                );
 
-                await User.update(toUser.entityKey.name, {
-                  coins: toUser.coins + amount,
-                }, null, null, transaction);
+                await User.update(
+                  toUser.entityKey.name,
+                  {
+                    coins: toUser.coins + amount,
+                  },
+                  null,
+                  null,
+                  transaction,
+                );
 
-                transaction.commit()
+                transaction
+                  .commit()
                   .then(async () => {
-                    const [user1, user2] = await User.get([
-                      fromUser.entityKey.name,
-                      toUser.entityKey.name,
-                    ], null, null, null, { preserveOrder: true });
+                    const [user1, user2] = await User.get(
+                      [fromUser.entityKey.name, toUser.entityKey.name],
+                      null,
+                      null,
+                      null,
+                      { preserveOrder: true },
+                    );
                     expect(user1.name).equal('User1');
                     expect(user1.coins).equal(0);
                     expect(user2.name).equal('User2');
                     expect(user2.coins).equal(1050);
                     resolve();
-                  }).catch(err => {
+                  })
+                  .catch(err => {
                     reject(err);
                   });
-              }).catch(err => {
+              })
+              .catch(err => {
                 transaction.rollback();
                 reject(err);
               });
@@ -298,7 +331,8 @@ describe('Model (Integration Tests)', () => {
         const fromUser = new User({ name: 'User1', coins: 1000 }, randomName());
         const toUser = new User({ name: 'User2', coins: 50 }, randomName());
 
-        return fromUser.save()
+        return fromUser
+          .save()
           .then(({ entityKey }) => {
             addKey(entityKey);
             return toUser.save();
@@ -310,11 +344,10 @@ describe('Model (Integration Tests)', () => {
       });
 
       it('should throw a 404 Not found when trying to update a non existing entity', done => {
-        User.update(randomName(), { name: 'test' })
-          .catch(err => {
-            expect(err.code).equal('ERR_ENTITY_NOT_FOUND');
-            done();
-          });
+        User.update(randomName(), { name: 'test' }).catch(err => {
+          expect(err.code).equal('ERR_ENTITY_NOT_FOUND');
+          done();
+        });
       });
     });
   });

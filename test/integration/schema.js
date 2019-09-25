@@ -5,7 +5,7 @@
 const chai = require('chai');
 const Chance = require('chance');
 const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../lib');
+const { Gstore } = require('../../lib');
 
 const gstore = new Gstore();
 const chance = new Chance();
@@ -52,16 +52,19 @@ describe('Schema (Integration Tests)', () => {
     const password = chance.string({ length: 10 });
     const user = new User({ email, password });
 
-    return user.save().then(entity => {
-      const response = entity.plain();
-      expect(response.password).to.not.exist;
-      expect(response.requested).to.not.exist;
+    return user
+      .save()
+      .then(entity => {
+        const response = entity.plain();
+        expect(response.password).to.not.exist;
+        expect(response.requested).to.not.exist;
 
-      const response2 = entity.plain({ readAll: true });
-      expect(response2.password).equal(password);
-      expect(response2.state).equal('requested');
-    }).catch(err => {
-      throw (err);
-    });
+        const response2 = entity.plain({ readAll: true });
+        expect(response2.password).equal(password);
+        expect(response2.state).equal('requested');
+      })
+      .catch(err => {
+        throw err;
+      });
   });
 });
