@@ -249,7 +249,6 @@ export class Entity<T extends object = GenericObject> {
    * If the error is `null`, the validation has passed.
    * The `value` returned is the entityData sanitized (unknown properties removed).
    *
-   * @returns {({ error: ValidationError, value: any })}
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/validate
    */
   validate(): ValidateResponse {

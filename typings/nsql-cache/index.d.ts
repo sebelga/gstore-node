@@ -3,7 +3,7 @@ declare module 'nsql-cache' {
   import { Query } from "@google-cloud/datastore/build/src/query";
 
   export interface NsqlCacheConfig {
-    ttl: {
+    ttl?: {
         keys?: number,
         queries?: number,
         memory?: {
@@ -20,12 +20,13 @@ declare module 'nsql-cache' {
         } | number | undefined,
 
     },
-    cachePrefix: {
-        keys: string;
-        queries: string;
+    cachePrefix?: {
+        keys?: string;
+        queries?: string;
     },
-    hashCacheKeys: boolean,
-    wrapClient: boolean,
+    hashCacheKeys?: boolean,
+    wrapClient?: boolean,
+    global?: boolean;
 }
 
   /**

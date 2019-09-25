@@ -6,21 +6,21 @@ import dsAdapter from 'nsql-cache-datastore';
 import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
 // import pkg from '../package.json';
-import Schema from './schema';
-import Entity from './entity';
-import Model, { generateModel } from './model';
+import GstoreSchema from './schema';
+import GstoreEntity from './entity';
+import GstoreModel, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { createDataLoader } from './dataloader';
-import { EntityKey, EntityData, DatastoreSaveMethod } from './types';
+import { EntityKey, EntityData, DatastoreSaveMethod, CustomEntityFunction } from './types';
 
-interface CacheConfig {
+export interface CacheConfig {
   stores: any[];
   config: NsqlCacheConfig;
 }
 
-interface GstoreConfig {
+export interface GstoreConfig {
   cache?: boolean | CacheConfig;
   /**
    * If set to `true` (defaut), when fetching an entity by key and the entity is not found in the Datastore,
@@ -44,12 +44,12 @@ export class Gstore {
   /**
    * Map of Gstore Model created
    */
-  public models: { [key: string]: Model<any> };
+  public models: { [key: string]: GstoreModel<any> };
 
   /**
    * Gstore Schema class
    */
-  public Schema: typeof Schema;
+  public Schema: typeof GstoreSchema;
 
   /**
    * Gstore instance configuration
@@ -88,7 +88,7 @@ export class Gstore {
 
     this.models = {};
     this.config = { ...DEFAULT_GSTORE_CONFIG, ...config };
-    this.Schema = Schema;
+    this.Schema = GstoreSchema;
     this.__defaultValues = defaultValues;
     // this.__pkgVersion = pkg.version;
 
@@ -104,16 +104,19 @@ export class Gstore {
   }
 
   /**
-   * Initalize a gstore-node Model
+   * Create or access a gstore Model
    *
    * @param {string} entityKind The Google Entity Kind
    * @param {Schema} schema A gstore schema instance
    * @returns {Model} A gstore Model
    */
-  model<T extends object, M extends object>(entityKind: string, schema?: Schema<T, M>): Model<T, M> {
+  model<T extends object, M extends object = { [key: string]: CustomEntityFunction<T> }>(
+    entityKind: string,
+    schema?: GstoreSchema<T, M>,
+  ): GstoreModel<T, M> {
     if (this.models[entityKind]) {
       // Don't allow overriding Model schema
-      if (schema instanceof Schema && schema !== undefined) {
+      if (schema instanceof GstoreSchema && schema !== undefined) {
         throw new Error(`Trying to override ${entityKind} Model Schema`);
       }
       return this.models[entityKind];
@@ -156,7 +159,7 @@ export class Gstore {
    * @link https://sebloix.gitbook.io/gstore-node/gstore-methods/save
    */
   save(
-    entities: Entity | Entity[],
+    entities: GstoreEntity | GstoreEntity[],
     transaction?: Transaction,
     options: { method?: DatastoreSaveMethod; validate?: boolean } | undefined = {},
   ): Promise<
@@ -174,7 +177,7 @@ export class Gstore {
     // Validate entities before saving
     if (options.validate) {
       let error;
-      const validateEntity = (entity: Entity): void => {
+      const validateEntity = (entity: GstoreEntity): void => {
         ({ error } = entity.validate());
         if (error) {
           throw error;
@@ -207,7 +210,7 @@ export class Gstore {
    *
    * @param {Datastore} datastore A Datastore instance
    */
-  connect(datastore: Datastore): void {
+  connect(datastore: any): void {
     if (!datastore.constructor || datastore.constructor.name !== 'Datastore') {
       throw new Error('No @google-cloud/datastore instance provided.');
     }
@@ -286,6 +289,14 @@ export const instances = {
   },
 };
 
+export type Entity = GstoreEntity;
+
+export type Model = GstoreModel;
+
+export type Schema = GstoreSchema;
+
 export { QUERIES_FORMATS } from './constants';
+
+export { ValidateResponse } from './helpers/validation';
 
 export default Gstore;
