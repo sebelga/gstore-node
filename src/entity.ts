@@ -191,9 +191,6 @@ export class Entity<T extends object = GenericObject> {
           });
       }
 
-      // TODO: Check if here we shouldn't update the this.entityKey from the onEntiySaved callback
-      // _this.setId();
-
       return Promise.resolve((this as unknown) as EntityResponse<T>);
     };
 
@@ -360,7 +357,6 @@ export class Entity<T extends object = GenericObject> {
   populate(path?: string, propsToSelect?: string[]): PromiseWithPopulate<T> {
     const refsToPopulate: PopulateRef[][] = [];
 
-    // TODO: Check if the "Promise.resolve(this)" is needed here.
     const promise = Promise.resolve(this).then((this.constructor as Model<T>).__populate(refsToPopulate));
 
     (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
