@@ -27,7 +27,7 @@ export interface GstoreConfig {
    * gstore will throw an `"ERR_ENTITY_NOT_FOUND"` error.
    * If set to `false`, `null` will be returned
    */
-  errorOnEntityNotFound: boolean;
+  errorOnEntityNotFound?: boolean;
 }
 const DEFAULT_GSTORE_CONFIG = {
   cache: undefined,
@@ -81,7 +81,7 @@ export class Gstore {
 
   public __pkgVersion = '7.1.0'; // TODO Fix this!
 
-  constructor(config = {}) {
+  constructor(config: GstoreConfig = {}) {
     if (!is.object(config)) {
       throw new Error('Gstore config must be an object.');
     }

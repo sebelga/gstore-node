@@ -10,7 +10,7 @@ import { Transaction } from '@google-cloud/datastore';
 
 import Gstore from './index';
 import Schema, { JoiConfig } from './schema';
-import Entity from './entity';
+import Entity, { EntityResponse } from './entity';
 import Query, { QueryResponse } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
@@ -38,7 +38,8 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T> & T & M;
+  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<T> &
+    M;
 
   /**
    * The gstore instance
@@ -66,11 +67,11 @@ export interface Model<
    * @returns {entity.Key}
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/key
    */
-  key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
+  key<U extends IdType | IdType[]>(
     id: U,
     ancestors?: Array<string | number>,
     namespace?: string,
-  ): R;
+  ): U extends Array<IdType> ? EntityKey[] : EntityKey;
 
   /**
    * Fetch an Entity from the Datastore by _key_.
@@ -89,7 +90,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GetOptions,
-  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+  ): PromiseWithPopulate<U extends Array<string | number> ? EntityResponse<T>[] : EntityResponse<T>>;
 
   /**
    * Update an Entity in the Datastore. This method _partially_ updates an entity data in the Datastore
@@ -112,7 +113,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GenericObject,
-  ): Promise<Entity<T>>;
+  ): Promise<EntityResponse<T>>;
 
   /**
    * Delete an Entity from the Datastore
@@ -135,6 +136,18 @@ export interface Model<
     key?: EntityKey | EntityKey[],
     options?: DeleteOptions,
   ): Promise<DeleteResponse>;
+
+  /**
+   * Delete all the entities of a Model.
+   * It runs a query to fetch the entities by batches of 500 (limit set by the Datastore) and delete them.
+   * It then repeat the operation until no more entities are found.
+   *
+   * @static
+   * @param ancestors Optional Ancestors to add to the Query
+   * @param namespace Optional Namespace to run the Query into
+   * @link https://sebloix.gitbook.io/gstore-node/queries/deleteall
+   */
+  deleteAll(ancestors?: Ancestor, namespace?: string): Promise<DeleteAllResponse>;
 
   /**
    * Clear all the Queries from the cache *linked* to the Model Entity Kind.
@@ -219,8 +232,6 @@ export interface Model<
   findAround: Query<T, M>['findAround'];
 
   __compile(kind: string, schema: Schema<T, M>): Model<T, M>;
-
-  __model(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   __fetchEntityByKey(key: EntityKey, transaction?: Transaction, dataloader?: any, options?: GetOptions): Promise<any>;
 
@@ -401,7 +412,7 @@ export const generateModel = <T extends object, M extends object>(
           if (typeof data === 'undefined' || data === null) {
             return null;
           }
-          return this.__model(data, undefined, undefined, undefined, (data as any)[this.gstore.ds.KEY]);
+          return new this(data, undefined, undefined, undefined, (data as any)[this.gstore.ds.KEY]);
         });
 
         // TODO: Check if this is still useful??
@@ -462,7 +473,7 @@ export const generateModel = <T extends object, M extends object>(
 
       const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData<T> }): Promise<Entity<T>> => {
         const { key: entityKey, data: entityData } = datastoreFormat;
-        const entity = this.__model(entityData, undefined, undefined, undefined, entityKey);
+        const entity = new this(entityData, undefined, undefined, undefined, entityKey);
 
         /**
          * If a DataLoader instance is passed in the options
@@ -594,7 +605,7 @@ export const generateModel = <T extends object, M extends object>(
         this.__hooksEnabled = false;
         this.__hooksTransaction(transaction, (this as any).__posts ? (this as any).__posts.delete : undefined);
         transaction.delete(key);
-        return Promise.resolve({ key: key! });
+        return Promise.resolve({ key });
       }
 
       return ((this.gstore.ds.delete(key) as unknown) as Promise<any>).then((results?: [{ indexUpdates?: number }]) => {
@@ -821,21 +832,6 @@ export const generateModel = <T extends object, M extends object>(
       return generateModel<T2, M2>(newKind, newSchema, gstore);
     }
 
-    static __model(
-      data: EntityData<T>,
-      id?: IdType,
-      ancestors?: Ancestor,
-      namespace?: string,
-      key?: EntityKey,
-    ): Entity<T> {
-      // const NewModel = this.__compile(this.entityKind, this.schema, this.gstore);
-      // return new NewModel(data, id, ancestors, namespace, key);
-
-      // TODO: Check if this is ok
-      // const NewModel = this;
-      return new this(data, id, ancestors, namespace, key);
-    }
-
     static __fetchEntityByKey(
       key: EntityKey | EntityKey[],
       transaction?: Transaction,
@@ -1058,8 +1054,6 @@ export const generateModel = <T extends object, M extends object>(
     // Helper to change the function scope (the "this" value) for a hook if necessary
     // TODO: Refactor this in promised-hook to make this behaviour more declarative.
     static __scopeHook(hook: string, args: GenericObject, hookName: string, hookType: 'pre' | 'post'): any {
-      const _this = this; // eslint-disable-line @typescript-eslint/no-this-alias
-
       /**
        * For "delete" hooks we want to set the scope to
        * the entity instance we are going to delete
@@ -1093,7 +1087,7 @@ export const generateModel = <T extends object, M extends object>(
           return undefined;
         }
 
-        return _this.__model({} as EntityData<T>, id, ancestors, namespace, key);
+        return new this({} as EntityData<T>, id, ancestors, namespace, key);
       };
 
       switch (hook) {

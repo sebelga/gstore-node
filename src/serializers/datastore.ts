@@ -2,7 +2,7 @@ import is from 'is';
 import arrify from 'arrify';
 
 import Entity from '../entity';
-import Model from '../model';
+import GstoreModel from '../model';
 import { GenericObject, EntityKey, EntityData, IdType, DatastoreSaveMethod } from '../types';
 
 type ToDatastoreOptions = { method?: DatastoreSaveMethod };
@@ -59,13 +59,13 @@ const toDatastore = <T extends object>(
 
 const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTITY' ? Entity : EntityData>(
   entityData: EntityData,
-  model: Model<any>,
+  Model: GstoreModel<any>,
   options: { format?: F; readAll?: boolean; showKey?: boolean } = {},
 ): R => {
   const convertToJson = (): GenericObject => {
     options.readAll = typeof options.readAll === 'undefined' ? false : options.readAll;
 
-    const { schema, gstore } = model;
+    const { schema, gstore } = Model;
     const { KEY } = gstore.ds;
     const entityKey = entityData[KEY as any];
     const data: { [key: string]: any } = {
@@ -120,8 +120,8 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
   };
 
   const convertToEntity = (): Entity => {
-    const key: EntityKey = entityData[model.gstore.ds.KEY as any];
-    return model.__model(entityData, undefined, undefined, undefined, key);
+    const key: EntityKey = entityData[Model.gstore.ds.KEY as any];
+    return new Model(entityData, undefined, undefined, undefined, key);
   };
 
   switch (options.format) {

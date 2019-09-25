@@ -3,9 +3,14 @@ import is from 'is';
 import arrify from 'arrify';
 
 import { GstoreQuery, QueryListOptions } from '../query';
+import { EntityData } from '../types';
 import Model from '../model';
 
-const buildQueryFromOptions = <T>(query: GstoreQuery<T>, options: QueryListOptions, ds: Datastore): GstoreQuery<T> => {
+const buildQueryFromOptions = <T, Outputformat>(
+  query: GstoreQuery<EntityData<T>, Outputformat>,
+  options: QueryListOptions,
+  ds: Datastore,
+): GstoreQuery<EntityData<T>, Outputformat> => {
   if (!query || query.constructor.name !== 'Query') {
     throw new Error('Query not passed');
   }

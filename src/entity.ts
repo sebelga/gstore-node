@@ -97,7 +97,7 @@ export class Entity<T extends object = GenericObject> {
    * @returns {Promise<Entity<T>>}
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/save
    */
-  save(transaction?: Transaction, opts?: SaveOptions): Promise<Entity<T>> {
+  save(transaction?: Transaction, opts?: SaveOptions): Promise<EntityResponse<T>> {
     this.__hooksEnabled = true;
 
     const options = {
@@ -172,14 +172,14 @@ export class Entity<T extends object = GenericObject> {
       return this.entityData;
     };
 
-    const onEntitySaved = (): Promise<Entity<T>> => {
+    const onEntitySaved = (): Promise<EntityResponse<T>> => {
       /**
        * Make sure to clear the cache for this Entity Kind
        */
       if ((this.constructor as Model).__hasCache(options)) {
         return (this.constructor as Model)
           .clearCache()
-          .then(() => this)
+          .then(() => (this as unknown) as EntityResponse<T>)
           .catch((err: any) => {
             let msg = 'Error while clearing the cache after saving the entity.';
             msg += 'The entity has been saved successfully though. ';
@@ -194,7 +194,7 @@ export class Entity<T extends object = GenericObject> {
       // TODO: Check if here we shouldn't update the this.entityKey from the onEntiySaved callback
       // _this.setId();
 
-      return Promise.resolve(this);
+      return Promise.resolve((this as unknown) as EntityResponse<T>);
     };
 
     /**
@@ -238,7 +238,7 @@ export class Entity<T extends object = GenericObject> {
       attachPostHooksToTransaction();
       transaction.save(datastoreEntity);
 
-      return Promise.resolve(this);
+      return Promise.resolve((this as unknown) as EntityResponse<T>);
     }
 
     return this.gstore.ds.save(datastoreEntity).then(onEntitySaved);
@@ -293,14 +293,14 @@ export class Entity<T extends object = GenericObject> {
     return this.entityData[path];
   }
 
-  set<P extends keyof T>(path: P, value: any): Entity<T> {
+  set<P extends keyof T>(path: P, value: any): EntityResponse<T> {
     if ({}.hasOwnProperty.call(this.schema.__virtuals, path)) {
       this.schema.__virtuals[path as string].applySetters(value, this.entityData);
-      return this;
+      return (this as unknown) as EntityResponse<T>;
     }
 
     this.entityData[path] = value;
-    return this;
+    return (this as unknown) as EntityResponse<T>;
   }
 
   /**
@@ -326,8 +326,8 @@ export class Entity<T extends object = GenericObject> {
    *
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/datastoreentity
    */
-  datastoreEntity(options = {}): Promise<Entity<T> | null> {
-    const onEntityFetched = (result: [EntityData<T> | null]): Entity<T> | null => {
+  datastoreEntity(options = {}): Promise<EntityResponse<T> | null> {
+    const onEntityFetched = (result: [EntityData<T> | null]): EntityResponse<T> | null => {
       const entityData = result ? result[0] : null;
 
       if (!entityData) {
@@ -341,7 +341,7 @@ export class Entity<T extends object = GenericObject> {
       }
 
       this.entityData = entityData;
-      return this;
+      return (this as unknown) as EntityResponse<T>;
     };
 
     if ((this.constructor as Model<T>).__hasCache(options)) {
@@ -584,6 +584,8 @@ export class Entity<T extends object = GenericObject> {
 }
 
 export default Entity;
+
+export type EntityResponse<T extends object> = Entity<T> & T;
 
 interface SaveOptions {
   method: DatastoreSaveMethod;
