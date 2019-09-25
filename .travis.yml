@@ -14,7 +14,7 @@ script:
   - npm run test:unit
 
 after_success:
-  - npm run coveralls
+  # - npm run coveralls
 
 cache:
   yarn: true
