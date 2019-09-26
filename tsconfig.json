@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "es6",
+    "module": "commonjs",
+    "allowSyntheticDefaultImports": true,
+    "lib": ["esnext"],
+    "strict": true,
+    "removeComments": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": false,
+    "rootDir": ".",
+    "outDir": "lib",
+    "types": [
+      "node",
+      "jest"
+    ],
+    "allowJs": false
+  },
+  "include": [
+    "src",
+    "typings",
+    "src/.eslintrc.js"
+  ]
+}
