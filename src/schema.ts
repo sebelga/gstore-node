@@ -105,7 +105,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
     };
   };
 
-  public readonly shortcutQueries: { [key: string]: QueryListOptions };
+  public readonly shortcutQueries: { [key: string]: QueryListOptions<T> };
 
   public joiSchema?: GenericObject;
 
@@ -160,7 +160,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
     }
   }
 
-  queries(type: 'list', settings: QueryListOptions): void {
+  queries(type: 'list', settings: QueryListOptions<T>): void {
     this.shortcutQueries[type] = settings;
   }
 

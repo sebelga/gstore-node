@@ -33,7 +33,11 @@ const getEntitiesRefsFromSchema = <T extends object>(schema: Schema<T>): string[
  *  [{ path: 'user.company', select: ['*'] }], // tree depth at level 1 (will be fetched after level 0 has been fetched)
  * ]
  */
-const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: PopulateRef[][]): void => {
+const addPathToPopulateRefs = (
+  initialPath: string,
+  _select: string | string[] | never = ['*'],
+  refs: PopulateRef[][],
+): void => {
   const pathToArray = initialPath.split('.');
   const select = arrify(_select);
   let prefix = '';
@@ -61,7 +65,10 @@ const addPathToPopulateRefs = (initialPath: string, _select = ['*'], refs: Popul
   });
 };
 
-type PopulateHandler = (path?: string, propsToSelect?: string[]) => Promise<any>;
+export type PopulateHandler = <U extends string | string[]>(
+  path?: U,
+  propsToSelect?: U extends Array<string> ? never : string | string[],
+) => Promise<any>;
 
 const populateFactory = <T extends object>(
   refsToPopulate: PopulateRef[][],

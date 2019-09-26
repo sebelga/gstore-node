@@ -22,6 +22,7 @@ import {
   PromiseWithPopulate,
 } from './types';
 import { ValidateResponse } from './helpers/validation';
+import { PopulateHandler } from './helpers/populateHelpers';
 
 const { validation, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
@@ -354,13 +355,16 @@ export class Entity<T extends object = GenericObject> {
    * @param properties The properties to return from the reference entities. If not specified, all properties will be returned
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/populate
    */
-  populate(path?: string, propsToSelect?: string[]): PromiseWithPopulate<T> {
+  populate<U extends string | string[]>(
+    path?: U,
+    propsToSelect?: U extends Array<string> ? never : string | string[],
+  ): PromiseWithPopulate<EntityResponse<T>> {
     const refsToPopulate: PopulateRef[][] = [];
 
     const promise = Promise.resolve(this).then((this.constructor as Model<T>).__populate(refsToPopulate));
 
-    (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
-    (promise as any).populate(path, propsToSelect);
+    ((promise as any).populate as PopulateHandler) = populateFactory(refsToPopulate, promise, this.schema);
+    ((promise as any).populate as PopulateHandler)(path, propsToSelect);
     return promise as any;
   }
 

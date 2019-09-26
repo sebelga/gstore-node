@@ -38,7 +38,7 @@ export type PopulateFunction<T extends object> = (
 export interface PromiseWithPopulate<T> extends Promise<T> {
   populate: <U extends string | string[]>(
     refs?: U,
-    properties?: U extends Array<string> ? undefined : string | string[],
+    properties?: U extends Array<string> ? never : string | string[],
   ) => PromiseWithPopulate<T>;
 }
 
@@ -50,3 +50,7 @@ export interface PromiseWithPopulate<T> extends Promise<T> {
 
 // From '@google-cloud/datastore/build/src/query';
 export type DatastoreOperator = '=' | '<' | '>' | '<=' | '>=' | 'HAS_ANCESTOR';
+
+export interface OrderOptions {
+  descending?: boolean;
+}
