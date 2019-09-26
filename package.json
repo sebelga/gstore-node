@@ -16,7 +16,7 @@
     "lint": "./node_modules/eslint/bin/eslint.js ./src ./test",
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "pretest": "yarn lint",
-    "release": "standard-version",
+    "release": "yarn build && standard-version",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test --exclude test/integration/**/*.* --recursive --colors --exit",
     "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 mocha test/integration --recursive --colors --exit"
