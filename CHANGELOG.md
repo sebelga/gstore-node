@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.2.0](https://github.com/sebelga/gstore-node/compare/v7.1.0...v7.2.0) (2019-09-26)
+
+
+### Features
+
+* **Typescript:** Improve typings support ([43d9dc2](https://github.com/sebelga/gstore-node/commit/43d9dc2))
+
 ## [7.1.0](https://github.com/sebelga/gstore-node/compare/v7.0.0...v7.1.0) (2019-09-13)
 
 
