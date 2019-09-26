@@ -11,7 +11,7 @@ import { Transaction } from '@google-cloud/datastore';
 import Gstore from './index';
 import Schema, { JoiConfig } from './schema';
 import Entity, { EntityResponse } from './entity';
-import Query, { QueryResponse } from './query';
+import Query, { QueryResponse, GstoreQuery } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
 import {
@@ -26,6 +26,8 @@ import {
   PopulateFunction,
   PromiseWithPopulate,
   GenericObject,
+  JSONFormatType,
+  EntityFormatType,
 } from './types';
 
 const dsAdapter = dsAdapterFactory();
@@ -188,7 +190,13 @@ export interface Model<
    * @returns {Object} The Datastore query object.
    * @link https://sebloix.gitbook.io/gstore-node/queries/google-cloud-queries
    */
-  query: Query<T, M>['initQuery'];
+  query<
+    F extends JSONFormatType | EntityFormatType = JSONFormatType,
+    R = F extends EntityFormatType ? QueryResponse<T, EntityResponse<T>[]> : QueryResponse<T, EntityData<T>[]>
+  >(
+    namespace?: string,
+    transaction?: Transaction,
+  ): GstoreQuery<T, R>;
 
   /**
    * Shortcut for listing entities from a Model. List queries are meant to quickly list entities
