@@ -2,16 +2,20 @@
 jsconfig.json
 .travis.yml
 .jshintrc
-.eslintrc.json
+.eslintignore
+.eslintrc.js
+.prettierrc.js
 .babelrc
 .editorconfig
+tsconfig.json
 **/todo.txt
 **/notes.txt
-CHANGELOG.md
-README.md
 yarn.lock
 
 test/
+src/
+scripts/
+typings/
 **/.trash
 .nyc_output/
 .vscode/

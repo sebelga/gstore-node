@@ -6,6 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "rm -rf ./lib && tsc",
+    "postbuild": "bash scripts/post_build.sh",
     "commit": "git-cz",
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "cover": "yarn cover:unit && yarn cover:integration && yarn cover:report",

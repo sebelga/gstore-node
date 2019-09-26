@@ -5,7 +5,7 @@ import NsqlCache, { NsqlCacheConfig } from 'nsql-cache';
 import dsAdapter from 'nsql-cache-datastore';
 import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
-// import pkg from '../package.json';
+import pkg from '../package.json';
 import GstoreSchema from './schema';
 import GstoreEntity from './entity';
 import GstoreModel, { generateModel } from './model';
@@ -79,7 +79,7 @@ export class Gstore {
 
   public __defaultValues: DefaultValues;
 
-  public __pkgVersion = '7.1.0'; // TODO Fix this!
+  public __pkgVersion = pkg.version;
 
   constructor(config: GstoreConfig = {}) {
     if (!is.object(config)) {

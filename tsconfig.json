@@ -10,8 +10,8 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "sourceMap": true,
-    "rootDir": "src",
+    "sourceMap": false,
+    "rootDir": ".",
     "outDir": "lib",
     "types": [
       "node",
