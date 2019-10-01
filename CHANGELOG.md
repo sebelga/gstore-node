@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.2](https://github.com/sebelga/gstore-node/compare/v7.2.1...v7.2.2) (2019-10-01)
+
+
+### Bug Fixes
+
+* **typings:** add Methods generic to Model<T, M> ([7c3e5b0](https://github.com/sebelga/gstore-node/commit/7c3e5b0))
+* **Typings:** Add generic types to Entity, Model & Schema ([#195](https://github.com/sebelga/gstore-node/issues/195)) ([c939de5](https://github.com/sebelga/gstore-node/commit/c939de5)), closes [#194](https://github.com/sebelga/gstore-node/issues/194)
+
 ### [7.2.1](https://github.com/sebelga/gstore-node/compare/v7.2.0...v7.2.1) (2019-09-26)
 
 ## [7.2.0](https://github.com/sebelga/gstore-node/compare/v7.1.0...v7.2.0) (2019-09-26)
