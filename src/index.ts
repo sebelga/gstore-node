@@ -13,7 +13,7 @@ import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { createDataLoader } from './dataloader';
-import { EntityKey, EntityData, DatastoreSaveMethod, CustomEntityFunction } from './types';
+import { EntityKey, EntityData, DatastoreSaveMethod, CustomEntityFunction, GenericObject } from './types';
 
 export interface CacheConfig {
   stores: any[];
@@ -289,11 +289,11 @@ export const instances = {
   },
 };
 
-export type Entity = GstoreEntity;
+export type Entity<T extends object = GenericObject> = GstoreEntity<T>;
 
-export type Model = GstoreModel;
+export type Model<T extends object = GenericObject> = GstoreModel<T>;
 
-export type Schema = GstoreSchema;
+export type Schema<T extends object = { [key: string]: any }, M extends object = { [key: string]: CustomEntityFunction<T> }> = GstoreSchema<T, M>;
 
 export { QUERIES_FORMATS } from './constants';
 
