@@ -861,7 +861,13 @@ export const generateModel = <T extends object, M extends object>(
           }
           return dataloader.loadMany(keysArray).then((result: EntityData) => arrify(result));
         }
-        return this.gstore.ds.get(keysArray).then(([result]: [any]) => arrify(result));
+
+        return this.gstore.ds.get(keys).then(([result]: [any]) => {
+          if (Array.isArray(keys)) {
+            return arrify(result);
+          }
+          return result;
+        });
       };
 
       if (this.__hasCache(options)) {
