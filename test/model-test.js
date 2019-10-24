@@ -310,7 +310,7 @@ describe('Model', () => {
       return GstoreModel.get(123).then(onEntity);
 
       function onEntity(_entity) {
-        expect(ds.get.getCall(0).args[0][0].constructor.name).equal('Key');
+        expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
         expect(_entity instanceof Entity.default).equal(true);
       }
     });
@@ -345,16 +345,16 @@ describe('Model', () => {
 
     it('not converting string with mix of number and non number', () =>
       GstoreModel.get('123:456').then(() => {
-        expect(ds.get.getCall(0).args[0][0].name).equal('123:456');
+        expect(ds.get.getCall(0).args[0].name).equal('123:456');
       }));
 
     it('passing an ancestor path array', () => {
       const ancestors = ['Parent', 'keyname'];
 
       return GstoreModel.get(123, ancestors).then(() => {
-        expect(ds.get.getCall(0).args[0][0].constructor.name).equal('Key');
-        expect(ds.get.getCall(0).args[0][0].parent.kind).equal(ancestors[0]);
-        expect(ds.get.getCall(0).args[0][0].parent.name).equal(ancestors[1]);
+        expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
+        expect(ds.get.getCall(0).args[0].parent.kind).equal(ancestors[0]);
+        expect(ds.get.getCall(0).args[0].parent.name).equal(ancestors[1]);
       });
     });
 
@@ -362,7 +362,7 @@ describe('Model', () => {
       const namespace = 'com.mydomain-dev';
 
       return GstoreModel.get(123, null, namespace).then(() => {
-        expect(ds.get.getCall(0).args[0][0].namespace).equal(namespace);
+        expect(ds.get.getCall(0).args[0].namespace).equal(namespace);
       });
     });
 
@@ -578,7 +578,7 @@ describe('Model', () => {
         GstoreModel.get(123).then(response => {
           assert.ok(ds.get.called);
           const { args } = ds.get.getCall(0);
-          expect(args[0][0].id).equal(123);
+          expect(args[0].id).equal(123);
           expect(response.entityData).include(entity);
         }));
 
