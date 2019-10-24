@@ -67,7 +67,7 @@
     "lodash.get": "^4.4.2",
     "lodash.set": "^4.3.2",
     "moment": "^2.24.0",
-    "nsql-cache": "^1.1.4",
+    "nsql-cache": "^1.1.5",
     "nsql-cache-datastore": "^1.1.6",
     "optional": "^0.1.4",
     "promised-hooks": "^3.1.0",

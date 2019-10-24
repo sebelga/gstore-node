@@ -5006,10 +5006,10 @@ nsql-cache-datastore@^1.1.6:
   dependencies:
     arrify "1.0.1"
 
-nsql-cache@^1.1.4:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/nsql-cache/-/nsql-cache-1.1.4.tgz#8f408ce478b2f9338659ba27143435c1371405b9"
-  integrity sha512-E8LxBzf/Q6URAlkZZ6HIVTUGeiWYApf315pMfbPAE9FWHBB9rUzksm5XvrGDEYz/swUsEn4xvkayCgVvKpeKwg==
+nsql-cache@^1.1.5:
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/nsql-cache/-/nsql-cache-1.1.5.tgz#10619d77fd711531a2e25e9992166797e40d39ec"
+  integrity sha512-QRJe7Z3fqUJc57NVTHsxRFXlCEIoLlb0FQMW5NOfWGMDq8Qcz4ampT2wnnvufT+T63uKgqvX4qwTAWMcQ3iuQw==
   dependencies:
     arrify "^1.0.1"
     cache-manager "^2.9.0"
