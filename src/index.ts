@@ -13,7 +13,13 @@ import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { createDataLoader } from './dataloader';
-import { EntityKey, EntityData, DatastoreSaveMethod, CustomEntityFunction, GenericObject } from './types';
+import {
+  EntityKey as EntityKeyType,
+  EntityData as EntityDataType,
+  DatastoreSaveMethod,
+  CustomEntityFunction,
+  GenericObject,
+} from './types';
 
 export interface CacheConfig {
   stores: any[];
@@ -238,7 +244,7 @@ export class Gstore {
    * @returns {DataLoader} The DataLoader instance
    * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/dataloader
    */
-  createDataLoader(): DataLoader<EntityKey[], EntityData> {
+  createDataLoader(): DataLoader<EntityKeyType[], EntityDataType> {
     return createDataLoader(this.ds);
   }
 
@@ -289,6 +295,8 @@ export const instances = {
   },
 };
 
+// Export Types
+
 export type Entity<T extends object = GenericObject> = GstoreEntity<T>;
 
 export type Model<
@@ -304,5 +312,11 @@ export type Schema<
 export { QUERIES_FORMATS } from './constants';
 
 export { ValidateResponse } from './helpers/validation';
+
+export { SchemaPathDefinition, SchemaOptions, PropType } from './schema';
+
+export { EntityData, EntityKey, IdType } from './types';
+
+export { QueryListOptions, QueryFindAroundOptions, QueryOptions, QueryResponse, GstoreQuery } from './query';
 
 export default Gstore;
