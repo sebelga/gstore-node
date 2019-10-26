@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.3](https://github.com/sebelga/gstore-node/compare/v7.2.2...v7.2.3) (2019-10-26)
+
+
+### Bug Fixes
+
+* **cache:** Get multiple keys ([#198](https://github.com/sebelga/gstore-node/issues/198)) ([0ec188d](https://github.com/sebelga/gstore-node/commit/0ec188d)), closes [#187](https://github.com/sebelga/gstore-node/issues/187)
+* **findOne:** add missing `readAll` option ([#200](https://github.com/sebelga/gstore-node/issues/200)) ([8e19a15](https://github.com/sebelga/gstore-node/commit/8e19a15))
+
 ### [7.2.2](https://github.com/sebelga/gstore-node/compare/v7.2.1...v7.2.2) (2019-10-01)
 
 
