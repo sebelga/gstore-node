@@ -44,76 +44,79 @@ const cleanUp = cb => {
 
 const randomName = () => chance.string({ pool: 'abcdefghijklmnopqrstuvwxyz0123456789' });
 
+const { Key } = Schema.Types;
+const companySchema = new Schema({ name: { type: String } });
+const userSchema = new Schema({
+  name: { type: String },
+  email: { type: String },
+  company: { type: Key },
+  privateVal: { read: false },
+});
+const publicationSchema = new Schema({ title: { type: String }, user: { type: Key } });
+const postSchema = new Schema({
+  title: { type: String },
+  user: { type: Key },
+  publication: { type: Key },
+});
+
+const UserModel = gstore.model('ModelTests-User', userSchema);
+const CompanyModel = gstore.model('ModelTests-Company', companySchema);
+const PostModel = gstore.model('ModelTests-Post', postSchema);
+const PublicationModel = gstore.model('ModelTests-Publication', publicationSchema);
+
+const addCompany = () => {
+  const name = randomName();
+  const company = new CompanyModel({ name });
+  return company.save().then(({ entityKey }) => {
+    addKey(entityKey);
+    return { name, entityKey };
+  });
+};
+
+const addUser = (company = null) => {
+  const name = randomName();
+  const email = chance.email();
+  const privateVal = randomName();
+
+  const user = new UserModel(
+    {
+      name,
+      company,
+      email,
+      privateVal,
+    },
+    randomName(),
+  );
+  return user.save().then(({ entityKey }) => {
+    addKey(entityKey);
+    return { entityKey, name, email, company, privateVal };
+  });
+};
+
+const addPost = (userKey = null, publicationKey = null) => {
+  const title = randomName();
+  const post = new PostModel({ title, user: userKey, publication: publicationKey }, randomName());
+  return post.save().then(({ entityKey }) => {
+    addKey(entityKey);
+    return { title, entityKey };
+  });
+};
+
+const addPublication = (userKey = null) => {
+  const title = randomName();
+  const publication = new PublicationModel({ title, user: userKey });
+  return publication.save().then(({ entityKey }) => {
+    addKey(entityKey);
+    return { title, entityKey };
+  });
+};
+
 describe('Model (Integration Tests)', () => {
   after(done => {
     cleanUp(() => done());
   });
 
   describe('get()', () => {
-    const { Key } = Schema.Types;
-    const companySchema = new Schema({ name: { type: String } });
-    const userSchema = new Schema({
-      name: { type: String },
-      email: { type: String },
-      company: { type: Key },
-      private: { read: false },
-    });
-    const publicationSchema = new Schema({ title: { type: String }, user: { type: Key } });
-    const postSchema = new Schema({
-      title: { type: String },
-      user: { type: Key },
-      publication: { type: Key },
-    });
-
-    const UserModel = gstore.model('ModelTests-User', userSchema);
-    const CompanyModel = gstore.model('ModelTests-Company', companySchema);
-    const PostModel = gstore.model('ModelTests-Post', postSchema);
-    const PublicationModel = gstore.model('ModelTests-Publication', publicationSchema);
-
-    const addCompany = () => {
-      const name = randomName();
-      const company = new CompanyModel({ name });
-      return company.save().then(({ entityKey }) => {
-        addKey(entityKey);
-        return { name, entityKey };
-      });
-    };
-
-    const addUser = (company = null) => {
-      const name = randomName();
-      const user = new UserModel(
-        {
-          name,
-          company,
-          email: chance.email(),
-          private: randomName(),
-        },
-        randomName(),
-      );
-      return user.save().then(({ entityKey }) => {
-        addKey(entityKey);
-        return { name, entityKey };
-      });
-    };
-
-    const addPost = (userKey = null, publicationKey = null) => {
-      const title = randomName();
-      const post = new PostModel({ title, user: userKey, publication: publicationKey }, randomName());
-      return post.save().then(({ entityKey }) => {
-        addKey(entityKey);
-        return { title, entityKey };
-      });
-    };
-
-    const addPublication = (userKey = null) => {
-      const title = randomName();
-      const publication = new PublicationModel({ title, user: userKey });
-      return publication.save().then(({ entityKey }) => {
-        addKey(entityKey);
-        return { title, entityKey };
-      });
-    };
-
     describe('populate()', () => {
       it('should fetch the "user" embedded entities', async () => {
         const { name: userName, entityKey: userKey } = await addUser();
@@ -122,7 +125,7 @@ describe('Model (Integration Tests)', () => {
         const { entityData } = await PostModel.get(postKey.name).populate('user');
         expect(entityData.user.id).equal(userKey.name);
         expect(entityData.user.name).equal(userName);
-        assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
+        assert.isUndefined(entityData.user.privateVal); // make sure "read: false" is not leaked
       });
 
       it('should return "null" if trying to populate a prop that does not exist', async () => {
@@ -168,10 +171,10 @@ describe('Model (Integration Tests)', () => {
         const { entityKey: userKey } = await addUser();
         const { entityKey: postKey } = await addPost(userKey);
 
-        const { entityData } = await PostModel.get(postKey.name).populate('user', ['email', 'private']);
+        const { entityData } = await PostModel.get(postKey.name).populate('user', ['email', 'privateVal']);
         assert.isDefined(entityData.user.email);
         assert.isUndefined(entityData.user.name);
-        assert.isDefined(entityData.user.private); // force get private fields
+        assert.isDefined(entityData.user.privateVal); // force get private fields
       });
 
       it('should throw an error when providing multiple properties to populate + fields to select', async () => {
@@ -179,7 +182,7 @@ describe('Model (Integration Tests)', () => {
         const { entityKey: postKey } = await addPost(userKey);
 
         try {
-          await PostModel.get(postKey.name).populate(['user', 'publication'], ['email', 'private']);
+          await PostModel.get(postKey.name).populate(['user', 'publication'], ['email', 'privateVal']);
           throw new Error('Shoud not get here.');
         } catch (err) {
           expect(err.message).equal('Only 1 property can be populated when fields to select are provided');
@@ -227,7 +230,7 @@ describe('Model (Integration Tests)', () => {
         const { entityData } = await PostModel.get(postKey.name).populate();
         expect(entityData.user.name).equal(userName);
         expect(entityData.publication).equal(null);
-        assert.isUndefined(entityData.user.private); // make sure "read: false" is not leaked
+        assert.isUndefined(entityData.user.privateVal); // make sure "read: false" is not leaked
       });
 
       it('should fetch the keys inside a Transaction', async () => {
@@ -244,6 +247,18 @@ describe('Model (Integration Tests)', () => {
         expect(transaction.get.callCount).equal(2);
         expect(entityData.user.name).equal(userName);
       });
+    });
+  });
+
+  describe('findOne()', () => {
+    it('should allow the `option.readAll`', async () => {
+      const { email, privateVal } = await addUser();
+
+      const user = await UserModel.findOne({ email });
+      expect(user.privateVal).to.equal(null);
+
+      const user2 = await UserModel.findOne({ email }, null, null, { readAll: true });
+      expect(user2.privateVal).to.equal(privateVal);
     });
   });
 

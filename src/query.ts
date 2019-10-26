@@ -122,6 +122,7 @@ class Query<T extends object, M extends object> {
     ancestors?: Array<string | number>,
     namespace?: string,
     options?: {
+      readAll?: boolean;
       cache?: boolean;
       ttl?: number | { [key: string]: number };
     },
