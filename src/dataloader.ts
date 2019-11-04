@@ -19,7 +19,7 @@ const { keyToString } = dsAdapter;
 export const createDataLoader = (
   ds: Datastore,
   options?: { maxBatchSize: number },
-): DataLoader<EntityKey[], EntityData> => {
+): DataLoader<EntityKey[] | EntityKey, EntityData> => {
   if (!ds) {
     throw new Error('A Datastore instance has to be passed');
   }
