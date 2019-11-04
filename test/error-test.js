@@ -13,18 +13,18 @@ const doSomethingBad = code => {
 };
 
 describe('message()', () => {
-  it('should return string passed', () => {
+  test('should return string passed', () => {
     expect(message('My message')).equal('My message');
   });
 
-  it('should return string passed with arguments', () => {
+  test('should return string passed with arguments', () => {
     expect(message('Hello %s %s', 'John', 'Snow')).equal('Hello John Snow');
     expect(message('Age: %d years old', 27)).equal('Age: 27 years old');
   });
 });
 
 describe('GstoreError', () => {
-  it('should create a custom Error', () => {
+  test('should create a custom Error', () => {
     try {
       doSomethingBad();
     } catch (e) {
@@ -48,7 +48,7 @@ describe('GstoreError', () => {
     }
   });
 
-  it('should fall back to generic if no message passed', () => {
+  test('should fall back to generic if no message passed', () => {
     const func = () => {
       throw new GstoreError();
     };
@@ -63,7 +63,7 @@ describe('GstoreError', () => {
 });
 
 describe('TypeError', () => {
-  it('should create a TypeError', () => {
+  test('should create a TypeError', () => {
     const throwTypeError = code => {
       code = code || 'ERR_GENERIC';
       throw new TypeError(code);
