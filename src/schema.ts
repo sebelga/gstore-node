@@ -329,7 +329,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
   /**
    * Custom Schema Types
    */
-  static Types = {
+  static Types: { Double: 'double'; GeoPoint: 'geoPoint'; Key: 'entityKey' } = {
     /**
      * Datastore Double object. For long doubles, a string can be provided.
      * @link https://googleapis.dev/nodejs/datastore/latest/Double.html
@@ -377,7 +377,7 @@ export interface SchemaOptions {
   joi?: boolean | JoiConfig;
 }
 
-export type Validator = string | { rule: string | ((...args: any[]) => boolean); args: any[] };
+export type Validator = string | { rule: string | ((...args: any[]) => boolean); args?: any[] };
 
 export type PropType =
   | NumberConstructor
