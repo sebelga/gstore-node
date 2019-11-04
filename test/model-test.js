@@ -25,7 +25,7 @@ describe('Model', () => {
   let mockEntities;
   let transaction;
 
-  beforeEach('Before each Model (global)', () => {
+  beforeEach(() => {
     gstore.models = {};
     gstore.modelSchemas = {};
     gstore.options = {};
@@ -78,26 +78,26 @@ describe('Model', () => {
   });
 
   describe('compile()', () => {
-    beforeEach('Reset before compile', () => {
+    beforeEach(() => {
       gstore.models = {};
       gstore.modelSchemas = {};
       GstoreModel = gstore.model('Blog', schema);
     });
 
-    it('should set properties on compile and return GstoreModel', () => {
+    test('should set properties on compile and return GstoreModel', () => {
       assert.isDefined(GstoreModel.schema);
       assert.isDefined(GstoreModel.gstore);
       assert.isDefined(GstoreModel.entityKind);
     });
 
-    it('should create new models classes', () => {
+    test('should create new models classes', () => {
       const User = gstore.model('User', new Schema({}));
 
       expect(User.entityKind).equal('User');
       expect(GstoreModel.entityKind).equal('Blog');
     });
 
-    it('should execute methods passed to schema.methods', () => {
+    test('should execute methods passed to schema.methods', () => {
       const imageSchema = new Schema({});
       const ImageModel = gstore.model('Image', imageSchema);
       sinon.stub(ImageModel, 'get').callsFake((id, cb) => {
@@ -122,7 +122,7 @@ describe('Model', () => {
       });
     });
 
-    it('should add __meta object', () => {
+    test('should add __meta object', () => {
       GstoreModel = gstore.model('MyEntity', schema);
 
       assert.isDefined(GstoreModel.schema.__meta);
@@ -131,7 +131,7 @@ describe('Model', () => {
   });
 
   describe('sanitize()', () => {
-    it('should remove keys not "writable"', () => {
+    test('should remove keys not "writable"', () => {
       let data = { price: 20, unknown: 'hello', name: 'John' };
 
       data = GstoreModel.sanitize(data);
@@ -140,7 +140,7 @@ describe('Model', () => {
       assert.isUndefined(data.unknown);
     });
 
-    it('should convert "null" string to null', () => {
+    test('should convert "null" string to null', () => {
       let data = {
         name: 'null',
       };
@@ -150,7 +150,7 @@ describe('Model', () => {
       expect(data.name).equal(null);
     });
 
-    it('return an empty object if data is not an object', () => {
+    test('return an empty object if data is not an object', () => {
       let data = 'hello';
 
       data = GstoreModel.sanitize(data);
@@ -158,14 +158,14 @@ describe('Model', () => {
       expect(data).deep.equal({});
     });
 
-    it('should not mutate the entityData passed', () => {
+    test('should not mutate the entityData passed', () => {
       const data = { name: 'John' };
       const data2 = GstoreModel.sanitize(data);
 
       expect(data2).not.equal(data);
     });
 
-    it('should remove not writable & unknown props in Joi schema', () => {
+    test('should remove not writable & unknown props in Joi schema', () => {
       schema = new Schema(
         {
           createdOn: { joi: Joi.date(), write: false },
@@ -180,7 +180,7 @@ describe('Model', () => {
       assert.isUndefined(entityData.unknown);
     });
 
-    it('should *not* remove unknown props in Joi schema', () => {
+    test('should *not* remove unknown props in Joi schema', () => {
       schema = new Schema(
         {
           createdOn: { joi: Joi.date(), write: false },
@@ -194,7 +194,7 @@ describe('Model', () => {
       assert.isDefined(entityData.unknown);
     });
 
-    it('should return the same value object from Model.sanitize and Entity.validate in Joi schema', () => {
+    test('should return the same value object from Model.sanitize and Entity.validate in Joi schema', () => {
       schema = new Schema(
         {
           foo: { joi: Joi.object({ bar: Joi.any() }).required() },
@@ -213,7 +213,7 @@ describe('Model', () => {
       assert.deepEqual(entityData, validationData);
     });
 
-    it('should preserve the datastore.KEY', () => {
+    test('should preserve the datastore.KEY', () => {
       const key = GstoreModel.key(123);
       let data = { foo: 'bar' };
       data[GstoreModel.gstore.ds.KEY] = key;
@@ -223,7 +223,7 @@ describe('Model', () => {
       expect(data[GstoreModel.gstore.ds.KEY]).to.equal(key);
     });
 
-    it('should preserve the datastore.KEY with Joi Schemas', () => {
+    test('should preserve the datastore.KEY with Joi Schemas', () => {
       schema = new Schema({}, { joi: true });
       GstoreModel = gstore.model('SanitizeJoiSchemaPreserveKEY', schema, gstore);
       const key = GstoreModel.key(123);
@@ -241,7 +241,7 @@ describe('Model', () => {
         GstoreModel = gstore.model('SanitizeReplacePopulatedEntity', schema, gstore);
       });
 
-      it('should replace a populated entity ref with its entity key', () => {
+      test('should replace a populated entity ref with its entity key', () => {
         const key = GstoreModel.key('abc');
         const data = {
           ref: {
@@ -256,7 +256,7 @@ describe('Model', () => {
         expect(sanitized.ref).to.equal(key);
       });
 
-      it('should not replace a ref that is not an object', () => {
+      test('should not replace a ref that is not an object', () => {
         const data = { ref: null };
 
         const sanitized = GstoreModel.sanitize(data);
@@ -268,14 +268,14 @@ describe('Model', () => {
   });
 
   describe('key()', () => {
-    it('should create from entityKind', () => {
+    test('should create from entityKind', () => {
       const key = GstoreModel.key();
 
       expect(key.path[0]).equal('Blog');
       assert.isUndefined(key.path[1]);
     });
 
-    it('should create array of ids', () => {
+    test('should create array of ids', () => {
       const keys = GstoreModel.key([22, 69]);
 
       expect(is.array(keys)).equal(true);
@@ -283,7 +283,7 @@ describe('Model', () => {
       expect(keys[1].path[1]).equal(69);
     });
 
-    it('should create array of ids with ancestors and namespace', () => {
+    test('should create array of ids with ancestors and namespace', () => {
       const namespace = 'com.mydomain-dev';
       const keys = GstoreModel.key([22, 69], ['Parent', 'keyParent'], namespace);
 
@@ -306,7 +306,7 @@ describe('Model', () => {
       ds.get.restore();
     });
 
-    it('passing an integer id', () => {
+    test('passing an integer id', () => {
       return GstoreModel.get(123).then(onEntity);
 
       function onEntity(_entity) {
@@ -315,12 +315,12 @@ describe('Model', () => {
       }
     });
 
-    it('passing an string id', () =>
+    test('passing an string id', () =>
       GstoreModel.get('keyname').then(_entity => {
         expect(_entity instanceof Entity.default).equal(true);
       }));
 
-    it('passing an array of ids', () => {
+    test('passing an array of ids', () => {
       ds.get.restore();
 
       const entity1 = { name: 'John' };
@@ -338,17 +338,17 @@ describe('Model', () => {
       });
     });
 
-    it('should consistently return an array when providing id as an Array', () =>
+    test('should consistently return an array when providing id as an Array', () =>
       GstoreModel.get(['abc']).then(_entity => {
         assert.isTrue(is.array(_entity));
       }));
 
-    it('not converting string with mix of number and non number', () =>
+    test('not converting string with mix of number and non number', () =>
       GstoreModel.get('123:456').then(() => {
         expect(ds.get.getCall(0).args[0].name).equal('123:456');
       }));
 
-    it('passing an ancestor path array', () => {
+    test('passing an ancestor path array', () => {
       const ancestors = ['Parent', 'keyname'];
 
       return GstoreModel.get(123, ancestors).then(() => {
@@ -358,7 +358,7 @@ describe('Model', () => {
       });
     });
 
-    it('should allow a namespace', () => {
+    test('should allow a namespace', () => {
       const namespace = 'com.mydomain-dev';
 
       return GstoreModel.get(123, null, namespace).then(() => {
@@ -366,7 +366,7 @@ describe('Model', () => {
       });
     });
 
-    it('on datastore get error, should reject error', done => {
+    test('on datastore get error, should reject error', done => {
       ds.get.restore();
       const error = { code: 500, message: 'Something went really bad' };
       sinon.stub(ds, 'get').rejects(error);
@@ -379,7 +379,7 @@ describe('Model', () => {
         });
     });
 
-    it('on no entity found, should return a "ERR_ENTITY_NOT_FOUND" error', () => {
+    test('on no entity found, should return a "ERR_ENTITY_NOT_FOUND" error', () => {
       ds.get.restore();
 
       sinon.stub(ds, 'get').resolves([]);
@@ -389,7 +389,7 @@ describe('Model', () => {
       });
     });
 
-    it('on no entity found, should return a null', () => {
+    test('on no entity found, should return a null', () => {
       ds.get.restore();
       gstore.config.errorOnEntityNotFound = false;
       sinon.stub(ds, 'get').resolves([]);
@@ -399,19 +399,19 @@ describe('Model', () => {
       });
     });
 
-    it('should get in a transaction', () =>
+    test('should get in a transaction', () =>
       GstoreModel.get(123, null, null, transaction).then(_entity => {
         expect(transaction.get.called).equal(true);
         expect(ds.get.called).equal(false);
         expect(_entity.__className).equal('Entity');
       }));
 
-    it('should throw error if transaction not an instance of glcoud Transaction', () =>
+    test('should throw error if transaction not an instance of glcoud Transaction', () =>
       GstoreModel.get(123, null, null, {}).catch(err => {
         expect(err.message).equal('Transaction needs to be a gcloud Transaction');
       }));
 
-    it('should return error from Transaction.get()', () => {
+    test('should return error from Transaction.get()', () => {
       transaction.get.restore();
       const error = { code: 500, message: 'Houston we really need you' };
       sinon.stub(transaction, 'get').rejects(error);
@@ -421,7 +421,7 @@ describe('Model', () => {
       });
     });
 
-    it('should still work with a callback', () => {
+    test('should still work with a callback', () => {
       return GstoreModel.get(123, onResult);
 
       function onResult(err, _entity) {
@@ -430,7 +430,7 @@ describe('Model', () => {
       }
     });
 
-    it('should get data through a Dataloader instance (singe key)', () => {
+    test('should get data through a Dataloader instance (singe key)', () => {
       const dataloader = gstore.createDataLoader(ds);
       const spy = sinon.stub(dataloader, 'load').resolves(entity);
 
@@ -444,7 +444,7 @@ describe('Model', () => {
       });
     });
 
-    it('should get data through a Dataloader instance (multiple key)', () => {
+    test('should get data through a Dataloader instance (multiple key)', () => {
       const dataloader = gstore.createDataLoader(ds);
       const spy = sinon.stub(dataloader, 'loadMany').resolves([{}, {}]);
 
@@ -460,7 +460,7 @@ describe('Model', () => {
       });
     });
 
-    it('should throw an error if dataloader is not a DataLoader instance', done => {
+    test('should throw an error if dataloader is not a DataLoader instance', done => {
       const dataloader = {};
 
       GstoreModel.get([123, 456], null, null, null, { dataloader }).then(
@@ -473,7 +473,7 @@ describe('Model', () => {
       );
     });
 
-    it('should allow to chain populate() calls and then call the Model.populate() method', () => {
+    test('should allow to chain populate() calls and then call the Model.populate() method', () => {
       const populateSpy = sinon.spy(GstoreModel, '__populate');
       const options = { dataLoader: { foo: 'bar' } };
 
@@ -489,7 +489,7 @@ describe('Model', () => {
         });
     });
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -500,7 +500,7 @@ describe('Model', () => {
         delete gstore.cache;
       });
 
-      it('should get value from cache', () => {
+      test('should get value from cache', () => {
         sinon.spy(GstoreModel.gstore.cache.keys, 'read');
         const key = GstoreModel.key(123);
         const value = { name: 'Michael' };
@@ -518,7 +518,7 @@ describe('Model', () => {
         );
       });
 
-      it('should throw an Error if entity not found in cache', done => {
+      test('should throw an Error if entity not found in cache', done => {
         ds.get.resolves([]);
         GstoreModel.get(12345, null, null, null, { ttl: 334455 }).catch(err => {
           expect(err.code).equal(ERROR_CODES.ERR_ENTITY_NOT_FOUND);
@@ -526,7 +526,7 @@ describe('Model', () => {
         });
       });
 
-      it('should return null if entity not found in cache', done => {
+      test('should return null if entity not found in cache', done => {
         ds.get.resolves([]);
 
         gstore.config.errorOnEntityNotFound = false;
@@ -538,7 +538,7 @@ describe('Model', () => {
         });
       });
 
-      it('should *not* get value from cache when deactivated in options', () => {
+      test('should *not* get value from cache when deactivated in options', () => {
         const key = GstoreModel.key(123);
         const value = { name: 'Michael' };
 
@@ -561,7 +561,7 @@ describe('Model', () => {
           );
       });
 
-      it('should *not* get value from cache when global ttl === -1', () => {
+      test('should *not* get value from cache when global ttl === -1', () => {
         const originalConf = gstore.cache.config.ttl;
         gstore.cache.config.ttl = { ...gstore.cache.config.ttl, keys: -1 };
         const key = GstoreModel.key(123);
@@ -574,7 +574,7 @@ describe('Model', () => {
         );
       });
 
-      it('should get value from fetchHandler', () =>
+      test('should get value from fetchHandler', () =>
         GstoreModel.get(123).then(response => {
           assert.ok(ds.get.called);
           const { args } = ds.get.getCall(0);
@@ -582,7 +582,7 @@ describe('Model', () => {
           expect(response.entityData).include(entity);
         }));
 
-      it('should get key from fetchHandler and Dataloader', () => {
+      test('should get key from fetchHandler and Dataloader', () => {
         const dataloader = gstore.createDataLoader(ds);
         const spy = sinon.stub(dataloader, 'load').resolves(entity);
 
@@ -592,7 +592,7 @@ describe('Model', () => {
         });
       });
 
-      it('should get multiple keys from fetchHandler and Dataloader', () => {
+      test('should get multiple keys from fetchHandler and Dataloader', () => {
         const entity2 = { name: 'Mick' };
         entity2[ds.KEY] = GstoreModel.key(456);
         const dataloader = gstore.createDataLoader(ds);
@@ -605,7 +605,7 @@ describe('Model', () => {
         });
       });
 
-      it('should get value from cache and call the fetchHandler **only** with keys not in the cache', () => {
+      test('should get value from cache and call the fetchHandler **only** with keys not in the cache', () => {
         const key = GstoreModel.key(456);
         const cacheEntity = { name: 'John' };
         cacheEntity[ds.KEY] = key;
@@ -620,7 +620,7 @@ describe('Model', () => {
         );
       });
 
-      it('should allow to chain populate() calls and then call the Model.populate() method', () => {
+      test('should allow to chain populate() calls and then call the Model.populate() method', () => {
         const spy = sinon.spy(GstoreModel, '__populate');
 
         const key = GstoreModel.key(123);
@@ -642,30 +642,30 @@ describe('Model', () => {
   });
 
   describe('update()', () => {
-    it('should run in a transaction', () =>
+    test('should run in a transaction', () =>
       GstoreModel.update(123).then(() => {
         expect(ds.transaction.called).equal(true);
         expect(transaction.run.called).equal(true);
         expect(transaction.commit.called).equal(true);
       }));
 
-    it('should return an entity instance', () =>
+    test('should return an entity instance', () =>
       GstoreModel.update(123).then(entity => {
         expect(entity.__className).equal('Entity');
       }));
 
-    it('should first get the entity by Key', () =>
+    test('should first get the entity by Key', () =>
       GstoreModel.update(123).then(() => {
         expect(transaction.get.getCall(0).args[0].constructor.name).equal('Key');
         expect(transaction.get.getCall(0).args[0].path[1]).equal(123);
       }));
 
-    it('should not convert a string id with mix of number and alpha chars', () =>
+    test('should not convert a string id with mix of number and alpha chars', () =>
       GstoreModel.update('123:456').then(() => {
         expect(transaction.get.getCall(0).args[0].name).equal('123:456');
       }));
 
-    it('should rollback if error while getting entity', () => {
+    test('should rollback if error while getting entity', () => {
       transaction.get.restore();
       const error = { code: 500, message: 'Houston we got a problem' };
       sinon.stub(transaction, 'get').rejects(error);
@@ -677,7 +677,7 @@ describe('Model', () => {
       });
     });
 
-    it('should return "ERR_ENTITY_NOT_FOUND" if entity not found', () => {
+    test('should return "ERR_ENTITY_NOT_FOUND" if entity not found', () => {
       transaction.get.restore();
       sinon.stub(transaction, 'get').resolves([]);
 
@@ -686,7 +686,7 @@ describe('Model', () => {
       });
     });
 
-    it('should return error if any while saving', done => {
+    test('should return error if any while saving', done => {
       transaction.run.restore();
       const error = { code: 500, message: 'Houston wee need you.' };
       sinon.stub(transaction, 'run').rejects([error]);
@@ -697,7 +697,7 @@ describe('Model', () => {
       });
     });
 
-    it('accept an ancestor path', () => {
+    test('accept an ancestor path', () => {
       const ancestors = ['Parent', 'keyname'];
 
       return GstoreModel.update(123, {}, ancestors).then(() => {
@@ -706,7 +706,7 @@ describe('Model', () => {
       });
     });
 
-    it('should allow a namespace', () => {
+    test('should allow a namespace', () => {
       const namespace = 'com.mydomain-dev';
 
       return GstoreModel.update(123, {}, null, namespace).then(() => {
@@ -714,7 +714,7 @@ describe('Model', () => {
       });
     });
 
-    it('should save and replace data', () => {
+    test('should save and replace data', () => {
       const data = { name: 'Mick' };
       return GstoreModel.update(123, data, null, null, null, { replace: true }).then(entity => {
         expect(entity.entityData.name).equal('Mick');
@@ -723,7 +723,7 @@ describe('Model', () => {
       });
     });
 
-    it('should accept a DataLoader instance, add it to the entity created and clear the key', () => {
+    test('should accept a DataLoader instance, add it to the entity created and clear the key', () => {
       const dataloader = gstore.createDataLoader(ds);
       const spy = sinon.spy(dataloader, 'clear');
 
@@ -735,7 +735,7 @@ describe('Model', () => {
       });
     });
 
-    it('should merge the new data with the entity data', () => {
+    test('should merge the new data with the entity data', () => {
       const data = {
         name: 'Sebas',
         lastname: 'Snow',
@@ -747,24 +747,24 @@ describe('Model', () => {
       });
     });
 
-    it('should call save() on the transaction', () => {
-      GstoreModel.update(123, {}).then(() => {
+    test('should call save() on the transaction', () => {
+      return GstoreModel.update(123, {}, undefined, undefined, transaction).then(() => {
         expect(transaction.save.called).equal(true);
       });
     });
 
-    it('should return error and rollback transaction if not passing validation', () =>
+    test('should return error and rollback transaction if not passing validation', () =>
       GstoreModel.update(123, { unknown: 1 }).catch(err => {
         assert.isDefined(err);
         expect(transaction.rollback.called).equal(true);
       }));
 
-    it('should return error if not passing validation', () =>
+    test('should return error if not passing validation', () =>
       GstoreModel.update(123, { unknown: 1 }, null, null, null, { replace: true }).catch(err => {
         assert.isDefined(err);
       }));
 
-    it('should run inside an *existing* transaction', () =>
+    test('should run inside an *existing* transaction', () =>
       GstoreModel.update(123, {}, null, null, transaction).then(entity => {
         expect(ds.transaction.called).equal(false);
         expect(transaction.get.called).equal(true);
@@ -772,12 +772,12 @@ describe('Model', () => {
         expect(entity.__className).equal('Entity');
       }));
 
-    it('should throw error if transaction passed is not instance of gcloud Transaction', () =>
+    test('should throw error if transaction passed is not instance of gcloud Transaction', () =>
       GstoreModel.update(123, {}, null, null, {}).catch(err => {
         expect(err.message).equal('Transaction needs to be a gcloud Transaction');
       }));
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -788,7 +788,7 @@ describe('Model', () => {
         delete gstore.cache;
       });
 
-      it('should call Model.clearCache() passing the key updated', () => {
+      test('should call Model.clearCache() passing the key updated', () => {
         sinon.spy(GstoreModel, 'clearCache');
         return GstoreModel.update(123, { name: 'Nuri' }, ['Parent', 'keyNameParent']).then(entity => {
           assert.ok(GstoreModel.clearCache.called);
@@ -798,7 +798,7 @@ describe('Model', () => {
         });
       });
 
-      it('on error when clearing the cache, should add the entityUpdated on the error', done => {
+      test('on error when clearing the cache, should add the entityUpdated on the error', done => {
         const err = new Error('Houston something bad happened');
         sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
@@ -823,31 +823,31 @@ describe('Model', () => {
       transaction.delete.restore();
     });
 
-    it('should call ds.delete with correct Key (int id)', () =>
+    test('should call ds.delete with correct Key (int id)', () =>
       GstoreModel.delete(123).then(response => {
         expect(ds.delete.called).equal(true);
         expect(ds.delete.getCall(0).args[0].constructor.name).equal('Key');
         expect(response.success).equal(true);
       }));
 
-    it('should call ds.delete with correct Key (string id)', () =>
+    test('should call ds.delete with correct Key (string id)', () =>
       GstoreModel.delete('keyName').then(response => {
         expect(ds.delete.called).equal(true);
         expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
         expect(response.success).equal(true);
       }));
 
-    it('not converting string id with mix of number and alpha chars', () =>
+    test('not converting string id with mix of number and alpha chars', () =>
       GstoreModel.delete('123:456').then(() => {
         expect(ds.delete.getCall(0).args[0].name).equal('123:456');
       }));
 
-    it('should allow array of ids', () =>
+    test('should allow array of ids', () =>
       GstoreModel.delete([22, 69]).then(() => {
         expect(is.array(ds.delete.getCall(0).args[0])).equal(true);
       }));
 
-    it('should allow ancestors', () =>
+    test('should allow ancestors', () =>
       GstoreModel.delete(123, ['Parent', 123]).then(() => {
         const key = ds.delete.getCall(0).args[0];
 
@@ -855,7 +855,7 @@ describe('Model', () => {
         expect(key.parent.id).equal(123);
       }));
 
-    it('should allow a namespace', () => {
+    test('should allow a namespace', () => {
       const namespace = 'com.mydomain-dev';
 
       return GstoreModel.delete('keyName', null, namespace).then(() => {
@@ -865,13 +865,13 @@ describe('Model', () => {
       });
     });
 
-    it('should delete entity in a transaction', () =>
+    test('should delete entity in a transaction', () =>
       GstoreModel.delete(123, null, null, transaction).then(() => {
         expect(transaction.delete.called).equal(true);
         expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
       }));
 
-    it('should deal with empty responses', () => {
+    test('should deal with empty responses', () => {
       ds.delete.restore();
       sinon.stub(ds, 'delete').resolves();
       return GstoreModel.delete(1).then(response => {
@@ -879,18 +879,18 @@ describe('Model', () => {
       });
     });
 
-    it('should delete entity in a transaction in sync', () => {
+    test('should delete entity in a transaction in sync', () => {
       GstoreModel.delete(123, null, null, transaction);
       expect(transaction.delete.called).equal(true);
       expect(transaction.delete.getCall(0).args[0].path[1]).equal(123);
     });
 
-    it('should throw error if transaction passed is not instance of gcloud Transaction', () =>
+    test('should throw error if transaction passed is not instance of gcloud Transaction', () =>
       GstoreModel.delete(123, null, null, {}).catch(err => {
         expect(err.message).equal('Transaction needs to be a gcloud Transaction');
       }));
 
-    it('should set "success" to false if no entity deleted', () => {
+    test('should set "success" to false if no entity deleted', () => {
       ds.delete.restore();
       sinon.stub(ds, 'delete').resolves([{ indexUpdates: 0 }]);
 
@@ -899,7 +899,7 @@ describe('Model', () => {
       });
     });
 
-    it('should not set success neither apiRes', () => {
+    test('should not set success neither apiRes', () => {
       ds.delete.restore();
       sinon.stub(ds, 'delete').resolves([{}]);
 
@@ -908,7 +908,7 @@ describe('Model', () => {
       });
     });
 
-    it('should handle errors', () => {
+    test('should handle errors', () => {
       ds.delete.restore();
       const error = { code: 500, message: 'We got a problem Houston' };
       sinon.stub(ds, 'delete').rejects(error);
@@ -918,7 +918,7 @@ describe('Model', () => {
       });
     });
 
-    it('should call pre hooks', () => {
+    test('should call pre hooks', () => {
       const spy = {
         beforeSave: () => Promise.resolve(),
       };
@@ -931,7 +931,7 @@ describe('Model', () => {
       });
     });
 
-    it('pre hook should override id passed', () => {
+    test('pre hook should override id passed', () => {
       const spy = {
         beforeSave: () => Promise.resolve({ __override: [666] }),
       };
@@ -944,7 +944,7 @@ describe('Model', () => {
       });
     });
 
-    it('should set "pre" hook scope to entity being deleted (1)', done => {
+    test('should set "pre" hook scope to entity being deleted (1)', done => {
       schema.pre('delete', function preDelete() {
         expect(this instanceof Entity.default).equal(true);
         done();
@@ -955,7 +955,7 @@ describe('Model', () => {
       GstoreModel.delete(123);
     });
 
-    it('should set "pre" hook scope to entity being deleted (2)', () => {
+    test('should set "pre" hook scope to entity being deleted (2)', () => {
       schema.pre('delete', function preDelete() {
         expect(this.entityKey.id).equal(777);
         return Promise.resolve();
@@ -966,7 +966,7 @@ describe('Model', () => {
       return GstoreModel.delete(null, null, null, null, GstoreModel.key(777));
     });
 
-    it('should NOT set "pre" hook scope if deleting an array of ids', () => {
+    test('should NOT set "pre" hook scope if deleting an array of ids', () => {
       let scope;
       schema.pre('delete', function preDelete() {
         scope = this;
@@ -979,7 +979,7 @@ describe('Model', () => {
       });
     });
 
-    it('should call post hooks', () => {
+    test('should call post hooks', () => {
       const spy = {
         afterDelete: () => Promise.resolve(),
       };
@@ -992,7 +992,7 @@ describe('Model', () => {
       });
     });
 
-    it('should pass key deleted to post hooks and set the scope to the entity deleted', done => {
+    test('should pass key deleted to post hooks and set the scope to the entity deleted', done => {
       schema.post('delete', function postDeleteHook({ key }) {
         expect(key.constructor.name).equal('Key');
         expect(key.id).equal(123);
@@ -1006,7 +1006,7 @@ describe('Model', () => {
       GstoreModel.delete(123);
     });
 
-    it('should pass array of keys deleted to post hooks', () => {
+    test('should pass array of keys deleted to post hooks', () => {
       const ids = [123, 456];
       schema.post('delete', response => {
         expect(response.key.length).equal(ids.length);
@@ -1018,7 +1018,7 @@ describe('Model', () => {
       return GstoreModel.delete(ids).then(() => {});
     });
 
-    it('transaction.execPostHooks() should call post hooks', () => {
+    test('transaction.execPostHooks() should call post hooks', () => {
       const spy = {
         afterDelete: () => Promise.resolve(),
       };
@@ -1036,7 +1036,7 @@ describe('Model', () => {
       });
     });
 
-    it('should still work passing a callback', () => {
+    test('should still work passing a callback', () => {
       GstoreModel.delete('keyName', (err, response) => {
         expect(ds.delete.called).equal(true);
         expect(ds.delete.getCall(0).args[0].path[1]).equal('keyName');
@@ -1044,7 +1044,7 @@ describe('Model', () => {
       });
     });
 
-    it('should accept a DataLoader instance and clear the cached key after deleting', () => {
+    test('should accept a DataLoader instance and clear the cached key after deleting', () => {
       const dataloader = gstore.createDataLoader(ds);
       const spy = sinon.spy(dataloader, 'clear');
 
@@ -1055,7 +1055,7 @@ describe('Model', () => {
       });
     });
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -1066,7 +1066,7 @@ describe('Model', () => {
         delete gstore.cache;
       });
 
-      it('should call Model.clearCache() passing the key deleted', () => {
+      test('should call Model.clearCache() passing the key deleted', () => {
         sinon.spy(GstoreModel, 'clearCache');
 
         return GstoreModel.delete(445566).then(response => {
@@ -1077,7 +1077,7 @@ describe('Model', () => {
         });
       });
 
-      it('on error when clearing the cache, should add the entityUpdated on the error', done => {
+      test('on error when clearing the cache, should add the entityUpdated on the error', done => {
         const err = new Error('Houston something bad happened');
         sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
@@ -1123,13 +1123,13 @@ describe('Model', () => {
       }
     });
 
-    it('should get all entities through Query', () =>
+    test('should get all entities through Query', () =>
       GstoreModel.deleteAll().then(() => {
         expect(GstoreModel.query.called).equal(true);
         expect(GstoreModel.query.getCall(0).args.length).equal(1);
       }));
 
-    it('should catch error if could not fetch entities', () => {
+    test('should catch error if could not fetch entities', () => {
       const error = { code: 500, message: 'Something went wrong' };
       queryMock.run.restore();
       sinon.stub(queryMock, 'run').rejects(error);
@@ -1139,7 +1139,7 @@ describe('Model', () => {
       });
     });
 
-    it('if pre hooks, should call "delete" on all entities found (in series)', () => {
+    test('if pre hooks, should call "delete" on all entities found (in series)', () => {
       schema = new Schema({});
       const spies = {
         pre: () => Promise.resolve(),
@@ -1159,7 +1159,7 @@ describe('Model', () => {
       });
     });
 
-    it('if post hooks, should call "delete" on all entities found (in series)', () => {
+    test('if post hooks, should call "delete" on all entities found (in series)', () => {
       schema = new Schema({});
       const spies = {
         post: () => Promise.resolve(),
@@ -1176,7 +1176,7 @@ describe('Model', () => {
       });
     });
 
-    it('if NO hooks, should call delete passing an array of keys', () => {
+    test('if NO hooks, should call delete passing an array of keys', () => {
       sinon.spy(GstoreModel, 'delete');
 
       return GstoreModel.deleteAll().then(() => {
@@ -1190,7 +1190,7 @@ describe('Model', () => {
       });
     });
 
-    it('should call with ancestors', () => {
+    test('should call with ancestors', () => {
       const ancestors = ['Parent', 'keyname'];
 
       return GstoreModel.deleteAll(ancestors).then(() => {
@@ -1199,7 +1199,7 @@ describe('Model', () => {
       });
     });
 
-    it('should call with namespace', () => {
+    test('should call with namespace', () => {
       const namespace = 'com.new-domain.dev';
 
       return GstoreModel.deleteAll(null, namespace).then(() => {
@@ -1207,12 +1207,12 @@ describe('Model', () => {
       });
     });
 
-    it('should return success:true if all ok', () =>
+    test('should return success:true if all ok', () =>
       GstoreModel.deleteAll().then(response => {
         expect(response.success).equal(true);
       }));
 
-    it('should return error if any while deleting', () => {
+    test('should return error if any while deleting', () => {
       const error = { code: 500, message: 'Could not delete' };
       sinon.stub(GstoreModel, 'delete').rejects(error);
 
@@ -1221,7 +1221,7 @@ describe('Model', () => {
       });
     });
 
-    it('should delete entites by batches of 500', done => {
+    test('should delete entites by batches of 500', done => {
       ds.createQuery.restore();
 
       const entities = [];
@@ -1241,7 +1241,7 @@ describe('Model', () => {
       });
     });
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -1252,7 +1252,7 @@ describe('Model', () => {
         delete gstore.cache;
       });
 
-      it('should delete all the keys from the cache and clear the Queries', done => {
+      test('should delete all the keys from the cache and clear the Queries', done => {
         ds.createQuery.restore();
 
         const entities = [];
@@ -1288,7 +1288,7 @@ describe('Model', () => {
   });
 
   describe('excludeFromIndexes', () => {
-    it('should add properties to schema as optional', () => {
+    test('should add properties to schema as optional', () => {
       const arr = ['newProp', 'url'];
       GstoreModel.excludeFromIndexes(arr);
 
@@ -1303,7 +1303,7 @@ describe('Model', () => {
       expect(schema.path('newProp').optional).equal(true);
     });
 
-    it('should only modifiy excludeFromIndexes on properties that already exist', () => {
+    test('should only modifiy excludeFromIndexes on properties that already exist', () => {
       const prop = 'lastname';
       GstoreModel.excludeFromIndexes(prop);
 
@@ -1323,7 +1323,7 @@ describe('Model', () => {
       delete transaction.hooks;
     });
 
-    it('should add hooks to a transaction', () => {
+    test('should add hooks to a transaction', () => {
       GstoreModel.__hooksTransaction(transaction, [() => {}, () => {}]);
 
       assert.isDefined(transaction.hooks.post);
@@ -1331,7 +1331,7 @@ describe('Model', () => {
       assert.isDefined(transaction.execPostHooks);
     });
 
-    it('should not override previous hooks on transaction', () => {
+    test('should not override previous hooks on transaction', () => {
       const fn = () => {};
       transaction.hooks = {
         post: [fn],
@@ -1342,7 +1342,7 @@ describe('Model', () => {
       expect(transaction.hooks.post[0]).equal(fn);
     });
 
-    it('--> execPostHooks() should chain each Promised hook from transaction', () => {
+    test('--> execPostHooks() should chain each Promised hook from transaction', () => {
       const postHook1 = sinon.stub().resolves(1);
       const postHook2 = sinon.stub().resolves(2);
       GstoreModel.__hooksTransaction(transaction, [postHook1, postHook2]);
@@ -1354,7 +1354,7 @@ describe('Model', () => {
       });
     });
 
-    it('--> execPostHooks() should resolve if no hooks', () => {
+    test('--> execPostHooks() should resolve if no hooks', () => {
       GstoreModel.__hooksTransaction(transaction, []);
       delete transaction.hooks.post;
 
@@ -1380,7 +1380,7 @@ describe('Model', () => {
       delete gstore.cache;
     });
 
-    it('should delete the cache', () => {
+    test('should delete the cache', () => {
       sinon.spy(gstore.cache.keys, 'del');
 
       return GstoreModel.clearCache([GstoreModel.key(112233), GstoreModel.key(778899)]).then(() => {
@@ -1391,7 +1391,7 @@ describe('Model', () => {
       });
     });
 
-    it('should clear all queries linked to its entity kind', () => {
+    test('should clear all queries linked to its entity kind', () => {
       sinon.spy(gstore.cache.queries, 'clearQueriesByKind');
       return GstoreModel.clearCache().then(() => {
         assert.ok(gstore.cache.queries.clearQueriesByKind.called);
@@ -1400,7 +1400,7 @@ describe('Model', () => {
       });
     });
 
-    it('should bubble up errors', done => {
+    test('should bubble up errors', done => {
       const err = new Error('Houston something bad happened');
       sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
       GstoreModel.clearCache(GstoreModel.key(123)).catch(e => {
@@ -1409,7 +1409,7 @@ describe('Model', () => {
       });
     });
 
-    it('should not throw error if Redis is not present', () => {
+    test('should not throw error if Redis is not present', () => {
       const err = new Error('Redis store not founc');
       err.code = 'ERR_NO_REDIS';
       sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
@@ -1465,7 +1465,7 @@ describe('Model', () => {
       ds.get.restore();
     });
 
-    it('should recursively fetch the keys at each level of the entityData tree', () =>
+    test('should recursively fetch the keys at each level of the entityData tree', () =>
       GstoreModel.__populate(refs)(entities).then(({ 0: { entityData } }) => {
         expect(entityData.ref.id).equal(456);
         expect(entityData.ref.name).equal('Level1');
@@ -1474,7 +1474,7 @@ describe('Model', () => {
         expect(ds.get.getCalls().length).equal(2);
       }));
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -1485,7 +1485,7 @@ describe('Model', () => {
         delete gstore.cache;
       });
 
-      it('should get the keys from the cache and not fetch from the Datastore', () =>
+      test('should get the keys from the cache and not fetch from the Datastore', () =>
         gstore.cache.keys.mset(key1, fetchData1, key2, fetchData2).then(() =>
           GstoreModel.__populate(refs)(entities).then(() => {
             expect(ds.get.getCalls().length).equal(0);
