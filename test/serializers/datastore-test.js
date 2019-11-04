@@ -49,7 +49,7 @@ describe('Datastore serializer', () => {
       datastoreMock[Model.gstore.ds.KEY] = key;
     });
 
-    it('and add Symbol("KEY") id to entity', () => {
+    test('and add Symbol("KEY") id to entity', () => {
       const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model);
 
       // expect(serialized).equal = datastoreMock;
@@ -57,25 +57,25 @@ describe('Datastore serializer', () => {
       assert.isUndefined(serialized.email);
     });
 
-    it('accepting "readAll" param', () => {
+    test('accepting "readAll" param', () => {
       const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { readAll: true });
 
       assert.isDefined(serialized.email);
     });
 
-    it('accepting "showKey" param', () => {
+    test('accepting "showKey" param', () => {
       const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { showKey: true });
 
       expect(serialized.__key).equal(key);
     });
 
-    it('should convert to entity instances', () => {
+    test('should convert to entity instances', () => {
       const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { format: QUERIES_FORMATS.ENTITY });
 
       expect(serialized.__className).equal('Entity');
     });
 
-    it('should convert Datetime prop to Date object if returned as number', () => {
+    test('should convert Datetime prop to Date object if returned as number', () => {
       const date = Date.now();
       datastoreMock.createdOn = date;
 
@@ -109,7 +109,7 @@ describe('Datastore serializer', () => {
       });
     });
 
-    it('without passing non-indexed properties', () => {
+    test('without passing non-indexed properties', () => {
       const expected = {
         name: 'John',
         embedded: {
@@ -123,17 +123,17 @@ describe('Datastore serializer', () => {
       expect(excludeLargeProperties).to.equal(false);
     });
 
-    it('not taking into account "undefined" variables', () => {
+    test('not taking into account "undefined" variables', () => {
       const { data } = datastoreSerializer.toDatastore(entity);
       expect({}.hasOwnProperty.call(data, 'lastname')).equal(false);
     });
 
-    it('and set excludeFromIndexes properties', () => {
+    test('and set excludeFromIndexes properties', () => {
       const { excludeFromIndexes } = datastoreSerializer.toDatastore(entity);
       expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]', 'array2[].*']);
     });
 
-    it('and set excludeLargeProperties flag', () => {
+    test('and set excludeLargeProperties flag', () => {
       const schema = new Schema({ name: String }, { excludeLargeProperties: true });
       Model = gstore.model('Serializer-auto-unindex', schema);
       entity = new Model({ name: 'John' });
@@ -142,7 +142,7 @@ describe('Datastore serializer', () => {
       expect(excludeLargeProperties).equal(true);
     });
 
-    it('should set all excludeFromIndexes on all properties of object', () => {
+    test('should set all excludeFromIndexes on all properties of object', () => {
       const schema = new Schema({
         embedded: { type: Object, excludeFromIndexes: true },
         embedded2: { joi: Joi.object(), excludeFromIndexes: true },
