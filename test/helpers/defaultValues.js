@@ -7,7 +7,7 @@ const { expect } = chai;
 
 describe('Query Helpers', () => {
   describe('defaultValues constants handler()', () => {
-    it('should return the current time', () => {
+    test('should return the current time', () => {
       const value = defaultValues.NOW;
       const result = defaultValues.__handler__(value);
 
@@ -19,7 +19,7 @@ describe('Query Helpers', () => {
       expect(dif).to.be.below(100);
     });
 
-    it('should return null if value passed not in map', () => {
+    test('should return null if value passed not in map', () => {
       const value = 'DOES_NOT_EXIST';
       const result = defaultValues.__handler__(value);
 
