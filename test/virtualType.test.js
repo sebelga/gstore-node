@@ -6,7 +6,7 @@ const { default: VirtualType } = require('../lib/virtualType');
 const { expect } = chai;
 
 describe('VirtualType', () => {
-  it('should add function to getter array', () => {
+  test('should add function to getter array', () => {
     const virtualType = new VirtualType('fullname');
 
     virtualType.get(() => {});
@@ -14,7 +14,7 @@ describe('VirtualType', () => {
     expect(virtualType.getter).not.equal(null);
   });
 
-  it('should throw error if not passing a function', () => {
+  test('should throw error if not passing a function', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = () => {
@@ -24,7 +24,7 @@ describe('VirtualType', () => {
     expect(fn).throw(Error);
   });
 
-  it('should add function to setter array', () => {
+  test('should add function to setter array', () => {
     const virtualType = new VirtualType('fullname');
 
     virtualType.set(() => {});
@@ -32,7 +32,7 @@ describe('VirtualType', () => {
     expect(virtualType.setter).not.equal(null);
   });
 
-  it('should throw error if not passing a function', () => {
+  test('should throw error if not passing a function', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = () => {
@@ -42,7 +42,7 @@ describe('VirtualType', () => {
     expect(fn).throw(Error);
   });
 
-  it('should applyGetter with scope', () => {
+  test('should applyGetter with scope', () => {
     const virtualType = new VirtualType('fullname');
 
     virtualType.get(function getName() {
@@ -58,7 +58,7 @@ describe('VirtualType', () => {
     expect(entityData.fullname).equal('John Snow');
   });
 
-  it('should return null if no getter', () => {
+  test('should return null if no getter', () => {
     const virtualType = new VirtualType('fullname');
 
     const entityData = {};
@@ -67,7 +67,7 @@ describe('VirtualType', () => {
     expect(v).equal(null);
   });
 
-  it('should applySetter with scope', () => {
+  test('should applySetter with scope', () => {
     const virtualType = new VirtualType('fullname');
 
     virtualType.set(function setName(name) {
@@ -82,7 +82,7 @@ describe('VirtualType', () => {
     expect(entityData.lastname).equal('Snow');
   });
 
-  it('should not do anything if no setter', () => {
+  test('should not do anything if no setter', () => {
     const virtualType = new VirtualType('fullname');
 
     const entityData = {};
