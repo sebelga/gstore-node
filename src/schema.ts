@@ -79,7 +79,7 @@ const RESERVED_PROPERTY_NAMES: { [key: string]: boolean } = {
 /**
  * gstore Schema
  */
-class Schema<T extends object = { [key: string]: any }, M extends object = { [key: string]: CustomEntityFunction<T> }> {
+class Schema<T extends object = any, M extends object = { [key: string]: CustomEntityFunction<T> }> {
   public readonly methods: { [P in keyof M]: CustomEntityFunction<T> };
 
   public readonly paths: { [P in keyof T]: SchemaPathDefinition };
@@ -145,7 +145,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
    * }
    * ```
   */
-  method(name: string | { [key: string]: FunctionType }, fn: FunctionType): void {
+  method(name: string | { [key: string]: FunctionType }, fn?: FunctionType): void {
     if (typeof name !== 'string') {
       if (typeof name !== 'object') {
         return;
@@ -171,7 +171,7 @@ class Schema<T extends object = { [key: string]: any }, M extends object = { [ke
    * @param {SchemaPathDefinition} [definition] The property definition
    * @link https://sebloix.gitbook.io/gstore-node/schema/methods/path
    */
-  path(propName: string, definition: SchemaPathDefinition): Schema<T> | SchemaPathDefinition | undefined {
+  path(propName: string, definition?: SchemaPathDefinition): Schema<T> | SchemaPathDefinition | undefined {
     if (typeof definition === 'undefined') {
       if (this.paths[propName as keyof T]) {
         return this.paths[propName as keyof T];

@@ -1,16 +1,16 @@
-'use strict';
+import chai from 'chai';
+import Joi from '@hapi/joi';
 
-const chai = require('chai');
-const Joi = require('@hapi/joi');
+import { Gstore } from './index';
+import GstoreSchema from './schema';
+import dsFactory from './__jest__/mocks/datastore';
 
-const { Gstore } = require('../lib');
-const ds = require('./mocks/datastore')();
-
+const ds = dsFactory();
 const gstore = new Gstore();
-const { Schema } = gstore;
-gstore.connect(ds);
-
 const { expect, assert } = chai;
+const { Schema } = gstore;
+
+gstore.connect(ds);
 
 describe('Schema', () => {
   describe('contructor', () => {
@@ -26,22 +26,19 @@ describe('Schema', () => {
     });
 
     test('should merge options passed', () => {
-      const schema = new Schema(
-        {},
-        {
-          newOption: 'myValue',
-          queries: { simplifyResult: false },
-        },
-      );
+      const schema = new Schema({}, {
+        newOption: 'myValue',
+        queries: { simplifyResult: false },
+      } as any);
 
-      expect(schema.options.newOption).equal('myValue');
-      expect(schema.options.queries.simplifyResult).equal(false);
+      expect((schema.options as any).newOption).equal('myValue');
+      expect((schema.options.queries as any).simplifyResult).equal(false);
     });
 
     test('should create its paths from obj passed', () => {
       const schema = new Schema({
-        property1: { type: 'string' },
-        property2: { type: 'number' },
+        property1: { type: String },
+        property2: { type: Number },
       });
 
       assert.isDefined(schema.paths.property1);
@@ -49,8 +46,8 @@ describe('Schema', () => {
     });
 
     test('should not allowed reserved properties on schema', () => {
-      const fn = () => {
-        const schema = new Schema({ ds: 123 });
+      const fn = (): GstoreSchema => {
+        const schema = new Schema({ ds: 123 } as any);
         return schema;
       };
 
@@ -59,15 +56,15 @@ describe('Schema', () => {
   });
 
   describe('add method', () => {
-    let schema;
+    let schema: GstoreSchema;
 
     beforeEach(() => {
       schema = new Schema({});
-      schema.methods = {};
+      // schema.methods = {};
     });
 
     test('should add it to its methods table', () => {
-      const fn = () => {};
+      const fn = (): void => {};
       schema.method('doSomething', fn);
 
       assert.isDefined(schema.methods.doSomething);
@@ -75,13 +72,17 @@ describe('Schema', () => {
     });
 
     test('should not do anything if value passed is not a function', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method('doSomething', 123);
 
       assert.isUndefined(schema.methods.doSomething);
     });
 
-    test('should allow to pass a table of functions and validate type', () => {
-      const fn = () => {};
+    test('should allow to pass a map of functions and validate type', () => {
+      const fn = (): void => {};
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method({
         doSomething: fn,
         doAnotherThing: 123,
@@ -93,6 +94,8 @@ describe('Schema', () => {
     });
 
     test('should only allow function and object to be passed', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method(10, () => {});
 
       expect(Object.keys(schema.methods).length).equal(0);
@@ -101,7 +104,7 @@ describe('Schema', () => {
 
   describe('modify / access paths table', () => {
     test('should read', () => {
-      const data = { keyname: { type: 'string' } };
+      const data = { keyname: { type: String } };
       const schema = new Schema(data);
 
       const pathValue = schema.path('keyname');
@@ -119,7 +122,7 @@ describe('Schema', () => {
 
     test('should set', () => {
       const schema = new Schema({});
-      schema.path('keyname', { type: 'string' });
+      schema.path('keyname', { type: String });
 
       assert.isDefined(schema.paths.keyname);
     });
@@ -127,7 +130,7 @@ describe('Schema', () => {
     test('should not allow to set reserved key', () => {
       const schema = new Schema({});
 
-      const fn = () => {
+      const fn = (): void => {
         schema.path('ds', {});
       };
 
@@ -137,7 +140,7 @@ describe('Schema', () => {
 
   describe('callQueue', () => {
     test('should add pre hooks to callQueue', () => {
-      const preMiddleware = () => {};
+      const preMiddleware = (): Promise<any> => Promise.resolve();
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -150,7 +153,7 @@ describe('Schema', () => {
     });
 
     test('should add post hooks to callQueue', () => {
-      const postMiddleware = () => {};
+      const postMiddleware = (): Promise<any> => Promise.resolve();
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -164,23 +167,23 @@ describe('Schema', () => {
   describe('virtual()', () => {
     test('should create new VirtualType', () => {
       const schema = new Schema({});
-      const fn = () => {};
-      schema.virtual('fullname', fn);
+      schema.virtual('fullname');
 
       expect(schema.__virtuals.fullname.constructor.name).equal('VirtualType');
     });
 
     test('should set the scope on the entityData', () => {
       const schema = new Schema({ id: {} });
-      schema.virtual('fullname').get(virtualFunc);
       const Model = gstore.model('VirtualTest', schema);
       const entity = new Model({ id: 123 });
 
-      entity.plain({ virtuals: true });
-
-      function virtualFunc() {
+      function virtualFunc(this: any): void {
         expect(this).deep.equal(entity.entityData);
       }
+
+      schema.virtual('fullname').get(virtualFunc);
+
+      entity.plain({ virtuals: true });
     });
   });
 
@@ -195,13 +198,13 @@ describe('Schema', () => {
   });
 
   describe('Joi', () => {
-    let schema;
+    let schema: GstoreSchema;
 
     beforeEach(() => {
       schema = new Schema(
         {
           name: { joi: Joi.string().required() },
-          notJoi: { type: 'string' },
+          notJoi: { type: String },
         },
         {
           joi: true,
