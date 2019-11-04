@@ -1,5 +1,5 @@
 import util from 'util';
-import chai from 'chai'; // eslint-disable-line import/no-extraneous-dependencies
+import chai from 'chai';
 import { GstoreError, TypeError, message } from './errors';
 
 const { expect, assert } = chai;

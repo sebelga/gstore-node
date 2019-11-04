@@ -1,4 +1,4 @@
-import chai from 'chai'; // eslint-disable-line import/no-extraneous-dependencies
+import chai from 'chai';
 import VirtualType from './virtualType';
 
 const { expect } = chai;
@@ -15,7 +15,8 @@ describe('VirtualType', () => {
   test('should throw error if not passing a function', () => {
     const virtualType = new VirtualType('fullname');
 
-    const fn = () => {
+    const fn = (): void => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       virtualType.get('string');
     };
@@ -34,7 +35,8 @@ describe('VirtualType', () => {
   test('should throw error if not passing a function', () => {
     const virtualType = new VirtualType('fullname');
 
-    const fn = () => {
+    const fn = (): void => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       virtualType.set('string');
     };

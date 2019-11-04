@@ -39,6 +39,8 @@ declare module 'nsql-cache' {
 
     public config: any;
 
+    public stores: any;
+
     keys: {
       read(
         keys: entity.Key | entity.Key[],

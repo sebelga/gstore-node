@@ -1,6 +1,6 @@
 import { Datastore } from '@google-cloud/datastore';
-import chai from 'chai'; // eslint-disable-line import/no-extraneous-dependencies
-import sinon from 'sinon'; // eslint-disable-line import/no-extraneous-dependencies
+import chai from 'chai';
+import sinon from 'sinon';
 import { Gstore } from '../lib';
 import { createDataLoader } from './dataloader';
 
