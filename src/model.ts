@@ -40,7 +40,9 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<T> &
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<
+    T
+  > &
     M;
 
   /**

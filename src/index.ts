@@ -22,7 +22,7 @@ import {
 } from './types';
 
 export interface CacheConfig {
-  stores: any[];
+  stores?: any[];
   config: NsqlCacheConfig;
 }
 
