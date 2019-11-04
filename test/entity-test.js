@@ -64,7 +64,7 @@ describe('Entity', () => {
   });
 
   describe('intantiate', () => {
-    it('should initialized properties', () => {
+    test('should initialized properties', () => {
       entity = new GstoreModel({}, 'keyid');
 
       assert.isDefined(entity.entityData);
@@ -75,17 +75,17 @@ describe('Entity', () => {
       expect(entity.__excludeFromIndexes).deep.equal({});
     });
 
-    it('should add data passed to entityData', () => {
+    test('should add data passed to entityData', () => {
       entity = new GstoreModel({ name: 'John' });
       expect(entity.entityData.name).to.equal('John');
     });
 
-    it('should have default if no data passed', () => {
+    test('should have default if no data passed', () => {
       entity = new GstoreModel();
       expect(entity.entityData.name).to.equal('Mick');
     });
 
-    it('should not add any data if nothing is passed', () => {
+    test('should not add any data if nothing is passed', () => {
       schema = new Schema({
         name: { type: String, optional: true },
       });
@@ -96,7 +96,7 @@ describe('Entity', () => {
       expect(Object.keys(entity.entityData).length).to.equal(0);
     });
 
-    it('should set default values or null from schema', () => {
+    test('should set default values or null from schema', () => {
       function fn() {
         return 'generatedValue';
       }
@@ -122,7 +122,7 @@ describe('Entity', () => {
       expect(entity.entityData.availableValuesRequired).equal(null);
     });
 
-    it('should set values from Joi schema', () => {
+    test('should set values from Joi schema', () => {
       const generateFullName = context => `${context.name} ${context.lastname}`;
 
       schema = new Schema(
@@ -142,7 +142,7 @@ describe('Entity', () => {
       expect(user.entityData.fullname).equal('Mick Jagger');
     });
 
-    it('should not set default if Joi validation does not pass', () => {
+    test('should not set default if Joi validation does not pass', () => {
       schema = new Schema(
         {
           name: {
@@ -164,7 +164,7 @@ describe('Entity', () => {
       assert.isUndefined(user.entityData.lastname);
     });
 
-    it('should call handler for default values in gstore.defaultValues constants', () => {
+    test('should call handler for default values in gstore.defaultValues constants', () => {
       sinon.spy(gstore.defaultValues, '__handler__');
       schema = new Schema({
         createdOn: { type: Date, default: gstore.defaultValues.NOW },
@@ -173,10 +173,9 @@ describe('Entity', () => {
       entity = new GstoreModel({});
 
       expect(gstore.defaultValues.__handler__.calledOnce).equal(true);
-      return entity;
     });
 
-    it('should not add default to optional properties', () => {
+    test('should not add default to optional properties', () => {
       schema = new Schema({
         name: { type: String },
         email: { optional: true },
@@ -188,7 +187,7 @@ describe('Entity', () => {
       expect(entity.entityData.email).equal(undefined);
     });
 
-    it('should create its array of excludeFromIndexes', () => {
+    test('should create its array of excludeFromIndexes', () => {
       schema = new Schema({
         name: { excludeFromIndexes: true },
         age: { excludeFromIndexes: true, type: Number },
@@ -225,31 +224,31 @@ describe('Entity', () => {
         ds.key.restore();
       });
 
-      it('---> with a full Key (String keyname passed)', () => {
+      test('---> with a full Key (String keyname passed)', () => {
         entity = new GstoreModel({}, 'keyid');
 
         expect(entity.entityKey.kind).equal('BlogPost');
         expect(entity.entityKey.name).equal('keyid');
       });
 
-      it('---> with a full Key (String with including numbers)', () => {
+      test('---> with a full Key (String with including numbers)', () => {
         entity = new GstoreModel({}, '123:456');
 
         expect(entity.entityKey.name).equal('123:456');
       });
 
-      it('---> with a full Key (Integer keyname passed)', () => {
+      test('---> with a full Key (Integer keyname passed)', () => {
         entity = new GstoreModel({}, 123);
 
         expect(entity.entityKey.id).equal(123);
       });
 
-      it('---> with a full Key ("string" Integer keyname passed)', () => {
+      test('---> with a full Key ("string" Integer keyname passed)', () => {
         entity = new GstoreModel({}, '123');
         expect(entity.entityKey.name).equal('123');
       });
 
-      it('---> throw error is id passed is not string or number', () => {
+      test('---> throw error is id passed is not string or number', () => {
         const fn = () => {
           entity = new GstoreModel({}, {});
           return entity;
@@ -258,13 +257,13 @@ describe('Entity', () => {
         expect(fn).throw(Error);
       });
 
-      it('---> with a partial Key (auto-generated id)', () => {
+      test('---> with a partial Key (auto-generated id)', () => {
         entity = new GstoreModel({});
 
         expect(entity.entityKey.kind).to.deep.equal('BlogPost');
       });
 
-      it('---> with an ancestor path (auto-generated id)', () => {
+      test('---> with an ancestor path (auto-generated id)', () => {
         entity = new GstoreModel({}, null, ['Parent', 1234]);
 
         expect(entity.entityKey.parent.kind).equal('Parent');
@@ -272,7 +271,7 @@ describe('Entity', () => {
         expect(entity.entityKey.kind).equal('BlogPost');
       });
 
-      it('---> with an ancestor path (manual id)', () => {
+      test('---> with an ancestor path (manual id)', () => {
         entity = new GstoreModel({}, 'entityKind', ['Parent', 1234]);
 
         expect(entity.entityKey.parent.kind).equal('Parent');
@@ -281,13 +280,13 @@ describe('Entity', () => {
         expect(entity.entityKey.name).equal('entityKind');
       });
 
-      it('---> with a namespace', () => {
+      test('---> with a namespace', () => {
         entity = new GstoreModel({}, null, null, 'com.otherdomain');
 
         expect(entity.entityKey.namespace).equal('com.otherdomain');
       });
 
-      it('---> with a gcloud Key', () => {
+      test('---> with a gcloud Key', () => {
         const key = ds.key('BlogPost', 1234);
 
         entity = new GstoreModel({}, null, null, null, key);
@@ -295,7 +294,7 @@ describe('Entity', () => {
         expect(entity.entityKey).equal(key);
       });
 
-      it('---> throw error if key is not instance of Key', () => {
+      test('---> throw error if key is not instance of Key', () => {
         function fn() {
           entity = new GstoreModel({}, null, null, null, {});
           return entity;
@@ -323,7 +322,7 @@ describe('Entity', () => {
         spyOn.fnHookPre.restore();
       });
 
-      it('should call pre hooks before saving and override arguments', () => {
+      test('should call pre hooks before saving and override arguments', () => {
         schema.pre('save', spyOn.fnHookPre);
         GstoreModel = gstore.model('BlogPost', schema);
         entity = new GstoreModel({ name: 'John' });
@@ -333,7 +332,7 @@ describe('Entity', () => {
         });
       });
 
-      it('should call pre and post hooks on custom method', () => {
+      test('should call pre and post hooks on custom method', () => {
         schema.method('newmethod', () => Promise.resolve());
         schema.pre('newmethod', spyOn.fnHookPre);
         schema.post('newmethod', spyOn.fnHookPost);
@@ -346,7 +345,7 @@ describe('Entity', () => {
         });
       });
 
-      it('should call post hooks after saving and override resolve', () => {
+      test('should call post hooks after saving and override resolve', () => {
         schema.post('save', spyOn.fnHookPost);
         GstoreModel = gstore.model('BlogPost', schema);
         entity = new GstoreModel({});
@@ -357,7 +356,7 @@ describe('Entity', () => {
         });
       });
 
-      it('should not do anything if no hooks on schema', () => {
+      test('should not do anything if no hooks on schema', () => {
         schema.callQueue = { model: {}, entity: {} };
         GstoreModel = gstore.model('BlogPost', schema);
         entity = new GstoreModel({ name: 'John' });
@@ -366,7 +365,7 @@ describe('Entity', () => {
         assert.isUndefined(entity.__posts);
       });
 
-      it('should not register unknown methods', () => {
+      test('should not register unknown methods', () => {
         schema.callQueue = { model: {}, entity: {} };
         schema.pre('unknown', () => {});
         GstoreModel = gstore.model('BlogPost', schema);
@@ -385,19 +384,19 @@ describe('Entity', () => {
       user = new GstoreModel({ name: 'John', lastname: 'Snow' });
     });
 
-    it('should get an entityData property', () => {
+    test('should get an entityData property', () => {
       const name = user.get('name');
 
       expect(name).equal('John');
     });
 
-    it('should return virtual', () => {
+    test('should return virtual', () => {
       const fullname = user.get('fullname');
 
       expect(fullname).equal('John Snow');
     });
 
-    it('should set an entityData property', () => {
+    test('should set an entityData property', () => {
       user.set('name', 'Gregory');
 
       const name = user.get('name');
@@ -405,13 +404,13 @@ describe('Entity', () => {
       expect(name).equal('Gregory');
     });
 
-    it('should set virtual', () => {
+    test('should set virtual', () => {
       user.set('fullname', 'Peter Jackson');
 
       expect(user.entityData.name).equal('Peter');
     });
 
-    it('should get data on entity properties from the entity data', () => {
+    test('should get data on entity properties from the entity data', () => {
       GstoreModel = gstore.model('BlogPost', schema);
 
       entity = new GstoreModel({
@@ -425,7 +424,7 @@ describe('Entity', () => {
       expect(entity.password).to.equal('JanesPassword');
     });
 
-    it('should reflect changes to entity properties in the entity data', () => {
+    test('should reflect changes to entity properties in the entity data', () => {
       GstoreModel = gstore.model('BlogPost', schema);
 
       entity = new GstoreModel({
@@ -453,7 +452,7 @@ describe('Entity', () => {
       datastoreSerializer.fromDatastore.restore();
     });
 
-    it('should throw an error is options is not of type Object', () => {
+    test('should throw an error is options is not of type Object', () => {
       const fn = () => {
         entity = new GstoreModel({ name: 'John' });
         entity.plain(true);
@@ -462,7 +461,7 @@ describe('Entity', () => {
       expect(fn).throw(Error);
     });
 
-    it('should call datastoreSerializer "fromDatastore"', () => {
+    test('should call datastoreSerializer "fromDatastore"', () => {
       entity = new GstoreModel({ name: 'John', password: 'test' });
       const { entityData } = entity;
 
@@ -473,7 +472,7 @@ describe('Entity', () => {
       assert.isUndefined(output.password);
     });
 
-    it('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
+    test('should call datastoreSerializer "fromDatastore" passing readAll parameter', () => {
       entity = new GstoreModel({ name: 'John', password: 'test' });
 
       const output = entity.plain({ readAll: true });
@@ -482,7 +481,7 @@ describe('Entity', () => {
       assert.isDefined(output.password);
     });
 
-    it('should pass showKey parameter', () => {
+    test('should pass showKey parameter', () => {
       entity = new GstoreModel({});
 
       entity.plain({ showKey: true });
@@ -490,7 +489,7 @@ describe('Entity', () => {
       expect(datastoreSerializer.fromDatastore.getCall(0).args[2]).deep.equal({ readAll: false, showKey: true });
     });
 
-    it('should add virtuals', () => {
+    test('should add virtuals', () => {
       entity = new GstoreModel({ name: 'John' });
       sinon.spy(entity, '__getEntityDataWithVirtuals');
 
@@ -500,7 +499,7 @@ describe('Entity', () => {
       entity.__getEntityDataWithVirtuals.restore();
     });
 
-    it('should clear embedded object excluded properties', () => {
+    test('should clear embedded object excluded properties', () => {
       schema = new Schema({
         embedded: { excludeFromRead: ['prop1', 'prop2'] },
       });
@@ -515,7 +514,7 @@ describe('Entity', () => {
       expect(plain.embedded.prop3).equal('3');
     });
 
-    it('should clear nested embedded object excluded properties', () => {
+    test('should clear nested embedded object excluded properties', () => {
       schema = new Schema({
         embedded: { excludeFromRead: ['prop1', 'prop2.p1', 'prop3.p1.p11'] },
       });
@@ -545,7 +544,7 @@ describe('Entity', () => {
       expect(plain.embedded.prop4).equal('4');
     });
 
-    it('should ignore incorrectly specified nested embedded object property paths', () => {
+    test('should ignore incorrectly specified nested embedded object property paths', () => {
       schema = new Schema({
         embedded: { excludeFromRead: ['prop3.wrong.p1', 'prop4', 'prop4.p1.p2', 'prop5.p1'] },
       });
@@ -567,7 +566,7 @@ describe('Entity', () => {
       expect(plain.embedded.prop3.p1.p2.p3).equal('p3');
     });
 
-    it('should not clear nested embedded object excluded properties when specifying readAll: true', () => {
+    test('should not clear nested embedded object excluded properties when specifying readAll: true', () => {
       schema = new Schema({
         embedded: { excludeFromRead: ['prop1', 'prop2.p1', 'prop3.p1.p11'] },
       });
@@ -600,7 +599,7 @@ describe('Entity', () => {
   });
 
   describe('datastoreEntity()', () => {
-    it('should get the data from the Datastore and merge it into the entity', () => {
+    test('should get the data from the Datastore and merge it into the entity', () => {
       const mockData = { name: 'John' };
       sinon.stub(ds, 'get').resolves([mockData]);
 
@@ -616,7 +615,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should return 404 not found if no entity returned', () => {
+    test('should return 404 not found if no entity returned', () => {
       sinon.stub(ds, 'get').resolves([]);
 
       entity = new GstoreModel({});
@@ -628,7 +627,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should return 404 not found if no entity returned (2)', () => {
+    test('should return 404 not found if no entity returned (2)', () => {
       sinon.stub(ds, 'get').resolves();
 
       entity = new GstoreModel({});
@@ -639,7 +638,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should return null if no entity returned', () => {
+    test('should return null if no entity returned', () => {
       gstore.config.errorOnEntityNotFound = false;
 
       sinon.stub(ds, 'get').resolves([]);
@@ -652,7 +651,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should bubble up error fetching the entity', () => {
+    test('should bubble up error fetching the entity', () => {
       const error = { code: 500, message: 'Something went bad' };
       sinon.stub(ds, 'get').rejects(error);
 
@@ -665,7 +664,7 @@ describe('Entity', () => {
       });
     });
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       let key;
       let mockData;
 
@@ -683,7 +682,7 @@ describe('Entity', () => {
         delete gstore.cache;
       });
 
-      it('should get value from cache', () => {
+      test('should get value from cache', () => {
         const value = mockData;
         entity = new GstoreModel(mockData);
         entity.entityKey = key;
@@ -706,7 +705,7 @@ describe('Entity', () => {
         );
       });
 
-      it('should **not** get value from cache', () => {
+      test('should **not** get value from cache', () => {
         const value = mockData;
         entity = new GstoreModel(mockData);
         entity.entityKey = key;
@@ -728,7 +727,7 @@ describe('Entity', () => {
   });
 
   describe('model()', () => {
-    it('should be able to return model instances', () => {
+    test('should be able to return model instances', () => {
       const imageSchema = new Schema({});
       const ImageModel = gstore.model('Image', imageSchema);
 
@@ -737,7 +736,7 @@ describe('Entity', () => {
       expect(blog.model('Image')).equal(ImageModel);
     });
 
-    it('should be able to execute methods from other model instances', () => {
+    test('should be able to execute methods from other model instances', () => {
       const imageSchema = new Schema({});
       const ImageModel = gstore.model('Image', imageSchema);
       const mockEntities = [{ key: ds.key(['BlogPost', 1234]) }];
@@ -775,15 +774,15 @@ describe('Entity', () => {
       entity = new User({ firstname: 'John', lastname: 'Snow' });
     });
 
-    it('should add add virtuals on instance', () => {
+    test('should add add virtuals on instance', () => {
       assert.isDefined(entity.fullname);
     });
 
-    it('setting on instance should modify entityData', () => {
+    test('setting on instance should modify entityData', () => {
       expect(entity.fullname).equal('John Snow');
     });
 
-    it('should add virtuals properties on entity instance', () => {
+    test('should add virtuals properties on entity instance', () => {
       expect(entity.fullname).equal('John Snow');
       entity.firstname = 'Mick';
       expect(entity.fullname).equal('Mick Snow');
@@ -793,14 +792,14 @@ describe('Entity', () => {
       expect(entity.entityData).deep.equal({ firstname: 'Andre', lastname: 'Agassi' });
     });
 
-    it('should Not override', () => {
+    test('should Not override', () => {
       entity = new User({ firstname: 'John', lastname: 'Snow', fullname: 'Jooohn' });
       const entityData = entity.__getEntityDataWithVirtuals();
 
       expect(entityData.fullname).equal('Jooohn');
     });
 
-    it('should read and parse virtual (set)', () => {
+    test('should read and parse virtual (set)', () => {
       entity = new User({ fullname: 'John Snow' });
 
       const entityData = entity.__getEntityDataWithVirtuals();
@@ -809,7 +808,7 @@ describe('Entity', () => {
       expect(entityData.lastname).equal('Snow');
     });
 
-    it('should override existing', () => {
+    test('should override existing', () => {
       entity = new User({ firstname: 'Peter', fullname: 'John Snow' });
 
       const entityData = entity.__getEntityDataWithVirtuals();
@@ -817,7 +816,7 @@ describe('Entity', () => {
       expect(entityData.firstname).equal('John');
     });
 
-    it('should not allow reserved name for virtuals', () => {
+    test('should not allow reserved name for virtuals', () => {
       const func = () => {
         schema.virtual('plain').get(function getFullName() {
           return `${this.firstname} ${this.lastname}`;
@@ -835,12 +834,12 @@ describe('Entity', () => {
       entity = new GstoreModel(data);
     });
 
-    it('should return the entity saved', () =>
+    test('should return the entity saved', () =>
       entity.save().then(_entity => {
         expect(_entity.__className).equal('Entity');
       }));
 
-    it('should validate() before', () => {
+    test('should validate() before', () => {
       const validateSpy = sinon.spy(entity, 'validate');
 
       return entity.save().then(() => {
@@ -848,7 +847,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should NOT validate() data before', () => {
+    test('should NOT validate() data before', () => {
       schema = new Schema({}, { validateBeforeSave: false });
       GstoreModel = gstore.model('Blog', schema);
       entity = new GstoreModel({ name: 'John' });
@@ -859,7 +858,7 @@ describe('Entity', () => {
       });
     });
 
-    it("should NOT save to Datastore if it didn't pass property validation", done => {
+    test("should NOT save to Datastore if it didn't pass property validation", done => {
       entity = new GstoreModel({ unknown: 'John' });
 
       entity
@@ -876,7 +875,7 @@ describe('Entity', () => {
         });
     });
 
-    it("should NOT save to Datastore if it didn't pass value validation", done => {
+    test("should NOT save to Datastore if it didn't pass value validation", done => {
       entity = new GstoreModel({ website: 'mydomain' });
 
       entity.save().catch(err => {
@@ -886,7 +885,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should convert to Datastore format before saving to Datastore', () => {
+    test('should convert to Datastore format before saving to Datastore', () => {
       const spySerializerToDatastore = sinon.spy(datastoreSerializer, 'toDatastore');
 
       return entity.save().then(() => {
@@ -903,18 +902,18 @@ describe('Entity', () => {
       });
     });
 
-    it('should set "upsert" method by default', () =>
+    test('should set "upsert" method by default', () =>
       entity.save().then(() => {
         expect(entity.gstore.ds.save.getCall(0).args[0].method).equal('upsert');
       }));
 
     describe('options', () => {
-      it('should accept a "method" parameter in options', () =>
+      test('should accept a "method" parameter in options', () =>
         entity.save(null, { method: 'insert' }).then(() => {
           expect(entity.gstore.ds.save.getCall(0).args[0].method).equal('insert');
         }));
 
-      it('should only allow "update", "insert", "upsert" as method', done => {
+      test('should only allow "update", "insert", "upsert" as method', done => {
         entity.save(null, { method: 'something' }).catch(e => {
           expect(e.message).equal('Method must be either "update", "insert" or "upsert"');
 
@@ -928,7 +927,7 @@ describe('Entity', () => {
       });
     });
 
-    it('on Datastore error, return the error', () => {
+    test('on Datastore error, return the error', () => {
       ds.save.restore();
 
       const error = {
@@ -944,7 +943,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should save entity in a transaction and execute "pre" hooks first', () => {
+    test('should save entity in a transaction and execute "pre" hooks first', () => {
       schema = new Schema({});
       const spyPreHook = sinon.spy();
       schema.pre('save', () => {
@@ -963,7 +962,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should *not* save entity in a transaction if there are "pre" hooks', () => {
+    test('should *not* save entity in a transaction if there are "pre" hooks', () => {
       schema = new Schema({});
       const spyPreHook = sinon.spy();
       schema.pre('save', () => {
@@ -979,7 +978,7 @@ describe('Entity', () => {
       expect(transaction.save.called).equal(false);
     });
 
-    it('should save entity in a transaction in sync', done => {
+    test('should save entity in a transaction in sync', done => {
       const schema2 = new Schema({}, { validateBeforeSave: false });
       const ModelInstance2 = gstore.model('NewType', schema2, gstore);
       entity = new ModelInstance2({});
@@ -988,7 +987,7 @@ describe('Entity', () => {
       done();
     });
 
-    it('should save entity in a transaction synchronous when validateBeforeSave desactivated', () => {
+    test('should save entity in a transaction synchronous when validateBeforeSave desactivated', () => {
       schema = new Schema({ name: { type: String } }, { validateBeforeSave: false });
 
       const ModelInstanceTemp = gstore.model('BlogTemp', schema, gstore);
@@ -998,7 +997,7 @@ describe('Entity', () => {
       expect(transaction.save.called).equal(true);
     });
 
-    it('should save entity in a transaction synchronous when disabling hook', () => {
+    test('should save entity in a transaction synchronous when disabling hook', () => {
       schema = new Schema({
         name: { type: String },
       });
@@ -1019,13 +1018,13 @@ describe('Entity', () => {
       expect(transaction2.save.called).equal(false);
     });
 
-    it('should throw error if transaction not instance of Transaction', () =>
+    test('should throw error if transaction not instance of Transaction', () =>
       entity.save({ id: 0 }, {}).catch(err => {
         assert.isDefined(err);
         expect(err.message).equal('Transaction needs to be a gcloud Transaction');
       }));
 
-    it('should call pre hooks', () => {
+    test('should call pre hooks', () => {
       const spyPre = sinon.stub().resolves();
 
       schema = new Schema({ name: { type: String } });
@@ -1038,7 +1037,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should call post hooks', () => {
+    test('should call post hooks', () => {
       const spyPost = sinon.stub().resolves(123);
       schema = new Schema({ name: { type: String } });
       schema.post('save', () => spyPost());
@@ -1051,7 +1050,7 @@ describe('Entity', () => {
       });
     });
 
-    it('error in post hooks should be added to response', () => {
+    test('error in post hooks should be added to response', () => {
       const error = { code: 500 };
       const spyPost = sinon.stub().rejects(error);
       schema = new Schema({ name: { type: String } });
@@ -1065,7 +1064,7 @@ describe('Entity', () => {
       });
     });
 
-    it('transaction.execPostHooks() should call post hooks', () => {
+    test('transaction.execPostHooks() should call post hooks', () => {
       const spyPost = sinon.stub().resolves(123);
       schema = new Schema({ name: { type: String } });
       schema.post('save', spyPost);
@@ -1082,7 +1081,7 @@ describe('Entity', () => {
         });
     });
 
-    it('transaction.execPostHooks() should set scope to entity saved', done => {
+    test('transaction.execPostHooks() should set scope to entity saved', done => {
       schema.post('save', function preSave() {
         expect(this instanceof Entity.default).equal(true);
         expect(this.name).equal('John Jagger');
@@ -1094,7 +1093,7 @@ describe('Entity', () => {
       entity.save(transaction).then(() => transaction.execPostHooks());
     });
 
-    it('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
+    test('if transaction.execPostHooks() is NOT called post middleware should not be called', () => {
       const spyPost = sinon.stub().resolves(123);
       schema = new Schema({ name: { type: String } });
       schema.post('save', spyPost);
@@ -1107,7 +1106,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should update modifiedOn to new Date if property in Schema', () => {
+    test('should update modifiedOn to new Date if property in Schema', () => {
       schema = new Schema({ modifiedOn: { type: Date } });
       GstoreModel = gstore.model('BlogPost', schema);
       entity = new GstoreModel({});
@@ -1119,7 +1118,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should convert plain geo object (latitude, longitude) to datastore GeoPoint', () => {
+    test('should convert plain geo object (latitude, longitude) to datastore GeoPoint', () => {
       schema = new Schema({ location: { type: Schema.Types.GeoPoint } });
       GstoreModel = gstore.model('Car', schema);
       entity = new GstoreModel({
@@ -1134,7 +1133,7 @@ describe('Entity', () => {
       });
     });
 
-    it('should sanitize the entityData', () => {
+    test('should sanitize the entityData', () => {
       schema = new Schema({ name: { type: String } });
       GstoreModel = gstore.model('TestValidate', schema);
       entity = new GstoreModel({ name: 'John', unknown: 'abc' });
@@ -1144,7 +1143,7 @@ describe('Entity', () => {
       });
     });
 
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
       });
@@ -1155,7 +1154,7 @@ describe('Entity', () => {
         delete gstore.cache;
       });
 
-      it('should call GstoreModel.clearCache()', () => {
+      test('should call GstoreModel.clearCache()', () => {
         sinon.spy(GstoreModel, 'clearCache');
         return entity.save().then(_entity => {
           assert.ok(GstoreModel.clearCache.called);
@@ -1165,7 +1164,7 @@ describe('Entity', () => {
         });
       });
 
-      it('on error when clearing the cache, should add the entity saved on the error object', done => {
+      test('on error when clearing the cache, should add the entity saved on the error object', done => {
         const err = new Error('Houston something bad happened');
         sinon.stub(gstore.cache.queries, 'clearQueriesByKind').rejects(err);
 
@@ -1188,7 +1187,7 @@ describe('Entity', () => {
       validation.validate.restore();
     });
 
-    it('should call "Validation" helper passing entityData, Schema & entityKind', () => {
+    test('should call "Validation" helper passing entityData, Schema & entityKind', () => {
       schema = new Schema({ name: { type: String } });
       GstoreModel = gstore.model('TestValidate', schema);
       entity = new GstoreModel({ name: 'John' });
@@ -1201,7 +1200,7 @@ describe('Entity', () => {
       expect(validation.validate.getCall(0).args[2]).equal(entity.entityKind);
     });
 
-    it('should maintain the Datastore Key on the entityData with Joi Schema', () => {
+    test('should maintain the Datastore Key on the entityData with Joi Schema', () => {
       schema = new Schema({ name: { joi: Joi.string() } }, { joi: true });
       GstoreModel = gstore.model('TestValidate3', schema);
       entity = new GstoreModel({ name: 'John', createdOn: 'abc' });
