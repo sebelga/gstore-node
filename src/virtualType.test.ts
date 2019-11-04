@@ -1,7 +1,5 @@
-'use strict';
-
-const chai = require('chai');
-const { default: VirtualType } = require('../lib/virtualType');
+import chai from 'chai'; // eslint-disable-line import/no-extraneous-dependencies
+import VirtualType from './virtualType';
 
 const { expect } = chai;
 
@@ -18,6 +16,7 @@ describe('VirtualType', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = () => {
+      // @ts-ignore
       virtualType.get('string');
     };
 
@@ -36,6 +35,7 @@ describe('VirtualType', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = () => {
+      // @ts-ignore
       virtualType.set('string');
     };
 
@@ -45,11 +45,11 @@ describe('VirtualType', () => {
   test('should applyGetter with scope', () => {
     const virtualType = new VirtualType('fullname');
 
-    virtualType.get(function getName() {
+    virtualType.get(function getName(this: any) {
       return `${this.name} ${this.lastname}`;
     });
 
-    const entityData = {
+    const entityData: any = {
       name: 'John',
       lastname: 'Snow',
     };
@@ -70,12 +70,12 @@ describe('VirtualType', () => {
   test('should applySetter with scope', () => {
     const virtualType = new VirtualType('fullname');
 
-    virtualType.set(function setName(name) {
+    virtualType.set(function setName(this: any, name) {
       const split = name.split(' ');
       [this.firstname, this.lastname] = split;
     });
 
-    const entityData = {};
+    const entityData: any = {};
 
     virtualType.applySetters('John Snow', entityData);
     expect(entityData.firstname).equal('John');
