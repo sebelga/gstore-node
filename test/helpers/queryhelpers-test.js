@@ -98,20 +98,17 @@ describe('Query Helpers', () => {
       expect(query.filters[0].val.id).equal(1234);
     });
 
-    test(
-      'and throw Error if no Datastore instance passed when passing ancestors',
-      () => {
-        const options = {
-          ancestors: ['Parent', 123],
-        };
+    test('and throw Error if no Datastore instance passed when passing ancestors', () => {
+      const options = {
+        ancestors: ['Parent', 123],
+      };
 
-        const fn = () => {
-          query = queryHelpers.buildQueryFromOptions(query, options);
-        };
+      const fn = () => {
+        query = queryHelpers.buildQueryFromOptions(query, options);
+      };
 
-        expect(fn).to.throw(Error);
-      }
-    );
+      expect(fn).to.throw(Error);
+    });
 
     test('and define one filter', () => {
       const options = {
@@ -140,20 +137,17 @@ describe('Query Helpers', () => {
       expect(query.filters[2].op).equal('<');
     });
 
-    test(
-      'and execute a function in a filter value, without modifying the filters Array',
-      () => {
-        const spy = sinon.spy();
-        const options = {
-          filters: [['modifiedOn', '<', spy]],
-        };
+    test('and execute a function in a filter value, without modifying the filters Array', () => {
+      const spy = sinon.spy();
+      const options = {
+        filters: [['modifiedOn', '<', spy]],
+      };
 
-        query = queryHelpers.buildQueryFromOptions(query, options, ds);
+      query = queryHelpers.buildQueryFromOptions(query, options, ds);
 
-        expect(spy.calledOnce).equal(true);
-        expect(options.filters[0][2]).to.equal(spy);
-      }
-    );
+      expect(spy.calledOnce).equal(true);
+      expect(options.filters[0][2]).to.equal(spy);
+    });
 
     test('and throw error if wrong format for filters', () => {
       const options = {

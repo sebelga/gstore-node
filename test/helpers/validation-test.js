@@ -67,7 +67,7 @@ describe('Validation', () => {
     schema.virtual('fullname').get(() => {});
   });
 
-  it('should return an object with an "error" and "value" properties', () => {
+  test('should return an object with an "error" and "value" properties', () => {
     const entityData = { name: 'John' };
 
     const { error, value } = validate(entityData);
@@ -76,7 +76,7 @@ describe('Validation', () => {
     expect(value).equal(entityData);
   });
 
-  it('should return a Promise and resolve with the entityData', () => {
+  test('should return a Promise and resolve with the entityData', () => {
     const entityData = { name: 'John' };
 
     return validate(entityData)
@@ -90,7 +90,7 @@ describe('Validation', () => {
       });
   });
 
-  it('should return a Promise and reject with the error', () => {
+  test('should return a Promise and reject with the error', () => {
     const entityData = { name: 123 };
 
     return validate(entityData).then(
@@ -102,7 +102,7 @@ describe('Validation', () => {
     );
   });
 
-  it('should return a Promise catch with the error', () => {
+  test('should return a Promise catch with the error', () => {
     const entityData = { name: 123 };
 
     return validate(entityData)
@@ -117,25 +117,25 @@ describe('Validation', () => {
       });
   });
 
-  it('properties passed ok', () => {
+  test('properties passed ok', () => {
     const { error } = validate({ name: 'John', lastname: 'Snow' });
 
     expect(error).equal(null);
   });
 
-  it('properties passed ko', () => {
+  test('properties passed ko', () => {
     const { error } = validate({ unknown: 123 });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_NOT_ALLOWED);
   });
 
-  it('should remove virtuals before validating', () => {
+  test('should remove virtuals before validating', () => {
     const { error } = validate({ fullname: 'John Snow' });
 
     expect(error).equal(null);
   });
 
-  it('accept unkwown properties when "explicityOnly" set to false', () => {
+  test('accept unkwown properties when "explicityOnly" set to false', () => {
     schema = new Schema({ name: { type: 'string' } }, { explicitOnly: false });
 
     const { error } = validate({ unknown: 123 });
@@ -143,7 +143,7 @@ describe('Validation', () => {
     expect(error).equal(null);
   });
 
-  it('required property', () => {
+  test('required property', () => {
     schema = new Schema({
       name: { type: 'string' },
       email: { type: 'string', required: true },
@@ -158,7 +158,7 @@ describe('Validation', () => {
     expect(error3.errors[0].code).equal(ERROR_CODES.ERR_PROP_REQUIRED);
   });
 
-  it("don't validate empty value", () => {
+  test("don't validate empty value", () => {
     const { error } = validate({ email: undefined });
     const { error: error2 } = validate({ email: null });
     const { error: error3 } = validate({ email: '' });
@@ -168,7 +168,7 @@ describe('Validation', () => {
     expect(error3).equal(null);
   });
 
-  it('no type validation', () => {
+  test('no type validation', () => {
     const { error } = validate({ street: 123 });
     const { error: error2 } = validate({ street: '123' });
     const { error: error3 } = validate({ street: true });
@@ -178,21 +178,21 @@ describe('Validation', () => {
     expect(error3).equal(null);
   });
 
-  it('--> Datstore Key ok', () => {
+  test('--> Datstore Key ok', () => {
     const company = ds.key(['EntityKind', 123]);
     const { error } = validate({ company });
 
     expect(error).equal(null);
   });
 
-  it('--> Datstore Key ko', () => {
+  test('--> Datstore Key ko', () => {
     const { error } = validate({ company: 123 });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
     expect(error.errors[0].ref).equal('key.base');
   });
 
-  it('--> Datstore Key ko', () => {
+  test('--> Datstore Key ko', () => {
     const address = ds.key(['WrongReference', 123]);
     const { error } = validate({ address });
 
@@ -200,20 +200,20 @@ describe('Validation', () => {
     expect(error.errors[0].ref).equal('key.entityKind');
   });
 
-  it('--> string', () => {
+  test('--> string', () => {
     const { error } = validate({ name: 123 });
 
     expect(error).not.equal(null);
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> number', () => {
+  test('--> number', () => {
     const { error } = validate({ age: 'string' });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> int', () => {
+  test('--> int', () => {
     const { error } = validate({ age: ds.int('7') });
     const { error: error2 } = validate({ age: ds.int(7) });
     const { error: error3 } = validate({ age: 7 });
@@ -229,7 +229,7 @@ describe('Validation', () => {
     expect(error6.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> double', () => {
+  test('--> double', () => {
     const { error } = validate({ price: ds.double('1.2') });
     const { error: error2 } = validate({ price: ds.double(7.0) });
     const { error: error3 } = validate({ price: 7 });
@@ -247,7 +247,7 @@ describe('Validation', () => {
     expect(error7.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> buffer', () => {
+  test('--> buffer', () => {
     const { error } = validate({ icon: Buffer.from('\uD83C\uDF69') });
     const { error: error2 } = validate({ icon: 'string' });
 
@@ -255,7 +255,7 @@ describe('Validation', () => {
     expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> boolean', () => {
+  test('--> boolean', () => {
     const { error } = validate({ modified: true });
     const { error: error2 } = validate({ modified: 'string' });
 
@@ -263,7 +263,7 @@ describe('Validation', () => {
     expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> object', () => {
+  test('--> object', () => {
     const { error } = validate({ prefs: { check: true } });
     const { error: error2 } = validate({ prefs: 'string' });
     const { error: error3 } = validate({ prefs: [123] });
@@ -273,7 +273,7 @@ describe('Validation', () => {
     expect(error3.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> geoPoint', () => {
+  test('--> geoPoint', () => {
     // datastore geoPoint
     const { error } = validate({
       location: ds.geoPoint({
@@ -305,13 +305,13 @@ describe('Validation', () => {
     expect(error7.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> array ok', () => {
+  test('--> array ok', () => {
     const { error } = validate({ tags: [] });
 
     expect(error).equal(null);
   });
 
-  it('--> array ko', () => {
+  test('--> array ko', () => {
     const { error } = validate({ tags: {} });
     const { error: error2 } = validate({ tags: 'string' });
     const { error: error3 } = validate({ tags: 123 });
@@ -321,7 +321,7 @@ describe('Validation', () => {
     expect(error3.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> date ok', () => {
+  test('--> date ok', () => {
     const { error } = validate({ birthday: '2015-01-01' });
     const { error: error2 } = validate({ birthday: new Date() });
 
@@ -329,7 +329,7 @@ describe('Validation', () => {
     expect(error2).equal(null);
   });
 
-  it('--> date ko', () => {
+  test('--> date ko', () => {
     const { error } = validate({ birthday: '01-2015-01' });
     const { error: error2 } = validate({ birthday: '01-01-2015' });
     const { error: error3 } = validate({ birthday: '2015/01/01' });
@@ -345,7 +345,7 @@ describe('Validation', () => {
     expect(error6.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
 
-  it('--> isURL ok', () => {
+  test('--> isURL ok', () => {
     const { error } = validate({ website: 'http://google.com' });
     const { error: error2 } = validate({ website: 'google.com' });
 
@@ -353,7 +353,7 @@ describe('Validation', () => {
     expect(error2).equal(null);
   });
 
-  it('--> isURL ko', () => {
+  test('--> isURL ko', () => {
     const { error } = validate({ website: 'domain.k' });
     const { error: error2 } = validate({ website: 123 });
 
@@ -361,13 +361,13 @@ describe('Validation', () => {
     expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_VALUE);
   });
 
-  it('--> isEmail ok', () => {
+  test('--> isEmail ok', () => {
     const { error } = validate({ email: 'john@snow.com' });
 
     expect(error).equal(null);
   });
 
-  it('--> isEmail ko', () => {
+  test('--> isEmail ko', () => {
     const { error } = validate({ email: 'john@snow' });
     const { error: error2 } = validate({ email: 'john@snow.' });
     const { error: error3 } = validate({ email: 'john@snow.k' });
@@ -379,7 +379,7 @@ describe('Validation', () => {
     expect(error4.errors[0].code).equal(ERROR_CODES.ERR_PROP_VALUE);
   });
 
-  it('--> is IP ok', () => {
+  test('--> is IP ok', () => {
     const { error } = validate({ ip: '127.0.0.1' });
     const { error: error2 } = validate({ ip2: '127.0.0.1' });
 
@@ -387,7 +387,7 @@ describe('Validation', () => {
     expect(error2).equal(null);
   });
 
-  it('--> is IP ko', () => {
+  test('--> is IP ko', () => {
     const { error } = validate({ ip: 'fe80::1c2e:f014:10d8:50f5' });
     const { error: error2 } = validate({ ip: '1.1.1' });
 
@@ -395,7 +395,7 @@ describe('Validation', () => {
     expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_VALUE);
   });
 
-  it('--> is HexColor', () => {
+  test('--> is HexColor', () => {
     const { error } = validate({ color: '#fff' });
     const { error: error2 } = validate({ color: 'white' });
 
@@ -403,7 +403,7 @@ describe('Validation', () => {
     expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_VALUE);
   });
 
-  it('--> is customFieldWithEmbeddedEntity ok', () => {
+  test('--> is customFieldWithEmbeddedEntity ok', () => {
     const { error } = validate({
       customFieldWithEmbeddedEntity: {
         embeddedEntity: {
@@ -415,7 +415,7 @@ describe('Validation', () => {
     expect(error).equal(null);
   });
 
-  it('--> is customFieldWithEmbeddedEntity ko', () => {
+  test('--> is customFieldWithEmbeddedEntity ko', () => {
     const { error } = validate({
       customFieldWithEmbeddedEntity: {
         embeddedEntity: {
@@ -427,7 +427,7 @@ describe('Validation', () => {
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_VALUE);
   });
 
-  it('--> is custom function (array containing objectsj)', () => {
+  test('--> is custom function (array containing objectsj)', () => {
     const validateFn = obj => {
       if (!Array.isArray(obj)) {
         return false;
@@ -456,7 +456,7 @@ describe('Validation', () => {
     expect(error4.code).equal(ERROR_CODES.ERR_VALIDATION);
   });
 
-  it('--> only accept value in range of values', () => {
+  test('--> only accept value in range of values', () => {
     const { error } = validate({ type: 'other' });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_IN_RANGE);
@@ -487,7 +487,7 @@ describe('Joi Validation', () => {
     );
   });
 
-  it('should validate with Joi', () => {
+  test('should validate with Joi', () => {
     const { error } = validate({ name: 123 });
     const { error: error2 } = validate({ name: 'John', color: 'c' });
     const { error: error3 } = validate({ name: 'John', birthyear: 1877 });
@@ -501,7 +501,7 @@ describe('Joi Validation', () => {
     expect(error5.details[0].type).equal('object.allowUnknown');
   });
 
-  it('should accept extra validation on top of the schema', () => {
+  test('should accept extra validation on top of the schema', () => {
     schema = new Schema(
       {
         name: { joi: Joi.string() },
@@ -522,7 +522,7 @@ describe('Joi Validation', () => {
     expect(error.details[0].type).equal('object.with');
   });
 
-  it('should accept an "option" object', () => {
+  test('should accept an "option" object', () => {
     schema = new Schema(
       {
         name: { joi: Joi.string().required() },
@@ -541,7 +541,7 @@ describe('Joi Validation', () => {
     expect(error).equal(null);
   });
 
-  it('should set "stripUnknown" according to "explicitOnly" setting', () => {
+  test('should set "stripUnknown" according to "explicitOnly" setting', () => {
     schema = new Schema({ name: { joi: Joi.string() } }, { explicitOnly: false });
     const schema2 = new Schema({ name: { joi: Joi.string() } });
 
