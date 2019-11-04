@@ -13,24 +13,24 @@ const { expect, assert } = chai;
 const ds = new Datastore();
 
 describe('dataloader', () => {
-  it('should read the ds instance from gstore', () => {
+  test('should read the ds instance from gstore', () => {
     gstore.connect(ds);
     const loader = gstore.createDataLoader();
     assert.isDefined(loader);
   });
 
-  it('should create a dataloader instance', () => {
+  test('should create a dataloader instance', () => {
     const loader = createDataLoader(ds);
     expect(loader.constructor.name).equal('DataLoader');
     expect(loader._options.maxBatchSize).equal(1000);
   });
 
-  it('should throw an error if no datastore instance passed', () => {
+  test('should throw an error if no datastore instance passed', () => {
     const fn = () => createDataLoader();
     expect(fn).throw('A Datastore instance has to be passed');
   });
 
-  it('should pass the keys to the datastore "get" method and preserve Order', () => {
+  test('should pass the keys to the datastore "get" method and preserve Order', () => {
     const key1 = ds.key(['User', 123]);
     const key2 = ds.key(['User', 456]);
     const key3 = ds.key({
@@ -57,7 +57,7 @@ describe('dataloader', () => {
     });
   });
 
-  it('should return "null" for entities not found', () => {
+  test('should return "null" for entities not found', () => {
     const key1 = ds.key(['User', 123]);
     const key2 = ds.key(['User', 456]);
     const key3 = ds.key(['User', 789]);
@@ -75,7 +75,7 @@ describe('dataloader', () => {
     });
   });
 
-  it('should bypass sort if only 1 key', () => {
+  test('should bypass sort if only 1 key', () => {
     const entity = { name: 'John' };
     const key = ds.key(['User', 123]);
     entity[ds.KEY] = key;
