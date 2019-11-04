@@ -1,13 +1,10 @@
-'use strict';
+import util from 'util';
+import chai from 'chai'; // eslint-disable-line import/no-extraneous-dependencies
+import { GstoreError, TypeError, message } from './errors';
 
-const util = require('util');
-const chai = require('chai');
-const errors = require('../lib/errors');
-
-const { GstoreError, TypeError, message } = errors;
 const { expect, assert } = chai;
 
-const doSomethingBad = code => {
+const doSomethingBad = (code?: string): void => {
   code = code || 'ERR_GENERIC';
   throw new GstoreError(code);
 };
@@ -49,7 +46,7 @@ describe('GstoreError', () => {
   });
 
   test('should fall back to generic if no message passed', () => {
-    const func = () => {
+    const func = (): void => {
       throw new GstoreError();
     };
 
@@ -64,7 +61,7 @@ describe('GstoreError', () => {
 
 describe('TypeError', () => {
   test('should create a TypeError', () => {
-    const throwTypeError = code => {
+    const throwTypeError = (code?: string): void => {
       code = code || 'ERR_GENERIC';
       throw new TypeError(code);
     };
