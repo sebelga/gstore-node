@@ -3,6 +3,9 @@ declare module '@hapi/joi' {
     string: any;
     number: any;
     array: any;
+    date: any;
+    object: any;
+    any: any;
   }
   const api: API;
   export default api;

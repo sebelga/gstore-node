@@ -72,7 +72,7 @@ export interface Model<
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/key
    */
   key<U extends IdType | IdType[]>(
-    id: U,
+    id?: U,
     ancestors?: Array<string | number>,
     namespace?: string,
   ): U extends Array<IdType> ? EntityKey[] : EntityKey;
@@ -181,7 +181,7 @@ export interface Model<
    * @param {*} data The entity data to sanitize
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/sanitize
    */
-  sanitize(data: { [propName: string]: any }, options: { disabled: string[] }): EntityData<T>;
+  sanitize(data: { [propName: string]: any }, options?: { disabled: string[] }): EntityData<T>;
 
   /**
    * Initialize a Datastore Query for the Model's entity kind.
