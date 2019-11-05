@@ -6,6 +6,7 @@ declare module '@hapi/joi' {
     date: any;
     object: any;
     any: any;
+    valid: any;
   }
   const api: API;
   export default api;

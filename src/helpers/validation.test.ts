@@ -1,21 +1,18 @@
-'use strict';
+import chai from 'chai';
+import Joi from '@hapi/joi';
 
-const chai = require('chai');
-const Joi = require('@hapi/joi');
+import dsFactory from '../__jest__/mocks/datastore';
+import Schema from '../schema';
+import { ERROR_CODES } from '../errors';
+import validation from './validation';
 
-const { default: Schema } = require('../../lib/schema');
-const { ERROR_CODES } = require('../../lib/errors');
-const { default: helpers } = require('../../lib/helpers');
-
-const { validation } = helpers;
-
-const ds = require('../mocks/datastore')({
+const ds = dsFactory({
   namespace: 'com.mydomain',
 });
 
 const { expect, assert } = chai;
 
-const customValidationFunction = (obj, validator, min, max) => {
+const customValidationFunction = (obj: any, validator: any, min: number, max: number): boolean => {
   if ('embeddedEntity' in obj) {
     const { value } = obj.embeddedEntity;
     return validator.isNumeric(value.toString()) && value >= min && value <= max;
@@ -30,9 +27,9 @@ const customValidationFunction = (obj, validator, min, max) => {
  * Once they will be deprecated we can delete the Validation (old Types) below.
  */
 describe('Validation', () => {
-  let schema;
+  let schema: Schema;
 
-  const validate = entityData => validation.validate(entityData, schema, 'MyEntityKind', ds);
+  const validate = (entityData: any): any => validation.validate(entityData, schema, 'MyEntityKind', ds);
 
   beforeEach(() => {
     schema = new Schema({
@@ -80,12 +77,12 @@ describe('Validation', () => {
     const entityData = { name: 'John' };
 
     return validate(entityData)
-      .then(value => {
+      .then((value: any) => {
         expect(value).equal(entityData);
         return Promise.resolve('test');
       })
       .catch(() => {})
-      .then(response => {
+      .then((response: any) => {
         expect(response).equal('test');
       });
   });
@@ -95,7 +92,7 @@ describe('Validation', () => {
 
     return validate(entityData).then(
       () => {},
-      error => {
+      (error: any) => {
         expect(error.name).equal('ValidationError');
         expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
       },
@@ -106,12 +103,12 @@ describe('Validation', () => {
     const entityData = { name: 123 };
 
     return validate(entityData)
-      .catch(error => {
+      .catch((error: any) => {
         expect(error.name).equal('ValidationError');
         expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
         return Promise.resolve('test');
       })
-      .then(response => {
+      .then((response: any) => {
         // Just to make sure we can chain Promises
         expect(response).equal('test');
       });
@@ -136,7 +133,7 @@ describe('Validation', () => {
   });
 
   test('accept unkwown properties when "explicityOnly" set to false', () => {
-    schema = new Schema({ name: { type: 'string' } }, { explicitOnly: false });
+    schema = new Schema({ name: { type: String } }, { explicitOnly: false });
 
     const { error } = validate({ unknown: 123 });
 
@@ -145,8 +142,8 @@ describe('Validation', () => {
 
   test('required property', () => {
     schema = new Schema({
-      name: { type: 'string' },
-      email: { type: 'string', required: true },
+      name: { type: String },
+      email: { type: String, required: true },
     });
 
     const { error } = validate({ name: 'John Snow', email: '' });
@@ -428,7 +425,7 @@ describe('Validation', () => {
   });
 
   test('--> is custom function (array containing objectsj)', () => {
-    const validateFn = obj => {
+    const validateFn = (obj: any): boolean => {
       if (!Array.isArray(obj)) {
         return false;
       }
@@ -438,7 +435,7 @@ describe('Validation', () => {
 
     schema = new Schema({
       arrOfObjs: {
-        type: 'array',
+        type: Array,
         validate: {
           rule: validateFn,
         },
@@ -464,9 +461,9 @@ describe('Validation', () => {
 });
 
 describe('Joi Validation', () => {
-  let schema;
+  let schema: Schema;
 
-  const validate = entityData => validation.validate(entityData, schema, 'MyEntityKind');
+  const validate = (entityData: any): any => validation.validate(entityData, schema, 'MyEntityKind', ds);
 
   beforeEach(() => {
     schema = new Schema(
@@ -546,7 +543,7 @@ describe('Joi Validation', () => {
     const schema2 = new Schema({ name: { joi: Joi.string() } });
 
     const { error, value } = validate({ name: 'John', unknownProp: 'abc' });
-    const { error: error2, value: value2 } = validation.validate({ name: 'John', unknownProp: 'abc' }, schema2, '');
+    const { error: error2, value: value2 } = validation.validate({ name: 'John', unknownProp: 'abc' }, schema2, '', ds);
 
     expect(error).equal(null);
     expect(value.unknownProp).equal('abc');
