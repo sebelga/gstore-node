@@ -1,26 +1,25 @@
-'use strict';
+import chai from 'chai';
+import sinon from 'sinon';
+import { Datastore } from '@google-cloud/datastore';
 
-const chai = require('chai');
-const sinon = require('sinon');
-const { Datastore } = require('@google-cloud/datastore');
+import queryHelpers from './queryhelpers';
+import { GstoreQuery } from '../query';
 
 const ds = new Datastore();
-const { default: helpers } = require('../../lib/helpers');
-
-const { queryHelpers } = helpers;
-
 const { expect } = chai;
 
 describe('Query Helpers', () => {
-  let query;
+  let query: GstoreQuery<any, any>;
 
   describe('should build a Query from options', () => {
     beforeEach(() => {
-      query = ds.createQuery();
+      query = ds.createQuery() as any;
     });
 
     test('and throw error if no query passed', () => {
-      const fn = () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         queryHelpers.buildQueryFromOptions();
       };
 
@@ -28,7 +27,9 @@ describe('Query Helpers', () => {
     });
 
     test('and throw error if query is not a gcloud Query', () => {
-      const fn = () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         queryHelpers.buildQueryFromOptions({});
       };
 
@@ -36,9 +37,9 @@ describe('Query Helpers', () => {
     });
 
     test('and not modify query if no options passed', () => {
-      const originalQuery = {};
+      const originalQuery: any = {};
       Object.keys(query).forEach(k => {
-        originalQuery[k] = query[k];
+        originalQuery[k] = (query as any)[k];
       });
 
       query = queryHelpers.buildQueryFromOptions(query);
@@ -103,7 +104,7 @@ describe('Query Helpers', () => {
         ancestors: ['Parent', 123],
       };
 
-      const fn = () => {
+      const fn = (): void => {
         query = queryHelpers.buildQueryFromOptions(query, options);
       };
 
@@ -112,7 +113,7 @@ describe('Query Helpers', () => {
 
     test('and define one filter', () => {
       const options = {
-        filters: ['name', '=', 'John'],
+        filters: ['name', '=', 'John'] as any[],
       };
 
       query = queryHelpers.buildQueryFromOptions(query, options, ds);
@@ -153,7 +154,9 @@ describe('Query Helpers', () => {
       const options = {
         filters: 'name',
       };
-      const fn = () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         query = queryHelpers.buildQueryFromOptions(query, options, ds);
       };
 

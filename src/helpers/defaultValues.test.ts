@@ -1,7 +1,5 @@
-'use strict';
-
-const chai = require('chai');
-const { default: defaultValues } = require('../../lib/helpers/defaultValues');
+import chai from 'chai';
+import defaultValues from './defaultValues';
 
 const { expect } = chai;
 
@@ -9,7 +7,7 @@ describe('Query Helpers', () => {
   describe('defaultValues constants handler()', () => {
     test('should return the current time', () => {
       const value = defaultValues.NOW;
-      const result = defaultValues.__handler__(value);
+      const result = defaultValues.__handler__(value) as Date;
 
       /**
        * we might have a slightly difference, that's ok :)
