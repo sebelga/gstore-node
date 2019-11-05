@@ -1,7 +1,8 @@
 import { Datastore } from '@google-cloud/datastore';
 import chai from 'chai';
 import sinon from 'sinon';
-import { Gstore } from '../lib';
+
+import { Gstore } from './index';
 import { createDataLoader } from './dataloader';
 
 const gstore = new Gstore();

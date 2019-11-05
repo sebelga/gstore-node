@@ -128,6 +128,8 @@ describe('Entity', () => {
         {
           name: { joi: Joi.string() },
           lastname: { joi: Joi.string().default('Jagger') },
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
           fullname: { joi: Joi.string().default(generateFullName, 'generated fullname') },
         },
         { joi: true },
@@ -755,7 +757,7 @@ describe('Entity', () => {
       const ImageModel = gstore.model('Image', imageSchema);
       const mockEntities = [{ key: ds.key(['BlogPost', 1234]) }];
 
-      sinon.stub(ImageModel, 'get').callsFake(() => Promise.resolve(mockEntities[0]));
+      sinon.stub(ImageModel, 'get').callsFake(() => Promise.resolve(mockEntities[0]) as any);
 
       const blog = new GstoreModel({});
 
@@ -973,7 +975,7 @@ describe('Entity', () => {
       return entity.save(transaction).then(_entity => {
         expect(spyPreHook.called).equal(true);
         expect((transaction.save as any).called).equal(true);
-        expect(spyPreHook.calledBefore(transaction.save)).equal(true); // eslint-disable-line @typescript-eslint/unbound-method
+        expect(spyPreHook.calledBefore(transaction.save as any)).equal(true); // eslint-disable-line @typescript-eslint/unbound-method
         assert.isDefined(_entity.entityData);
       });
     });
@@ -1051,7 +1053,7 @@ describe('Entity', () => {
       entity = new GstoreModel({ name: 'John' });
 
       return entity.save().then(() => {
-        expect(spyPre.calledBefore(ds.save)).equal(true); // eslint-disable-line @typescript-eslint/unbound-method
+        expect(spyPre.calledBefore(ds.save as any)).equal(true); // eslint-disable-line @typescript-eslint/unbound-method
       });
     });
 

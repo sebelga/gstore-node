@@ -101,7 +101,7 @@ describe('Model', () => {
     test('should execute methods passed to schema.methods', () => {
       const imageSchema = new Schema({});
       const ImageModel = gstore.model('Image', imageSchema);
-      sinon.stub(ImageModel, 'get').callsFake((id: any, cb: any) => {
+      sinon.stub(ImageModel, 'get').callsFake((id: any, cb: any): any => {
         cb(null, mockEntities[0]);
       });
       schema.methods.fullName = function fullName(cb): any {
@@ -201,7 +201,9 @@ describe('Model', () => {
       schema = new Schema(
         {
           foo: { joi: Joi.object({ bar: Joi.any() }).required() },
-          createdOn: { joi: Joi.date().default(() => new Date('01-01-2019'), 'static createdOn date') },
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
+          createdOn: { joi: Joi.date().default(() => new Date('01-01-2019'), 'static createdOn') },
         },
         { joi: true },
       );
@@ -476,7 +478,7 @@ describe('Model', () => {
         .then(() => {
           expect(populateSpy.called).equal(true);
           const { args } = populateSpy.getCall(0);
-          expect(args[0][0]).deep.equal([{ path: 'company', select: ['name', 'phone-number'] }]);
+          expect(args[0]![0]).deep.equal([{ path: 'company', select: ['name', 'phone-number'] }]);
           expect(args[1]).deep.equal({ ...options, transaction: undefined });
 
           (GstoreModel.__populate as any).restore();
@@ -626,7 +628,7 @@ describe('Model', () => {
             .then(() => {
               expect(spy.called).equal(true);
               const { args } = spy.getCall(0);
-              expect(args[0][0]).deep.equal([{ path: 'company', select: ['name', 'phone-number'] }]);
+              expect(args[0]![0]).deep.equal([{ path: 'company', select: ['name', 'phone-number'] }]);
 
               (GstoreModel.__populate as any).restore();
             }),
