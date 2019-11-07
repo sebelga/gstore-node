@@ -35,6 +35,6 @@ after_success:
 
 cache:
   yarn: true
-  directories:
-  - "$HOME/google-cloud-sdk/"
+  # directories:
+  # - "$HOME/google-cloud-sdk/"
 
