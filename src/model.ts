@@ -1132,7 +1132,7 @@ export const generateModel = <T extends object, M extends object>(
   const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;
 
-  model.query = initQuery.bind(query);
+  model.query = initQuery.bind(query); // eslint-disable-line @typescript-eslint/unbound-method
   model.list = list.bind(query);
   model.findOne = findOne.bind(query);
   model.findAround = findAround.bind(query);

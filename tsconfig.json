@@ -23,6 +23,5 @@
     "src",
     "typings",
     "src/.eslintrc.js"
-  ],
-  "exclude" : ["src/**/*.test.ts"]
+  ]
 }

@@ -1,12 +1,7 @@
-'use strict';
-
 module.exports = {
-  extends: ['../.eslintrc.js'],
-  rules: {
-    'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
+  root: true,
+  parserOptions: {
+    project: './test/tsconfig.json',
   },
-  env: {
-    node: true,
-    mocha: true,
-  },
+  extends: ['../src/.eslintrc.js'],
 };

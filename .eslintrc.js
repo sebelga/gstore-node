@@ -8,9 +8,9 @@ module.exports = {
   extends: ['airbnb-base', 'plugin:prettier/recommended'],
   env: {
     node: true,
-    mocha: true,
+    jest: true,
   },
-  plugins: ['mocha'],
+  plugins: ['jest'],
   settings: {
     'import/resolver': {
       node: {
@@ -31,7 +31,7 @@ module.exports = {
     'import/no-extraneous-dependencies': [
       'error',
       {
-        devDependencies: ['**/test/**/*.js'],
+        devDependencies: ['**/test/**/*.ts', '/**/*.test.ts'],
       },
     ],
     'no-use-before-define': [
@@ -47,6 +47,6 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
-    'mocha/no-exclusive-tests': 'error',
+    // 'mocha/no-exclusive-tests': 'error',
   },
 };
