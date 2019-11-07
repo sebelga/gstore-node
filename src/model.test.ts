@@ -9,10 +9,10 @@ import GstoreSchema, { SchemaPathDefinition } from './schema';
 import Model from './model';
 import { Gstore, EntityKey } from './index';
 import { ERROR_CODES } from './errors';
-import dsFactory from './__jest__/mocks/datastore';
-import Transaction from './__jest__/mocks/transaction';
-import entitiesMock from './__jest__/mocks/entities';
-import Query from './__jest__/mocks/query';
+import dsFactory from "../__tests__/mocks/datastore";
+import Transaction from "../__tests__/mocks/transaction";
+import entitiesMock from './../__tests__/mocks/entities';
+import Query from './../__tests__/mocks/query';
 
 const ds = dsFactory({ namespace: 'com.mydomain' });
 

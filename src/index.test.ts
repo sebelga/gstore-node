@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { Datastore, Transaction } from '@google-cloud/datastore';
 
 import pkg from '../package.json';
-import MockTransaction from './__jest__/mocks/transaction';
+import MockTransaction from './../__tests__/mocks/transaction';
 import Model from './model';
 import GstoreSchema from './schema';
 import { Gstore, instances } from './index';

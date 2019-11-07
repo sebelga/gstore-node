@@ -1,7 +1,7 @@
 import chai from 'chai';
 import Joi from '@hapi/joi';
 
-import dsFactory from '../__jest__/mocks/datastore';
+import dsFactory from '../../__tests__/mocks/datastore';
 import { Gstore, QUERIES_FORMATS } from '../index';
 import GstoreModel from '../model';
 import Entity from '../entity';

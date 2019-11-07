@@ -6,10 +6,10 @@ import { Gstore, QUERIES_FORMATS } from './index';
 import Model from './model';
 import GstoreSchema from './schema';
 
-import dsFactory from './__jest__/mocks/datastore';
-import Transaction from './__jest__/mocks/transaction';
-import Query from './__jest__/mocks/query';
-import entitiesMock from './__jest__/mocks/entities';
+import dsFactory from '../__tests__/mocks/datastore';
+import Transaction from '../__tests__/mocks/transaction';
+import Query from '../__tests__/mocks/query';
+import entitiesMock from "../__tests__/mocks/entities";
 import { GstoreQuery } from './query';
 
 const ds = dsFactory({

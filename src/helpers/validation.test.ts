@@ -1,7 +1,7 @@
 import chai from 'chai';
 import Joi from '@hapi/joi';
 
-import dsFactory from '../__jest__/mocks/datastore';
+import dsFactory from '../../__tests__/mocks/datastore';
 import Schema from '../schema';
 import { ERROR_CODES } from '../errors';
 import validation from './validation';

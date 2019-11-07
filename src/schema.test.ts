@@ -3,7 +3,7 @@ import Joi from '@hapi/joi';
 
 import { Gstore } from './index';
 import GstoreSchema from './schema';
-import dsFactory from './__jest__/mocks/datastore';
+import dsFactory from './../__tests__/mocks/datastore';
 
 const ds = dsFactory();
 const gstore = new Gstore();

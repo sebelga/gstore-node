@@ -7,7 +7,7 @@ import Entity, { EntityResponse } from './entity';
 import GstoreSchema from './schema';
 import Model from './model';
 import helpers from './helpers';
-import Transaction from './__jest__/mocks/transaction';
+import Transaction from '../__tests__/mocks/transaction';
 import { ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { Gstore } from './index';
