@@ -182,14 +182,14 @@ describe('Validation', () => {
     expect(error).equal(null);
   });
 
-  test('--> Datstore Key ko', () => {
+  test('--> Datstore Key ko (1)', () => {
     const { error } = validate({ company: 123 });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
     expect(error.errors[0].ref).equal('key.base');
   });
 
-  test('--> Datstore Key ko', () => {
+  test('--> Datstore Key ko (2)', () => {
     const address = ds.key(['WrongReference', 123]);
     const { error } = validate({ address });
 

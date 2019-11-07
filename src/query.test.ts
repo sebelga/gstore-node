@@ -9,7 +9,7 @@ import GstoreSchema from './schema';
 import dsFactory from '../__tests__/mocks/datastore';
 import Transaction from '../__tests__/mocks/transaction';
 import Query from '../__tests__/mocks/query';
-import entitiesMock from "../__tests__/mocks/entities";
+import entitiesMock from '../__tests__/mocks/entities';
 import { GstoreQuery } from './query';
 
 const ds = dsFactory({

@@ -12,7 +12,7 @@ describe('VirtualType', () => {
     expect(virtualType.getter).not.equal(null);
   });
 
-  test('should throw error if not passing a function', () => {
+  test('should throw error if not passing a function to get()', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = (): void => {
@@ -32,7 +32,7 @@ describe('VirtualType', () => {
     expect(virtualType.setter).not.equal(null);
   });
 
-  test('should throw error if not passing a function', () => {
+  test('should throw error if not passing a function to set()', () => {
     const virtualType = new VirtualType('fullname');
 
     const fn = (): void => {

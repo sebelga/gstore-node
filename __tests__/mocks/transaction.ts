@@ -1,17 +1,15 @@
-
-function Transaction(this: any) {
-  const _this = this;
-  this.run = () => {};
-  this.get = () => {};
-  this.save = () => {};
-  this.delete = () => {};
-  this.commit = () => Promise.resolve();
-  this.rollback = () => Promise.resolve();
-  this.createQuery = () => ({
-    filter: () => {},
-    scope: _this,
+function Transaction(this: any): void {
+  this.run = (): any => {};
+  this.get = (): any => {};
+  this.save = (): any => {};
+  this.delete = (): any => {};
+  this.commit = (): any => Promise.resolve();
+  this.rollback = (): any => Promise.resolve();
+  this.createQuery = (): any => ({
+    filter: (): any => {},
+    scope: this,
   });
-  this.runQuery = () => Promise.resolve();
+  this.runQuery = (): any => Promise.resolve();
 }
 
 Transaction.prototype.name = 'Transaction';

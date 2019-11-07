@@ -2,6 +2,7 @@
   "extends": "../tsconfig.json",
   "include": [
     "integration",
+    "mocks",
     "../typings",
     ".eslintrc.js"
   ],

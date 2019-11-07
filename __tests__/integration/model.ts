@@ -284,22 +284,11 @@ describe('Model (Integration Tests)', () => {
       const mySchema = new Schema<MyUser>(
         {
           name: { joi: Joi.string().required() },
-          // lastname: { joi: Joi.string() },
-          // password: { joi: Joi.string() },
           coins: {
             joi: Joi.number()
               .integer()
               .min(0),
           },
-          // email: { joi: Joi.string().email() },
-          // createdAt: { joi: Joi.date() },
-          // accessToken: { joi: [Joi.string(), Joi.number()] },
-          // birthyear: {
-          //   joi: Joi.number()
-          //     .integer()
-          //     .min(1900)
-          //     .max(2013),
-          // },
         },
         { joi: true },
       );

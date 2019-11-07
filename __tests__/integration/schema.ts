@@ -13,7 +13,7 @@ gstore.connect(ds);
 const { expect } = chai;
 const { Schema } = gstore;
 
-describe.only('Schema (Integration Tests)', () => {
+describe('Schema (Integration Tests)', () => {
   beforeEach(() => {
     gstore.models = {};
   });
