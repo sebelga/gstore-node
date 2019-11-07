@@ -1,15 +1,26 @@
+sudo: false
 language: node_js
 node_js:
   - "lts/*"
   - "10"
+env:
+# Make sure gcloud command is on our PATH and the App Engine SDK is in the Python path
+- PATH=$PATH:${HOME}/google-cloud-sdk/bin CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 branches:
   only:
   - master
 
+before_install:
+# If the SDK is not already cached, download it and unpack it
+- if [ ! -d ${HOME}/google-cloud-sdk ]; then
+     curl https://sdk.cloud.google.com | bash;
+  fi
+
 install: yarn install
 
 script:
+  - yarn local-datastore
   - yarn test:unit
   - yarn build
 
@@ -18,4 +29,6 @@ after_success:
 
 cache:
   yarn: true
+  directories:
+  - "$HOME/google-cloud-sdk/"
 
