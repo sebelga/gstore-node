@@ -18,18 +18,17 @@ before_install:
 - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 - sudo apt-get install google-cloud-sdk -y --allow-unauthenticated
 - sudo apt-get install google-cloud-sdk-datastore-emulator -y --allow-unauthenticated
-# If the SDK is not already cached, download it and unpack it
-# - if [ ! -d ${HOME}/google-cloud-sdk ]; then
-#      curl https://sdk.cloud.google.com | bash;
-#   fi
-# - gcloud components install cloud-datastore-emulator;
+
+services:
+  - redis-server
 
 install: yarn install
 
 before_script:
   - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
+
 script:
-  - yarn test:unit
+  - yarn test
   - yarn build
 
 after_success:
