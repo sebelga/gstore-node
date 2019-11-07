@@ -5,7 +5,7 @@ module.exports = {
   transform: {
     '^.+\\.ts?$': 'ts-jest',
   },
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.ts?$',
+  testRegex: '(/__tests__/integration/.*|(\\.|/)(test|spec))\\.ts?$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/__jest__/**/*.ts', '!src/**/*.test.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts'],
 };

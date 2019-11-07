@@ -4,5 +4,5 @@ const defaultConfig = require('./jest.config');
 
 module.exports = {
   ...defaultConfig,
-  testRegex: '(/__tests__/.*)\\.ts?$',
+  testRegex: '(/__tests__/integration/.*)\\.ts?$',
 };
