@@ -27,13 +27,16 @@ before_install:
 install: yarn install
 
 before_script:
-  - (yarn local-datastore)
+  - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
 script:
   - yarn test:unit
   - yarn build
 
 after_success:
   - yarn coveralls
+
+after_script:
+  - kill -9 $DATASTORE_PID
 
 cache:
   yarn: true
