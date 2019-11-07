@@ -31,7 +31,7 @@ module.exports = {
     'import/no-extraneous-dependencies': [
       'error',
       {
-        devDependencies: ['**/test/**/*.ts', '/**/*.test.ts'],
+        devDependencies: ['**/__tests__/**/*.ts', '/**/*.test.ts'],
       },
     ],
     'no-use-before-define': [
@@ -47,6 +47,5 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
-    // 'mocha/no-exclusive-tests': 'error',
   },
 };

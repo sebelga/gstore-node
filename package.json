@@ -14,13 +14,13 @@
     "cover:unit": "DATASTORE_EMULATOR_HOST=localhost:8081 nyc --exclude-after-remap false yarn test:unit",
     "cover:integration": "nyc --silent --no-clean yarn test:integration",
     "cover:report": "nyc report --reporter=lcov --reporter=html",
-    "lint": "./node_modules/eslint/bin/eslint.js ./src ./test",
+    "lint": "./node_modules/eslint/bin/eslint.js ./src ./__tests__",
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "pretest": "yarn lint",
     "release": "yarn build && standard-version",
-    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --projects . ./test --coverage --collectCoverageFrom=src/**/*.ts --collectCoverageFrom=!src/__jest__/**/*.ts --collectCoverageFrom=!src/**/*.test.ts",
-    "test:unit": "jest --coverage --collectCoverageFrom=src/**/*.ts --collectCoverageFrom=!src/__jest__/**/*.ts --collectCoverageFrom=!src/**/*.test.ts",
-    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=test/jest.config.js"
+    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage",
+    "test:unit": "jest --c=jest.config.unit.js --coverage",
+    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=jest.config.integration.js"
   },
   "engines": {
     "node": ">=10.0"
@@ -103,11 +103,8 @@
     "eslint-import-resolver-webpack": "^0.11.1",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^23.0.2",
-    "eslint-plugin-mocha": "^6.1.0",
     "eslint-plugin-prettier": "^3.1.0",
     "jest": "^24.9.0",
-    "mocha": "^6.2.0",
-    "mocha-lcov-reporter": "^1.3.0",
     "nconf": "^0.10.0",
     "nyc": "^14.1.1",
     "prettier": "^1.18.2",

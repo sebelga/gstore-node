@@ -1,8 +1,3 @@
-/**
- * Make sure that we are starting from a fresh gstore instance
- */
-// delete require.cache[require.resolve('../lib')];
-
 import chai from 'chai';
 import sinon from 'sinon';
 import { Datastore, Transaction } from '@google-cloud/datastore';
