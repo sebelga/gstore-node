@@ -15,8 +15,8 @@ before_install:
 # If the SDK is not already cached, download it and unpack it
 - if [ ! -d ${HOME}/google-cloud-sdk ]; then
      curl https://sdk.cloud.google.com | bash;
-     gcloud components install cloud-datastore-emulator;
   fi
+- gcloud components install cloud-datastore-emulator;
 
 install: yarn install
 
