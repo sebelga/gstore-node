@@ -17,9 +17,9 @@
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "pretest": "yarn lint",
     "release": "yarn build && standard-version",
-    "test": "yarn test:unit && yarn test:integration",
-    "test:unit": "jest",
-    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --config=test/jest.config.js"
+    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --projects . ./test --coverage --collectCoverageFrom=src/**/*.ts --collectCoverageFrom=!src/__jest__/**/*.ts --collectCoverageFrom=!src/**/*.test.ts",
+    "test:unit": "jest --coverage --collectCoverageFrom=src/**/*.ts --collectCoverageFrom=!src/__jest__/**/*.ts --collectCoverageFrom=!src/**/*.test.ts",
+    "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=test/jest.config.js"
   },
   "engines": {
     "node": ">=10.0"
