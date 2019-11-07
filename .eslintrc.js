@@ -47,5 +47,7 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
+    'jest/no-focused-tests': 'error',
+    'jest/no-identical-title': 'error',
   },
 };
