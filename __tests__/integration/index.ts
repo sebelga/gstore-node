@@ -1,9 +1,10 @@
-'use strict';
+import chai from 'chai';
+import Chance from 'chance';
+import { Datastore } from '@google-cloud/datastore';
 
-const chai = require('chai');
-const Chance = require('chance');
-const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../../lib');
+import { Gstore, Entity, EntityKey } from '../../src';
+
+type GenericObject = { [key: string]: any };
 
 const gstore = new Gstore();
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
@@ -14,31 +15,30 @@ const { expect } = chai;
 const userSchema = new Schema({ name: { type: String } });
 const chance = new Chance();
 
-let generatedIds = [];
-const allKeys = [];
+let generatedIds: string[] = [];
+const allKeys: EntityKey[] = [];
 
 const UserModel = gstore.model('GstoreTests-User', userSchema);
 
-const getId = () => {
+const getId = (): string => {
   const id = chance.string({ pool: 'abcdefghijklmnopqrstuvwxyz' });
-  if (generatedIds.indexOf(id) >= 0) {
+  if (generatedIds.includes(id)) {
     return getId();
   }
   generatedIds.push(id);
   return id;
 };
 
-const getUser = () => {
+const getUser = (): Entity<any> & GenericObject => {
   const key = UserModel.key(getId());
   allKeys.push(key);
   const data = { name: chance.string() };
-  const user = new UserModel(data, null, null, null, key);
+  const user = new UserModel(data, undefined, undefined, undefined, key);
   return user;
 };
 
-const cleanUp = () =>
-  ds
-    .delete(allKeys)
+const cleanUp = (): Promise<any> =>
+  ((ds.delete(allKeys) as unknown) as Promise<any>)
     .then(() => UserModel.deleteAll())
     .catch(err => {
                 console.log('Error cleaning up'); // eslint-disable-line
@@ -46,14 +46,14 @@ const cleanUp = () =>
     });
 
 describe('Gstore (Integration Tests)', () => {
-  before(() => {
+  beforeAll(() => {
     generatedIds = [];
   });
 
-  after(() => cleanUp());
+  afterAll(() => cleanUp());
 
   describe('save()', () => {
-    it('should convert entities to Datastore format and save them', () => {
+    test('should convert entities to Datastore format and save them', () => {
       const users = [getUser(), getUser()];
       return gstore.save(users).then(() =>
         UserModel.list().then(({ entities: { 0: entity } }) => {

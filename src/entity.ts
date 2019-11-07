@@ -54,7 +54,7 @@ export class Entity<T extends object = GenericObject> {
 
   public __hooksEnabled = true;
 
-  constructor(data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
+  constructor(data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
     this.__className = 'Entity';
 
     this.__excludeFromIndexes = {};
@@ -118,7 +118,7 @@ export class Entity<T extends object = GenericObject> {
       return { error: null };
     };
 
-    const validateMethod = (method: string): { error: Error | null } => {
+    const validateMethod = (method: DatastoreSaveMethod): { error: Error | null } => {
       const allowed: { [key: string]: boolean } = {
         update: true,
         insert: true,
@@ -134,7 +134,7 @@ export class Entity<T extends object = GenericObject> {
       const { error: entityDataError } = validateEntityData();
       let methodError: Error | null;
       if (!entityDataError) {
-        ({ error: methodError } = validateMethod(options.method));
+        ({ error: methodError } = validateMethod(options.method!));
       }
 
       return { error: entityDataError || methodError! };
@@ -588,8 +588,8 @@ export default Entity;
 export type EntityResponse<T extends object> = Entity<T> & T;
 
 interface SaveOptions {
-  method: DatastoreSaveMethod;
-  sanitizeEntityData: boolean;
+  method?: DatastoreSaveMethod;
+  sanitizeEntityData?: boolean;
   cache?: any;
 }
 

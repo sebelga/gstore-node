@@ -1,30 +1,36 @@
-'use strict';
+import chai from 'chai';
+import sinon from 'sinon';
+import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
-const chai = require('chai');
-const sinon = require('sinon');
+import { Gstore, QUERIES_FORMATS } from './index';
+import Model from './model';
+import GstoreSchema from './schema';
 
-const { Gstore, QUERIES_FORMATS } = require('../');
-const ds = require('./mocks/datastore')({
+import dsFactory from '../__tests__/mocks/datastore';
+import Transaction from '../__tests__/mocks/transaction';
+import Query from '../__tests__/mocks/query';
+import entitiesMock from '../__tests__/mocks/entities';
+import { GstoreQuery } from './query';
+
+const ds = dsFactory({
   namespace: 'com.mydomain',
 });
-const Transaction = require('./mocks/transaction');
-const Query = require('./mocks/query');
-const { generateEntities } = require('./mocks/entities');
 
 const gstore = new Gstore();
 const gstoreWithCache = new Gstore({ cache: true });
 const { Schema } = gstore;
 const { expect, assert } = chai;
+const { generateEntities } = entitiesMock;
 
-let query;
-let mockEntities;
-let responseQueries;
-let ModelInstance;
+let query: GstoreQuery<any, any>;
+let mockEntities: any;
+let responseQueries: any;
+let ModelInstance: Model;
 
-const setupCacheContext = () => {
+const setupCacheContext = (): void => {
   gstore.cache = gstoreWithCache.cache;
 
-  query = ModelInstance.query().filter('name', '=', 'John');
+  query = ModelInstance.query().filter('name', '=', 'John') as any;
 
   responseQueries = [
     mockEntities,
@@ -34,44 +40,42 @@ const setupCacheContext = () => {
     },
   ];
 
-  sinon.spy(gstore.cache.queries, 'read');
+  sinon.spy(gstore.cache!.queries, 'read');
 };
 
-const cleanupCacheContext = () => {
-  gstore.cache.reset();
-  gstore.cache.queries.read.restore();
+const cleanupCacheContext = (): void => {
+  gstore.cache!.reset();
+  (gstore.cache!.queries.read as any).restore();
   delete gstore.cache;
 };
 
 describe('Query', () => {
-  let schema;
-  let transaction;
+  let schema: GstoreSchema;
+  let transaction: DatastoreTransaction;
 
   beforeEach(() => {
     gstore.models = {};
-    gstore.modelSchemas = {};
-    gstore.options = {};
     gstore.cache = undefined;
 
     gstore.connect(ds);
     gstoreWithCache.connect(ds);
 
     schema = new Schema({
-      name: { type: 'string' },
-      lastname: { type: 'string', excludeFromIndexes: true },
+      name: { type: String },
+      lastname: { type: String, excludeFromIndexes: true },
       password: { read: false },
-      age: { type: 'int', excludeFromIndexes: true },
-      birthday: { type: 'datetime' },
+      age: { type: Number, excludeFromIndexes: true },
+      birthday: { type: Date },
       street: {},
       website: { validate: 'isURL' },
       email: { validate: 'isEmail' },
       ip: { validate: { rule: 'isIP', args: [4] } },
       ip2: { validate: { rule: 'isIP' } }, // no args passed
-      modified: { type: 'boolean' },
-      tags: { type: 'array' },
-      prefs: { type: 'object' },
-      price: { type: 'double', write: false },
-      icon: { type: 'buffer' },
+      modified: { type: Boolean },
+      tags: { type: Array },
+      prefs: { type: Object },
+      price: { type: Schema.Types.Double, write: false },
+      icon: { type: Buffer },
       location: { type: 'geoPoint' },
     });
 
@@ -82,8 +86,8 @@ describe('Query', () => {
   });
 
   afterEach(() => {
-    if (query && query.__originalRun && query.__originalRun.restore) {
-      query.__originalRun.restore();
+    if (query && query.__originalRun && (query.__originalRun as any).restore) {
+      (query.__originalRun as any).restore();
     }
   });
 
@@ -101,14 +105,14 @@ describe('Query', () => {
       sinon.stub(query, '__originalRun').resolves(responseQueries);
     });
 
-    it('should create gcloud-node Query object', () => {
+    test('should create gcloud-node Query object', () => {
       query = ModelInstance.query();
 
       expect(query.constructor.name).equal('Query');
     });
 
-    it('should be able to execute all gcloud-node queries', () => {
-      const fn = () => {
+    test('should be able to execute all gcloud-node queries', () => {
+      const fn = (): GstoreQuery<any, any> => {
         query = ModelInstance.query()
           .filter('name', '=', 'John')
           .groupBy(['name'])
@@ -116,15 +120,17 @@ describe('Query', () => {
           .order('lastname', { descending: true })
           .limit(1)
           .offset(1)
-          .start('X');
+          .start('X') as any;
         return query;
       };
 
       expect(fn).to.not.throw(Error);
     });
 
-    it('should throw error if calling unregistered query method', () => {
-      const fn = () => {
+    test('should throw error if calling unregistered query method', () => {
+      const fn = (): GstoreQuery<any, any> => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         query = ModelInstance.query().unkown('test', false);
         return query;
       };
@@ -132,7 +138,7 @@ describe('Query', () => {
       expect(fn).to.throw(Error);
     });
 
-    it('should run query', () =>
+    test('should run query', () =>
       query.run().then(response => {
         // We add manually the id in the mocks to be able to deep compare
         mockEntities[0].id = 1234;
@@ -142,7 +148,7 @@ describe('Query', () => {
         // 'password' it has been defined with read: false
         delete mockEntities[0].password;
 
-        expect(query.__originalRun.called).equal(true);
+        expect((query.__originalRun as any).called).equal(true);
         expect(response.entities.length).equal(2);
         assert.isUndefined(response.entities[0].password);
         expect(response.entities).deep.equal(mockEntities);
@@ -152,31 +158,31 @@ describe('Query', () => {
         delete mockEntities[1].id;
       }));
 
-    it('should add id to entities', () =>
+    test('should add id to entities', () =>
       query.run().then(response => {
         expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
         expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
       }));
 
-    it('should accept "readAll" option', () =>
+    test('should accept "readAll" option', () =>
       query.run({ readAll: true }).then(response => {
         assert.isDefined(response.entities[0].password);
       }));
 
-    it('should accept "showKey" option', () =>
+    test('should accept "showKey" option', () =>
       query.run({ showKey: true }).then(response => {
         assert.isDefined(response.entities[0].__key);
       }));
 
-    it('should forward options to underlying Datastore.Query', () =>
+    test('should forward options to underlying Datastore.Query', () =>
       query.run({ consistency: 'strong' }).then(() => {
-        assert(query.__originalRun.called);
-        const { args } = query.__originalRun.getCall(0);
+        assert((query.__originalRun as any).called);
+        const { args } = (query.__originalRun as any).getCall(0);
         expect(args[0].consistency).equal('strong');
       }));
 
-    it('should not add endCursor to response', () => {
-      query.__originalRun.restore();
+    test('should not add endCursor to response', () => {
+      (query.__originalRun as any).restore();
       sinon.stub(query, '__originalRun').resolves([[], { moreResults: ds.NO_MORE_RESULTS }]);
 
       return query.run().then(response => {
@@ -184,9 +190,9 @@ describe('Query', () => {
       });
     });
 
-    it('should catch error thrown in query run()', () => {
+    test('should catch error thrown in query run()', () => {
       const error = { code: 400, message: 'Something went wrong doctor' };
-      query.__originalRun.restore();
+      (query.__originalRun as any).restore();
       sinon.stub(query, '__originalRun').rejects(error);
 
       return query.run().catch(err => {
@@ -194,38 +200,29 @@ describe('Query', () => {
       });
     });
 
-    it('should allow a namespace for query', () => {
+    test('should allow a namespace for query', () => {
       const namespace = 'com.mydomain-dev';
       query = ModelInstance.query(namespace);
 
       expect(query.namespace).equal(namespace);
     });
 
-    it('should create query on existing transaction', () => {
-      query = ModelInstance.query(null, transaction);
-      expect(query.scope.constructor.name).equal('Transaction');
+    test('should create query on existing transaction', () => {
+      query = ModelInstance.query(undefined, transaction);
+      expect(query.scope!.constructor.name).equal('Transaction');
     });
 
-    it('should not set transaction if not an instance of gcloud Transaction', () => {
-      const fn = () => {
-        query = ModelInstance.query(null, {});
+    test('should not set transaction if not an instance of gcloud Transaction', () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
+        query = ModelInstance.query(undefined, {});
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('should still work with a callback', () => {
-      query = ModelInstance.query().filter('name', 'John');
-      sinon.stub(query, '__originalRun').resolves(responseQueries);
-
-      return query.run((err, response) => {
-        expect(query.__originalRun.called).equal(true);
-        expect(response.entities.length).equal(2);
-        expect(response.nextPageCursor).equal('abcdef');
-      });
-    });
-
-    context('when cache is active', () => {
+    describe('when cache is active', () => {
       beforeEach(() => {
         setupCacheContext();
         sinon.stub(query, '__originalRun').resolves(responseQueries);
@@ -235,44 +232,44 @@ describe('Query', () => {
         cleanupCacheContext();
       });
 
-      it('should get query from cache and pass down options', () =>
+      test('should get query from cache and pass down options', () =>
         query.run({ ttl: 9999 }).then(response => {
-          assert.ok(query.__originalRun.called);
-          expect(gstore.cache.queries.read.callCount).equal(1);
-          expect(gstore.cache.queries.read.getCall(0).args[1].ttl).equal(9999);
+          assert.ok((query.__originalRun as any).called);
+          expect((gstore.cache!.queries.read as any).callCount).equal(1);
+          expect((gstore.cache!.queries.read as any).getCall(0).args[1].ttl).equal(9999);
           expect(response.entities[0].name).deep.equal(mockEntities[0].name);
           expect(response.entities[1].name).deep.equal(mockEntities[1].name);
         }));
 
-      it('should *not* get query from cache', () =>
-        gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+      test('should *not* get query from cache', () =>
+        gstore.cache!.queries.set(query as any, responseQueries, { ttl: 600 }).then(() =>
           query.run({ cache: false }).then(() => {
-            assert.ok(query.__originalRun.called);
+            assert.ok((query.__originalRun as any).called);
           }),
         ));
 
-      it('should *not* get query from cache when ttl === -1', () => {
-        const conf = { ...gstore.cache.config.ttl };
-        gstore.cache.config.ttl.queries = -1;
+      test('should *not* get query from cache when ttl === -1', () => {
+        const conf = { ...gstore.cache!.config.ttl };
+        gstore.cache!.config.ttl.queries = -1;
 
-        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+        return gstore.cache!.queries.set(query as any, responseQueries, { ttl: 600 }).then(() =>
           query.run().then(() => {
-            expect(gstore.cache.queries.read.callCount).equal(0);
-            assert.ok(query.__originalRun.called);
-            gstore.cache.config.ttl = conf; // put back original config
+            expect((gstore.cache!.queries.read as any).callCount).equal(0);
+            assert.ok((query.__originalRun as any).called);
+            gstore.cache!.config.ttl = conf; // put back original config
           }),
         );
       });
 
-      it('should get query from the cache when ttl === -1 but option.cache is set to "true"', () => {
-        const conf = { ...gstore.cache.config.ttl };
-        gstore.cache.config.ttl.queries = -1;
+      test('should get query from the cache when ttl === -1 but option.cache is set to "true"', () => {
+        const conf = { ...gstore.cache!.config.ttl };
+        gstore.cache!.config.ttl.queries = -1;
 
-        return gstore.cache.queries.set(query, responseQueries, { ttl: 600 }).then(() =>
+        return gstore.cache!.queries.set(query as any, responseQueries, { ttl: 600 }).then(() =>
           query.run({ cache: true }).then(() => {
-            expect(gstore.cache.queries.read.callCount).equal(1);
-            assert.ok(!query.__originalRun.called);
-            gstore.cache.config.ttl = conf; // put back original config
+            expect((gstore.cache!.queries.read as any).callCount).equal(1);
+            assert.ok(!(query.__originalRun as any).called);
+            gstore.cache!.config.ttl = conf; // put back original config
           }),
         );
       });
@@ -280,10 +277,10 @@ describe('Query', () => {
   });
 
   describe('shortcut queries', () => {
-    let queryMock;
+    let queryMock: Query;
 
     beforeEach(() => {
-      sinon.stub(ds, 'createQuery').callsFake(namespace => {
+      sinon.stub(ds, 'createQuery').callsFake((namespace: string) => {
         queryMock = new Query(ds, { entities: mockEntities }, undefined, namespace);
 
         sinon.spy(queryMock, 'run');
@@ -302,41 +299,41 @@ describe('Query', () => {
       if (!queryMock) {
         return;
       }
-      if (queryMock.run.restore) {
-        queryMock.run.restore();
+      if ((queryMock.run as any).restore) {
+        (queryMock.run as any).restore();
       }
-      if (queryMock.filter.restore) {
-        queryMock.filter.restore();
+      if ((queryMock.filter as any).restore) {
+        (queryMock.filter as any).restore();
       }
-      if (queryMock.hasAncestor.restore) {
-        queryMock.hasAncestor.restore();
+      if ((queryMock.hasAncestor as any).restore) {
+        (queryMock.hasAncestor as any).restore();
       }
-      if (queryMock.order.restore) {
-        queryMock.order.restore();
+      if ((queryMock.order as any).restore) {
+        (queryMock.order as any).restore();
       }
-      if (queryMock.limit.restore) {
-        queryMock.limit.restore();
+      if ((queryMock.limit as any).restore) {
+        (queryMock.limit as any).restore();
       }
-      if (queryMock.offset.restore) {
-        queryMock.offset.restore();
+      if ((queryMock.offset as any).restore) {
+        (queryMock.offset as any).restore();
       }
     });
 
     describe('list', () => {
-      it('should work with no settings defined', () =>
+      test('should work with no settings defined', () =>
         ModelInstance.list().then(response => {
           expect(response.entities.length).equal(2);
           expect(response.nextPageCursor).equal('abcdef');
           assert.isUndefined(response.entities[0].password);
         }));
 
-      it('should add id to entities', () =>
+      test('should add id to entities', () =>
         ModelInstance.list().then(response => {
           expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
         }));
 
-      it('should not add endCursor to response', () => {
+      test('should not add endCursor to response', () => {
         ds.createQuery.restore();
         sinon
           .stub(ds, 'createQuery')
@@ -347,7 +344,7 @@ describe('Query', () => {
         });
       });
 
-      it('should read settings passed', () => {
+      test('should read settings passed', () => {
         const querySettings = {
           limit: 10,
           offset: 10,
@@ -357,13 +354,13 @@ describe('Query', () => {
         ModelInstance = gstore.model('Blog', schema);
 
         return ModelInstance.list().then(response => {
-          expect(queryMock.limit.getCall(0).args[0]).equal(querySettings.limit);
-          expect(queryMock.offset.getCall(0).args[0]).equal(querySettings.offset);
+          expect((queryMock.limit as any).getCall(0).args[0]).equal(querySettings.limit);
+          expect((queryMock.offset as any).getCall(0).args[0]).equal(querySettings.offset);
           expect(response.entities[0].__className).equal('Entity');
         });
       });
 
-      it('should override global setting with options', () => {
+      test('should override global setting with options', () => {
         const querySettings = {
           limit: 10,
           offset: 10,
@@ -374,14 +371,14 @@ describe('Query', () => {
         ModelInstance = gstore.model('Blog', schema);
 
         return ModelInstance.list({ limit: 15, offset: 15 }).then(response => {
-          expect(queryMock.limit.getCall(0).args[0]).equal(15);
-          expect(queryMock.offset.getCall(0).args[0]).equal(15);
+          expect((queryMock.limit as any).getCall(0).args[0]).equal(15);
+          expect((queryMock.offset as any).getCall(0).args[0]).equal(15);
           assert.isDefined(response.entities[0].password);
           assert.isDefined(response.entities[0].__key);
         });
       });
 
-      it('should deal with err response', () => {
+      test('should deal with err response', () => {
         const error = { code: 500, message: 'Server error' };
         ds.createQuery.callsFake(() => {
           queryMock = new Query(ds, { entities: mockEntities });
@@ -394,7 +391,7 @@ describe('Query', () => {
         });
       });
 
-      it('should accept a namespace ', () => {
+      test('should accept a namespace ', () => {
         const namespace = 'com.mydomain-dev';
 
         return ModelInstance.list({ namespace }).then(() => {
@@ -402,7 +399,7 @@ describe('Query', () => {
         });
       });
 
-      context('when cache is active', () => {
+      describe('when cache is active', () => {
         beforeEach(() => {
           setupCacheContext();
         });
@@ -411,74 +408,78 @@ describe('Query', () => {
           cleanupCacheContext();
         });
 
-        it('should get query from cache and pass down options', () => {
+        test('should get query from cache and pass down options', () => {
           const options = { ttl: 7777, cache: true };
 
           return ModelInstance.list(options).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
-            expect(ModelInstance.gstore.cache.queries.read.getCall(0).args[1]).contains(options);
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(1);
+            expect((ModelInstance.gstore.cache!.queries.read as any).getCall(0).args[1]).contains(options);
           });
         });
 
-        it('should *not* get query from cache', () =>
+        test('should *not* get query from cache', () =>
           ModelInstance.list({ cache: false }).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(0);
           }));
       });
     });
 
     describe('findAround()', () => {
-      it('should get 3 entities after a given date', () =>
+      test('should get 3 entities after a given date', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).then(entities => {
-          expect(queryMock.filter.getCall(0).args).deep.equal(['createdOn', '>', '2016-1-1']);
-          expect(queryMock.order.getCall(0).args).deep.equal(['createdOn', { descending: true }]);
-          expect(queryMock.limit.getCall(0).args[0]).equal(3);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal(['createdOn', '>', '2016-1-1']);
+          expect((queryMock.order as any).getCall(0).args).deep.equal(['createdOn', { descending: true }]);
+          expect((queryMock.limit as any).getCall(0).args[0]).equal(3);
 
           // Make sure to not show properties where read is set to false
           assert.isUndefined(entities[0].password);
         }));
 
-      it('should get 3 entities before a given date', () =>
+      test('should get 3 entities before a given date', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 12 }).then(() => {
-          expect(queryMock.filter.getCall(0).args).deep.equal(['createdOn', '<', '2016-1-1']);
-          expect(queryMock.limit.getCall(0).args[0]).equal(12);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal(['createdOn', '<', '2016-1-1']);
+          expect((queryMock.limit as any).getCall(0).args[0]).equal(12);
         }));
 
-      it('should throw error if not all arguments are passed', done => {
+      test('should throw error if not all arguments are passed', done => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         ModelInstance.findAround('createdOn', '2016-1-1').catch(err => {
           expect(err.message).equal('[gstore.findAround()]: Not all the arguments were provided.');
           done();
         });
       });
 
-      it('should validate that options passed is an object', done => {
+      test('should validate that options passed is an object', done => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         ModelInstance.findAround('createdOn', '2016-1-1', 'string').catch(err => {
           expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
           done();
         });
       });
 
-      it('should validate that options has an "after" or "before" property', done => {
+      test('should validate that options has an "after" or "before" property', done => {
         ModelInstance.findAround('createdOn', '2016-1-1', {}).catch(err => {
           expect(err.message).equal('[gstore.findAround()]: You must set "after" or "before" in options.');
           done();
         });
       });
 
-      it('should validate that options has not both "after" & "before" properties', done => {
+      test('should validate that options has not both "after" & "before" properties', done => {
         ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }).catch(err => {
           expect(err.message).equal('[gstore.findAround()]: You can\'t set both "after" and "before".');
           done();
         });
       });
 
-      it('should add id to entities', () =>
+      test('should add id to entities', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then(entities => {
           expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
         }));
 
-      it('should read all properties', () =>
+      test('should read all properties', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' }).then(
           entities => {
             assert.isDefined(entities[0].password);
@@ -486,19 +487,19 @@ describe('Query', () => {
           },
         ));
 
-      it('should add entities key', () =>
+      test('should add entities key', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true }).then(entities => {
           assert.isDefined(entities[0].__key);
         }));
 
-      it('should accept a namespace', () => {
+      test('should accept a namespace', () => {
         const namespace = 'com.new-domain.dev';
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }, namespace).then(() => {
           expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
         });
       });
 
-      it('should deal with err response', () => {
+      test('should deal with err response', () => {
         const error = { code: 500, message: 'Server error' };
 
         ds.createQuery.callsFake(() => {
@@ -512,7 +513,7 @@ describe('Query', () => {
         });
       });
 
-      context('when cache is active', () => {
+      describe('when cache is active', () => {
         beforeEach(() => {
           setupCacheContext();
         });
@@ -521,28 +522,28 @@ describe('Query', () => {
           cleanupCacheContext();
         });
 
-        it('should get query from cache and pass down options', () => {
+        test('should get query from cache and pass down options', () => {
           const options = { ttl: 7777, cache: true, after: 3 };
 
           return ModelInstance.findAround('xxx', 'xxx', options).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
-            const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(1);
+            const { args } = (ModelInstance.gstore.cache!.queries.read as any).getCall(0);
             expect(args[1]).contains({ ttl: 7777, cache: true });
           });
         });
 
-        it('should *not* get query from cache', () =>
+        test('should *not* get query from cache', () =>
           ModelInstance.findAround('xxx', 'xxx', { after: 3, cache: false }).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(0);
           }));
       });
     });
 
     describe('findOne()', () => {
-      it('should call pre and post hooks', () => {
+      test('should call pre and post hooks', () => {
         const spies = {
-          pre: () => Promise.resolve(),
-          post: () => Promise.resolve(),
+          pre: (): Promise<void> => Promise.resolve(),
+          post: (): Promise<void> => Promise.resolve(),
         };
         sinon.spy(spies, 'pre');
         sinon.spy(spies, 'post');
@@ -551,50 +552,52 @@ describe('Query', () => {
         ModelInstance = gstore.model('Blog', schema);
 
         return ModelInstance.findOne({}).then(() => {
-          expect(spies.pre.calledOnce).equal(true);
-          expect(spies.post.calledOnce).equal(true);
-          expect(spies.pre.calledBefore(queryMock.__originalRun)).equal(true);
-          expect(spies.post.calledAfter(queryMock.__originalRun)).equal(true);
+          expect((spies.pre as any).calledOnce).equal(true);
+          expect((spies.post as any).calledOnce).equal(true);
+          expect((spies.pre as any).calledBefore((queryMock as any).__originalRun)).equal(true);
+          expect((spies.post as any).calledAfter((queryMock as any).__originalRun)).equal(true);
         });
       });
 
-      it('should run correct gcloud Query', () =>
+      test('should run correct gcloud Query', () =>
         ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
-          expect(queryMock.filter.getCall(0).args).deep.equal(['name', 'John']);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal(['name', 'John']);
 
-          expect(queryMock.filter.getCall(1).args).deep.equal(['email', 'john@snow.com']);
+          expect((queryMock.filter as any).getCall(1).args).deep.equal(['email', 'john@snow.com']);
         }));
 
-      it('should return a Model instance', () =>
+      test('should return a Model instance', () =>
         ModelInstance.findOne({ name: 'John' }).then(entity => {
-          expect(entity.entityKind).equal('BlogTestQuery');
-          expect(entity.__className).equal('Entity');
+          expect(entity!.entityKind).equal('BlogTestQuery');
+          expect(entity!.__className).equal('Entity');
         }));
 
-      it('should validate that params passed are object', done => {
+      test('should validate that params passed are object', done => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         ModelInstance.findOne('some string').catch(err => {
           expect(err.message).equal('[gstore.findOne()]: "Params" has to be an object.');
           done();
         });
       });
 
-      it('should accept ancestors', () => {
+      test('should accept ancestors', () => {
         const ancestors = ['Parent', 'keyname'];
 
-        return ModelInstance.findOne({ name: 'John' }, ancestors, () => {
-          expect(queryMock.hasAncestor.getCall(0).args[0].path).deep.equal(ancestors);
+        return ModelInstance.findOne({ name: 'John' }, ancestors).then(() => {
+          expect((queryMock.hasAncestor as any).getCall(0).args[0].path).deep.equal(ancestors);
         });
       });
 
-      it('should accept a namespace', () => {
+      test('should accept a namespace', () => {
         const namespace = 'com.new-domain.dev';
 
-        return ModelInstance.findOne({ name: 'John' }, null, namespace).then(() => {
+        return ModelInstance.findOne({ name: 'John' }, undefined, namespace).then(() => {
           expect(ds.createQuery.getCall(0).args[0]).equal(namespace);
         });
       });
 
-      it('should deal with err response', () => {
+      test('should deal with err response', () => {
         const error = { code: 500, message: 'Server error' };
 
         ds.createQuery.callsFake(() => {
@@ -608,7 +611,7 @@ describe('Query', () => {
         });
       });
 
-      it('if entity not found should return "ERR_ENTITY_NOT_FOUND"', () => {
+      test('if entity not found should return "ERR_ENTITY_NOT_FOUND"', () => {
         ds.createQuery.callsFake(() => {
           queryMock = new Query(ds, { entities: [] });
           return queryMock;
@@ -619,8 +622,8 @@ describe('Query', () => {
         });
       });
 
-      it('should call pre hooks and override parameters', () => {
-        const spyPre = sinon.stub().callsFake((...args) => {
+      test('should call pre hooks and override parameters', () => {
+        const spyPre = sinon.stub().callsFake((...args: any[]) => {
           // Make sure the original arguments are passed to the hook
           if (args[0].name === 'John') {
             // And override them
@@ -631,8 +634,8 @@ describe('Query', () => {
           return Promise.resolve();
         });
 
-        schema = new Schema({ name: { type: 'string' } });
-        schema.pre('findOne', function preHook(...args) {
+        schema = new Schema({ name: { type: String } });
+        schema.pre('findOne', function preHook(this: any, ...args) {
           return spyPre.apply(this, args);
         });
 
@@ -640,9 +643,9 @@ describe('Query', () => {
 
         return ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
           assert.ok(spyPre.calledBefore(ds.createQuery));
-          const { args } = queryMock.filter.getCall(0);
-          const { args: args2 } = queryMock.filter.getCall(1);
-          const { args: args3 } = queryMock.hasAncestor.getCall(0);
+          const { args } = (queryMock.filter as any).getCall(0);
+          const { args: args2 } = (queryMock.filter as any).getCall(1);
+          const { args: args3 } = (queryMock.hasAncestor as any).getCall(0);
 
           expect(args[0]).equal('name');
           expect(args[1]).equal('Mick');
@@ -653,7 +656,7 @@ describe('Query', () => {
         });
       });
 
-      context('when cache is active', () => {
+      describe('when cache is active', () => {
         beforeEach(() => {
           setupCacheContext();
         });
@@ -662,16 +665,16 @@ describe('Query', () => {
           cleanupCacheContext();
         });
 
-        it('should get query from cache and pass down options', () =>
-          ModelInstance.findOne({ name: 'John' }, null, null, { ttl: 7777, cache: true }).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(1);
-            const { args } = ModelInstance.gstore.cache.queries.read.getCall(0);
+        test('should get query from cache and pass down options', () =>
+          ModelInstance.findOne({ name: 'John' }, undefined, undefined, { ttl: 7777, cache: true }).then(() => {
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(1);
+            const { args } = (ModelInstance.gstore.cache!.queries.read as any).getCall(0);
             expect(args[1]).contains({ ttl: 7777, cache: true });
           }));
 
-        it('should *not* get query from cache', () =>
-          ModelInstance.findOne({ name: 'John' }, null, null, { cache: false }).then(() => {
-            expect(ModelInstance.gstore.cache.queries.read.callCount).equal(0);
+        test('should *not* get query from cache', () =>
+          ModelInstance.findOne({ name: 'John' }, undefined, undefined, { cache: false }).then(() => {
+            expect((ModelInstance.gstore.cache!.queries.read as any).callCount).equal(0);
           }));
       });
     });

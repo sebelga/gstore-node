@@ -1,6 +1,6 @@
-'use strict';
+import datastoreFactory from './datastore';
 
-const ds = require('./datastore')({
+const ds = datastoreFactory({
   namespace: 'com.mydomain',
 });
 
@@ -10,11 +10,11 @@ const key3 = ds.key(['User', 333]);
 const key4 = ds.key(['User', 444]);
 const key5 = ds.key(['User', 555]);
 
-const entity1 = { name: 'John' };
-const entity2 = { name: 'Mick' };
-const entity3 = { name: 'Carol' };
-const entity4 = { name: 'Greg' };
-const entity5 = { name: 'Tito' };
+const entity1: any = { name: 'John' };
+const entity2: any = { name: 'Mick' };
+const entity3: any = { name: 'Carol' };
+const entity4: any = { name: 'Greg' };
+const entity5: any = { name: 'Tito' };
 
 entity1[ds.KEY] = key1;
 entity2[ds.KEY] = key2;
@@ -25,8 +25,8 @@ entity5[ds.KEY] = key5;
 // Helper to create fakeData on beforeEach
 // to make sure we did not mutate any entity in our
 // tests... We should not, but who knows?
-const generateEntities = () => {
-  const mockEntity = {
+const generateEntities = (): any => {
+  const mockEntity: any = {
     name: 'John',
     lastname: 'Snow',
     email: 'john@snow.com',
@@ -34,10 +34,10 @@ const generateEntities = () => {
 
   mockEntity[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-  const mockEntity2 = { name: 'John', lastname: 'Snow', password: 'xxx' };
+  const mockEntity2: any = { name: 'John', lastname: 'Snow', password: 'xxx' };
   mockEntity2[ds.KEY] = ds.key(['BlogPost', 1234]);
 
-  const mockEntity3 = { name: 'Mick', lastname: 'Jagger' };
+  const mockEntity3: any = { name: 'Mick', lastname: 'Jagger' };
   mockEntity3[ds.KEY] = ds.key(['BlogPost', 'keyname']);
 
   const mockEntities = [mockEntity2, mockEntity3];
@@ -50,7 +50,7 @@ const generateEntities = () => {
   };
 };
 
-module.exports = {
+export default {
   keys: [key1, key2, key3, key4, key5],
   entities: [entity1, entity2, entity3, entity4, entity5],
   generateEntities,

@@ -40,7 +40,9 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<T> &
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<
+    T
+  > &
     M;
 
   /**
@@ -70,7 +72,7 @@ export interface Model<
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/key
    */
   key<U extends IdType | IdType[]>(
-    id: U,
+    id?: U,
     ancestors?: Array<string | number>,
     namespace?: string,
   ): U extends Array<IdType> ? EntityKey[] : EntityKey;
@@ -179,7 +181,7 @@ export interface Model<
    * @param {*} data The entity data to sanitize
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/sanitize
    */
-  sanitize(data: { [propName: string]: any }, options: { disabled: string[] }): EntityData<T>;
+  sanitize(data: { [propName: string]: any }, options?: { disabled: string[] }): EntityData<T>;
 
   /**
    * Initialize a Datastore Query for the Model's entity kind.
@@ -1130,7 +1132,7 @@ export const generateModel = <T extends object, M extends object>(
   const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;
 
-  model.query = initQuery.bind(query);
+  model.query = initQuery.bind(query); // eslint-disable-line @typescript-eslint/unbound-method
   model.list = list.bind(query);
   model.findOne = findOne.bind(query);
   model.findAround = findAround.bind(query);

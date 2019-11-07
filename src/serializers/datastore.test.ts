@@ -1,13 +1,15 @@
-'use strict';
+import chai from 'chai';
+import Joi from '@hapi/joi';
 
-const chai = require('chai');
-const Joi = require('@hapi/joi');
+import dsFactory from '../../__tests__/mocks/datastore';
+import { Gstore, QUERIES_FORMATS } from '../index';
+import GstoreModel from '../model';
+import Entity from '../entity';
+import datastoreSerializer from './datastore';
 
-const { Gstore, QUERIES_FORMATS } = require('../../lib');
-const ds = require('../mocks/datastore')({
+const ds = dsFactory({
   namespace: 'com.mydomain',
 });
-const { datastoreSerializer } = require('../../lib/serializers');
 
 const gstore = new Gstore();
 const { Schema } = gstore;
@@ -16,19 +18,16 @@ const { expect, assert } = chai;
 gstore.connect(ds);
 
 describe('Datastore serializer', () => {
-  let Model;
+  let Model: GstoreModel<any, any>;
 
   beforeEach(() => {
     gstore.models = {};
-    gstore.modelSchemas = {};
   });
 
   describe('should convert data FROM Datastore format', () => {
-    let datastoreMock;
+    let mockEntityData: any;
 
     const key = ds.key(['BlogPost', 1234]);
-
-    let data;
 
     beforeEach(() => {
       const schema = new Schema({
@@ -36,57 +35,56 @@ describe('Datastore serializer', () => {
         email: { type: String, read: false },
         createdOn: { type: Date },
       });
-      Model = gstore.model('Blog', schema, {});
+      Model = gstore.model('Blog', schema);
 
-      data = {
+      mockEntityData = {
         name: 'John',
         lastname: 'Snow',
         email: 'john@snow.com',
         createdOn: '2017-12-25',
       };
 
-      datastoreMock = data;
-      datastoreMock[Model.gstore.ds.KEY] = key;
+      mockEntityData[Model.gstore.ds.KEY] = key;
     });
 
-    it('and add Symbol("KEY") id to entity', () => {
-      const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model);
+    test('and add Symbol("KEY") id to entity', () => {
+      const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model);
 
-      // expect(serialized).equal = datastoreMock;
+      // expect(serialized).equal = mockEntityData;
       expect(serialized.id).equal(key.id);
       assert.isUndefined(serialized.email);
     });
 
-    it('accepting "readAll" param', () => {
-      const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { readAll: true });
+    test('accepting "readAll" param', () => {
+      const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model, { readAll: true });
 
       assert.isDefined(serialized.email);
     });
 
-    it('accepting "showKey" param', () => {
-      const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { showKey: true });
+    test('accepting "showKey" param', () => {
+      const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model, { showKey: true });
 
       expect(serialized.__key).equal(key);
     });
 
-    it('should convert to entity instances', () => {
-      const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model, { format: QUERIES_FORMATS.ENTITY });
+    test('should convert to entity instances', () => {
+      const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model, { format: QUERIES_FORMATS.ENTITY });
 
       expect(serialized.__className).equal('Entity');
     });
 
-    it('should convert Datetime prop to Date object if returned as number', () => {
+    test('should convert Datetime prop to Date object if returned as number', () => {
       const date = Date.now();
-      datastoreMock.createdOn = date;
+      mockEntityData.createdOn = date;
 
-      const serialized = datastoreSerializer.fromDatastore(datastoreMock, Model);
+      const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model);
 
       assert.isDefined(serialized.createdOn.getDate);
     });
   });
 
   describe('should convert data TO Datastore format', () => {
-    let entity;
+    let entity: Entity;
 
     beforeEach(() => {
       const schema = new Schema({
@@ -109,7 +107,7 @@ describe('Datastore serializer', () => {
       });
     });
 
-    it('without passing non-indexed properties', () => {
+    test('without passing non-indexed properties', () => {
       const expected = {
         name: 'John',
         embedded: {
@@ -123,18 +121,18 @@ describe('Datastore serializer', () => {
       expect(excludeLargeProperties).to.equal(false);
     });
 
-    it('not taking into account "undefined" variables', () => {
+    test('not taking into account "undefined" variables', () => {
       const { data } = datastoreSerializer.toDatastore(entity);
       expect({}.hasOwnProperty.call(data, 'lastname')).equal(false);
     });
 
-    it('and set excludeFromIndexes properties', () => {
+    test('and set excludeFromIndexes properties', () => {
       const { excludeFromIndexes } = datastoreSerializer.toDatastore(entity);
       expect(excludeFromIndexes).to.deep.equal(['name', 'embedded.description', 'array2[]', 'array2[].*']);
     });
 
-    it('and set excludeLargeProperties flag', () => {
-      const schema = new Schema({ name: String }, { excludeLargeProperties: true });
+    test('and set excludeLargeProperties flag', () => {
+      const schema = new Schema({ name: { type: String } }, { excludeLargeProperties: true });
       Model = gstore.model('Serializer-auto-unindex', schema);
       entity = new Model({ name: 'John' });
 
@@ -142,7 +140,7 @@ describe('Datastore serializer', () => {
       expect(excludeLargeProperties).equal(true);
     });
 
-    it('should set all excludeFromIndexes on all properties of object', () => {
+    test('should set all excludeFromIndexes on all properties of object', () => {
       const schema = new Schema({
         embedded: { type: Object, excludeFromIndexes: true },
         embedded2: { joi: Joi.object(), excludeFromIndexes: true },

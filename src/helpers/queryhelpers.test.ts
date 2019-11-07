@@ -1,44 +1,45 @@
-'use strict';
+import chai from 'chai';
+import sinon from 'sinon';
+import { Datastore } from '@google-cloud/datastore';
 
-const chai = require('chai');
-const sinon = require('sinon');
-const { Datastore } = require('@google-cloud/datastore');
+import queryHelpers from './queryhelpers';
+import { GstoreQuery } from '../query';
 
 const ds = new Datastore();
-const { default: helpers } = require('../../lib/helpers');
-
-const { queryHelpers } = helpers;
-
 const { expect } = chai;
 
 describe('Query Helpers', () => {
-  let query;
+  let query: GstoreQuery<any, any>;
 
   describe('should build a Query from options', () => {
     beforeEach(() => {
-      query = ds.createQuery();
+      query = ds.createQuery() as any;
     });
 
-    it('and throw error if no query passed', () => {
-      const fn = () => {
+    test('and throw error if no query passed', () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         queryHelpers.buildQueryFromOptions();
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('and throw error if query is not a gcloud Query', () => {
-      const fn = () => {
+    test('and throw error if query is not a gcloud Query', () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         queryHelpers.buildQueryFromOptions({});
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('and not modify query if no options passed', () => {
-      const originalQuery = {};
+    test('and not modify query if no options passed', () => {
+      const originalQuery: any = {};
       Object.keys(query).forEach(k => {
-        originalQuery[k] = query[k];
+        originalQuery[k] = (query as any)[k];
       });
 
       query = queryHelpers.buildQueryFromOptions(query);
@@ -49,7 +50,7 @@ describe('Query Helpers', () => {
       expect(query.selectVal).deep.equal(originalQuery.selectVal);
     });
 
-    it('and update query', () => {
+    test('and update query', () => {
       const options = {
         limit: 10,
         order: { property: 'name', descending: true },
@@ -66,7 +67,7 @@ describe('Query Helpers', () => {
       expect(query.selectVal).deep.equal(['name']);
     });
 
-    it('and allow order on serveral properties', () => {
+    test('and allow order on serveral properties', () => {
       const options = {
         order: [{ property: 'name', descending: true }, { property: 'age' }],
       };
@@ -76,7 +77,7 @@ describe('Query Helpers', () => {
       expect(query.orders.length).equal(2);
     });
 
-    it('and allow select to be an Array', () => {
+    test('and allow select to be an Array', () => {
       const options = {
         select: ['name', 'lastname', 'email'],
       };
@@ -86,7 +87,7 @@ describe('Query Helpers', () => {
       expect(query.selectVal).deep.equal(options.select);
     });
 
-    it('and update hasAncestor in query', () => {
+    test('and update hasAncestor in query', () => {
       const options = {
         ancestors: ['Parent', 1234],
       };
@@ -98,21 +99,21 @@ describe('Query Helpers', () => {
       expect(query.filters[0].val.id).equal(1234);
     });
 
-    it('and throw Error if no Datastore instance passed when passing ancestors', () => {
+    test('and throw Error if no Datastore instance passed when passing ancestors', () => {
       const options = {
         ancestors: ['Parent', 123],
       };
 
-      const fn = () => {
+      const fn = (): void => {
         query = queryHelpers.buildQueryFromOptions(query, options);
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('and define one filter', () => {
+    test('and define one filter', () => {
       const options = {
-        filters: ['name', '=', 'John'],
+        filters: ['name', '=', 'John'] as any[],
       };
 
       query = queryHelpers.buildQueryFromOptions(query, options, ds);
@@ -123,7 +124,7 @@ describe('Query Helpers', () => {
       expect(query.filters[0].val).equal('John');
     });
 
-    it('and define several filters', () => {
+    test('and define several filters', () => {
       const options = {
         filters: [['name', '=', 'John'], ['lastname', 'Snow'], ['age', '<', 30]],
       };
@@ -137,7 +138,7 @@ describe('Query Helpers', () => {
       expect(query.filters[2].op).equal('<');
     });
 
-    it('and execute a function in a filter value, without modifying the filters Array', () => {
+    test('and execute a function in a filter value, without modifying the filters Array', () => {
       const spy = sinon.spy();
       const options = {
         filters: [['modifiedOn', '<', spy]],
@@ -149,18 +150,20 @@ describe('Query Helpers', () => {
       expect(options.filters[0][2]).to.equal(spy);
     });
 
-    it('and throw error if wrong format for filters', () => {
+    test('and throw error if wrong format for filters', () => {
       const options = {
         filters: 'name',
       };
-      const fn = () => {
+      const fn = (): void => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         query = queryHelpers.buildQueryFromOptions(query, options, ds);
       };
 
       expect(fn).to.throw(Error);
     });
 
-    it('and add start cursor', () => {
+    test('and add start cursor', () => {
       const options = {
         start: 'abcdef',
       };

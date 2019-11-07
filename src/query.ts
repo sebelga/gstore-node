@@ -222,8 +222,8 @@ class Query<T extends object, M extends object> {
 export interface GstoreQuery<T, R> extends Omit<DatastoreQuery, 'run' | 'filter' | 'order'> {
   __originalRun: DatastoreQuery['run'];
   run: QueryRunFunc<T, R>;
-  filter<P extends keyof T>(property: P, value: T[P]): DatastoreQuery;
-  filter<P extends keyof T>(property: P, operator: DatastoreOperator, value: T[P]): DatastoreQuery;
+  filter<P extends keyof T>(property: P, value: T[P]): this;
+  filter<P extends keyof T>(property: P, operator: DatastoreOperator, value: T[P]): this;
   order(property: keyof T, options?: OrderOptions): this;
 }
 

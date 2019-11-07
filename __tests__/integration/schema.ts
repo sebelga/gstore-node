@@ -1,11 +1,9 @@
 /* eslint-disable no-unused-expressions */
 
-'use strict';
-
-const chai = require('chai');
-const Chance = require('chance');
-const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../../lib');
+import chai from 'chai';
+import Chance from 'chance';
+import { Datastore } from '@google-cloud/datastore';
+import { Gstore } from '../../src';
 
 const gstore = new Gstore();
 const chance = new Chance();
@@ -18,11 +16,10 @@ const { Schema } = gstore;
 describe('Schema (Integration Tests)', () => {
   beforeEach(() => {
     gstore.models = {};
-    gstore.modelSchemas = {};
   });
 
-  it('read param set to "false" should not return those properties from entity.plain()', () => {
-    const schema = new Schema({
+  test('read param set to "false" should not return those properties from entity.plain()', () => {
+    const schema = new Schema<{ email: string; password: string; state?: string }>({
       email: {
         type: String,
         required: true,
@@ -57,6 +54,8 @@ describe('Schema (Integration Tests)', () => {
       .then(entity => {
         const response = entity.plain();
         expect(response.password).to.not.exist;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         expect(response.requested).to.not.exist;
 
         const response2 = entity.plain({ readAll: true });

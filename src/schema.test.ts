@@ -1,20 +1,20 @@
-'use strict';
+import chai from 'chai';
+import Joi from '@hapi/joi';
 
-const chai = require('chai');
-const Joi = require('@hapi/joi');
+import { Gstore } from './index';
+import GstoreSchema from './schema';
+import dsFactory from '../__tests__/mocks/datastore';
 
-const { Gstore } = require('../lib');
-const ds = require('./mocks/datastore')();
-
+const ds = dsFactory();
 const gstore = new Gstore();
-const { Schema } = gstore;
-gstore.connect(ds);
-
 const { expect, assert } = chai;
+const { Schema } = gstore;
+
+gstore.connect(ds);
 
 describe('Schema', () => {
   describe('contructor', () => {
-    it('should initialized properties', () => {
+    test('should initialized properties', () => {
       const schema = new Schema({});
 
       assert.isDefined(schema.methods);
@@ -25,32 +25,29 @@ describe('Schema', () => {
       expect(schema.options.queries).deep.equal({ readAll: false, format: 'JSON' });
     });
 
-    it('should merge options passed', () => {
-      const schema = new Schema(
-        {},
-        {
-          newOption: 'myValue',
-          queries: { simplifyResult: false },
-        },
-      );
+    test('should merge options passed', () => {
+      const schema = new Schema({}, {
+        newOption: 'myValue',
+        queries: { simplifyResult: false },
+      } as any);
 
-      expect(schema.options.newOption).equal('myValue');
-      expect(schema.options.queries.simplifyResult).equal(false);
+      expect((schema.options as any).newOption).equal('myValue');
+      expect((schema.options.queries as any).simplifyResult).equal(false);
     });
 
-    it('should create its paths from obj passed', () => {
+    test('should create its paths from obj passed', () => {
       const schema = new Schema({
-        property1: { type: 'string' },
-        property2: { type: 'number' },
+        property1: { type: String },
+        property2: { type: Number },
       });
 
       assert.isDefined(schema.paths.property1);
       assert.isDefined(schema.paths.property2);
     });
 
-    it('should not allowed reserved properties on schema', () => {
-      const fn = () => {
-        const schema = new Schema({ ds: 123 });
+    test('should not allowed reserved properties on schema', () => {
+      const fn = (): GstoreSchema => {
+        const schema = new Schema({ ds: 123 } as any);
         return schema;
       };
 
@@ -59,29 +56,32 @@ describe('Schema', () => {
   });
 
   describe('add method', () => {
-    let schema;
+    let schema: GstoreSchema;
 
     beforeEach(() => {
       schema = new Schema({});
-      schema.methods = {};
     });
 
-    it('should add it to its methods table', () => {
-      const fn = () => {};
+    test('should add it to its methods table', () => {
+      const fn = (): void => {};
       schema.method('doSomething', fn);
 
       assert.isDefined(schema.methods.doSomething);
       expect(schema.methods.doSomething).to.equal(fn);
     });
 
-    it('should not do anything if value passed is not a function', () => {
+    test('should not do anything if value passed is not a function', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method('doSomething', 123);
 
       assert.isUndefined(schema.methods.doSomething);
     });
 
-    it('should allow to pass a table of functions and validate type', () => {
-      const fn = () => {};
+    test('should allow to pass a map of functions and validate type', () => {
+      const fn = (): void => {};
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method({
         doSomething: fn,
         doAnotherThing: 123,
@@ -92,7 +92,9 @@ describe('Schema', () => {
       assert.isUndefined(schema.methods.doAnotherThing);
     });
 
-    it('should only allow function and object to be passed', () => {
+    test('should only allow function and object to be passed', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       schema.method(10, () => {});
 
       expect(Object.keys(schema.methods).length).equal(0);
@@ -100,8 +102,8 @@ describe('Schema', () => {
   });
 
   describe('modify / access paths table', () => {
-    it('should read', () => {
-      const data = { keyname: { type: 'string' } };
+    test('should read', () => {
+      const data = { keyname: { type: String } };
       const schema = new Schema(data);
 
       const pathValue = schema.path('keyname');
@@ -109,7 +111,7 @@ describe('Schema', () => {
       expect(pathValue).to.equal(data.keyname);
     });
 
-    it('should not return anything if does not exist', () => {
+    test('should not return anything if does not exist', () => {
       const schema = new Schema({});
 
       const pathValue = schema.path('keyname');
@@ -117,17 +119,17 @@ describe('Schema', () => {
       assert.isUndefined(pathValue);
     });
 
-    it('should set', () => {
+    test('should set', () => {
       const schema = new Schema({});
-      schema.path('keyname', { type: 'string' });
+      schema.path('keyname', { type: String });
 
       assert.isDefined(schema.paths.keyname);
     });
 
-    it('should not allow to set reserved key', () => {
+    test('should not allow to set reserved key', () => {
       const schema = new Schema({});
 
-      const fn = () => {
+      const fn = (): void => {
         schema.path('ds', {});
       };
 
@@ -136,8 +138,8 @@ describe('Schema', () => {
   });
 
   describe('callQueue', () => {
-    it('should add pre hooks to callQueue', () => {
-      const preMiddleware = () => {};
+    test('should add pre hooks to callQueue', () => {
+      const preMiddleware = (): Promise<any> => Promise.resolve();
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -149,8 +151,8 @@ describe('Schema', () => {
       expect(schema.__callQueue.entity.save.pres[1]).equal(preMiddleware);
     });
 
-    it('should add post hooks to callQueue', () => {
-      const postMiddleware = () => {};
+    test('should add post hooks to callQueue', () => {
+      const postMiddleware = (): Promise<any> => Promise.resolve();
       const schema = new Schema({});
       schema.__callQueue = { model: {}, entity: {} };
 
@@ -162,29 +164,29 @@ describe('Schema', () => {
   });
 
   describe('virtual()', () => {
-    it('should create new VirtualType', () => {
+    test('should create new VirtualType', () => {
       const schema = new Schema({});
-      const fn = () => {};
-      schema.virtual('fullname', fn);
+      schema.virtual('fullname');
 
       expect(schema.__virtuals.fullname.constructor.name).equal('VirtualType');
     });
 
-    it('should set the scope on the entityData', () => {
+    test('should set the scope on the entityData', () => {
       const schema = new Schema({ id: {} });
-      schema.virtual('fullname').get(virtualFunc);
       const Model = gstore.model('VirtualTest', schema);
       const entity = new Model({ id: 123 });
 
-      entity.plain({ virtuals: true });
-
-      function virtualFunc() {
+      function virtualFunc(this: any): void {
         expect(this).deep.equal(entity.entityData);
       }
+
+      schema.virtual('fullname').get(virtualFunc);
+
+      entity.plain({ virtuals: true });
     });
   });
 
-  it('add shortCut queries settings', () => {
+  test('add shortCut queries settings', () => {
     const schema = new Schema({});
     const listQuerySettings = { limit: 10, filters: [] };
 
@@ -195,13 +197,13 @@ describe('Schema', () => {
   });
 
   describe('Joi', () => {
-    let schema;
+    let schema: GstoreSchema;
 
     beforeEach(() => {
       schema = new Schema(
         {
           name: { joi: Joi.string().required() },
-          notJoi: { type: 'string' },
+          notJoi: { type: String },
         },
         {
           joi: true,
@@ -209,7 +211,7 @@ describe('Schema', () => {
       );
     });
 
-    it('should build Joi schema', () => {
+    test('should build Joi schema', () => {
       assert.isDefined(schema.joiSchema);
     });
   });

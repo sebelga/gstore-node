@@ -22,7 +22,7 @@ import {
 } from './types';
 
 export interface CacheConfig {
-  stores: any[];
+  stores?: any[];
   config: NsqlCacheConfig;
 }
 
@@ -244,7 +244,7 @@ export class Gstore {
    * @returns {DataLoader} The DataLoader instance
    * @link https://sebloix.gitbook.io/gstore-node/cache-dataloader/dataloader
    */
-  createDataLoader(): DataLoader<EntityKeyType[], EntityDataType> {
+  createDataLoader(): DataLoader<EntityKeyType, EntityDataType> {
     return createDataLoader(this.ds);
   }
 

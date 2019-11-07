@@ -1,30 +1,27 @@
-'use strict';
+import util from 'util';
+import chai from 'chai';
+import { GstoreError, TypeError, message } from './errors';
 
-const util = require('util');
-const chai = require('chai');
-const errors = require('../lib/errors');
-
-const { GstoreError, TypeError, message } = errors;
 const { expect, assert } = chai;
 
-const doSomethingBad = code => {
+const doSomethingBad = (code?: string): void => {
   code = code || 'ERR_GENERIC';
   throw new GstoreError(code);
 };
 
 describe('message()', () => {
-  it('should return string passed', () => {
+  test('should return string passed', () => {
     expect(message('My message')).equal('My message');
   });
 
-  it('should return string passed with arguments', () => {
+  test('should return string passed with arguments', () => {
     expect(message('Hello %s %s', 'John', 'Snow')).equal('Hello John Snow');
     expect(message('Age: %d years old', 27)).equal('Age: 27 years old');
   });
 });
 
 describe('GstoreError', () => {
-  it('should create a custom Error', () => {
+  test('should create a custom Error', () => {
     try {
       doSomethingBad();
     } catch (e) {
@@ -48,8 +45,8 @@ describe('GstoreError', () => {
     }
   });
 
-  it('should fall back to generic if no message passed', () => {
-    const func = () => {
+  test('should fall back to generic if no message passed', () => {
+    const func = (): void => {
       throw new GstoreError();
     };
 
@@ -63,8 +60,8 @@ describe('GstoreError', () => {
 });
 
 describe('TypeError', () => {
-  it('should create a TypeError', () => {
-    const throwTypeError = code => {
+  test('should create a TypeError', () => {
+    const throwTypeError = (code?: string): void => {
       code = code || 'ERR_GENERIC';
       throw new TypeError(code);
     };

@@ -10,11 +10,11 @@ branches:
 install: yarn install
 
 script:
-  - npm run build
-  - npm run test:unit
+  - yarn test:unit
+  - yarn build
 
 after_success:
-  # - npm run coveralls
+  - yarn coveralls
 
 cache:
   yarn: true

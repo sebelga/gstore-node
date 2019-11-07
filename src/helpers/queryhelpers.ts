@@ -8,8 +8,8 @@ import Model from '../model';
 
 const buildQueryFromOptions = <T, Outputformat>(
   query: GstoreQuery<EntityData<T>, Outputformat>,
-  options: QueryListOptions<T>,
-  ds: Datastore,
+  options?: QueryListOptions<T>,
+  ds?: Datastore,
 ): GstoreQuery<EntityData<T>, Outputformat> => {
   if (!query || query.constructor.name !== 'Query') {
     throw new Error('Query not passed');

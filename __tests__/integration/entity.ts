@@ -1,9 +1,9 @@
-'use strict';
+import chai from 'chai';
+import Chance from 'chance';
+import { Datastore } from '@google-cloud/datastore';
+import { Gstore, Entity, EntityKey } from '../../src';
 
-const chai = require('chai');
-const Chance = require('chance');
-const { Datastore } = require('@google-cloud/datastore');
-const { Gstore } = require('../../lib');
+type GenericObject = { [key: string]: any };
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 const gstore = new Gstore();
@@ -20,49 +20,52 @@ const addressSchema = new Schema({
 });
 const chance = new Chance();
 
-let generatedIds = [];
-const allKeys = [];
+let generatedIds: string[] = [];
+const allKeys: EntityKey[] = [];
 
 const UserModel = gstore.model('EntityTests-User', userSchema);
 const AddressModel = gstore.model('EntityTests-Address', addressSchema);
 const AddressBookModel = gstore.model('EntityTests-AddressBook', addressBookSchema);
 
-const getId = () => {
+const getId = (): string => {
   const id = chance.string({ pool: 'abcdefghijklmnopqrstuvwxyz' });
-  if (generatedIds.indexOf(id) >= 0) {
+  if (generatedIds.includes(id)) {
     return getId();
   }
   generatedIds.push(id);
   return id;
 };
 
-const getAddressBook = () => {
+const getAddressBook = (): Entity<any> & GenericObject => {
   const key = AddressBookModel.key(getId());
   allKeys.push(key);
   const data = { label: chance.string() };
-  const addressBook = new AddressBookModel(data, null, null, null, key);
+  const addressBook = new AddressBookModel(data, undefined, undefined, undefined, key);
   return addressBook;
 };
 
-const getAddress = (addressBookEntity = null) => {
+const getAddress = (addressBookEntity: Entity<any> | null = null): Entity<any> & GenericObject => {
   const key = AddressModel.key(getId());
   allKeys.push(key);
-  const data = { city: chance.city(), country: chance.country(), addressBook: addressBookEntity.entityKey };
-  const address = new AddressModel(data, null, null, null, key);
+  const data = {
+    city: chance.city(),
+    country: chance.country(),
+    addressBook: addressBookEntity !== null ? addressBookEntity.entityKey : null,
+  };
+  const address = new AddressModel(data, undefined, undefined, undefined, key);
   return address;
 };
 
-const getUser = (addressEntity, id = getId()) => {
+const getUser = (addressEntity: Entity<any>, id: string | number = getId()): Entity<any> & GenericObject => {
   const key = UserModel.key(id);
   allKeys.push(key);
   const data = { address: addressEntity.entityKey };
-  const user = new UserModel(data, null, null, null, key);
+  const user = new UserModel(data, undefined, undefined, undefined, key);
   return user;
 };
 
-const cleanUp = () =>
-  ds
-    .delete(allKeys)
+const cleanUp = (): Promise<any> =>
+  ((ds.delete(allKeys) as unknown) as Promise<any>)
     .then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll(), AddressBookModel.deleteAll()]))
     .catch(err => {
                 console.log('Error cleaning up'); // eslint-disable-line
@@ -72,30 +75,30 @@ const cleanUp = () =>
 describe('Entity (Integration Tests)', () => {
   const addressBook = getAddressBook();
   const address = getAddress(addressBook);
-  let user;
+  let user: Entity<any> & GenericObject;
 
-  before(() => {
+  beforeAll(() => {
     generatedIds = [];
     return gstore.save([addressBook, address]);
   });
 
-  after(() => cleanUp());
+  afterAll(() => cleanUp());
 
   beforeEach(() => {
     user = getUser(address);
   });
 
   describe('save()', () => {
-    it('should replace a populated ref to its key before saving', () =>
+    test('should replace a populated ref to its key before saving', () =>
       user
         .populate()
         .then(() => user.save())
-        .then(() => UserModel.get(user.entityKey.name))
+        .then(() => UserModel.get(user.entityKey.name!))
         .then(entityFetched => {
           expect(entityFetched.entityData.address).deep.equal(address.entityKey);
         }));
 
-    it('should add the id or name to the entity', async () => {
+    test('should add the id or name to the entity', async () => {
       const entity1 = await user.save();
       expect(entity1.id).equal(entity1.entityKey.name);
 
@@ -107,7 +110,7 @@ describe('Entity (Integration Tests)', () => {
   });
 
   describe('populate()', () => {
-    it('should populate the user address', () =>
+    test('should populate the user address', () =>
       user
         .populate()
         .populate('unknown') // allow chaining populate() calls
@@ -117,13 +120,13 @@ describe('Entity (Integration Tests)', () => {
           expect(user.entityData.unknown).equal(null);
         }));
 
-    it('should only populate the user address country', () =>
+    test('should only populate the user address country', () =>
       user.populate('address', 'country').then(() => {
         expect(user.address.country).equal(address.country);
         assert.isUndefined(user.address.city);
       }));
 
-    it('should allow deep fetching', () =>
+    test('should allow deep fetching', () =>
       user
         .populate()
         .populate('address.addressBook', ['label', 'unknown'])

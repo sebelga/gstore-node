@@ -35,9 +35,11 @@ declare module 'nsql-cache' {
    * @class Cache
    */
   class NsqlCache {
-    constructor(settings: { db: any, stores: any[], config: NsqlCacheConfig })
+    constructor(settings: { db: any, stores?: any[], config: NsqlCacheConfig })
 
     public config: any;
+
+    public stores: any;
 
     keys: {
       read(

@@ -33,7 +33,7 @@ const messages: { [key: string]: string | (MessageGetter) } = {
 export class GstoreError extends Error {
   public code: string;
 
-  constructor(code: string, msg?: string, args?: any) {
+  constructor(code?: string, msg?: string, args?: any) {
     if (!msg && code && code in messages) {
       if (is.function(messages[code])) {
         msg = (messages[code] as MessageGetter)(...args.messageParams);

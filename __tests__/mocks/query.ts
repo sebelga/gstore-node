@@ -1,7 +1,25 @@
-'use strict';
-
 class Query {
-  constructor(ds, mocks, info, namespace) {
+  public ds: any;
+
+  public mocks: any;
+
+  public info: any;
+
+  public kinds: any;
+
+  public filters: any;
+
+  public namespace: string;
+
+  public groupByVal: any;
+
+  public orders: any;
+
+  public selectVal: any;
+
+  public ancestors: any;
+
+  constructor(ds: any, mocks?: any, info?: any, namespace?: string) {
     this.ds = ds;
     this.mocks = mocks;
     this.info = info;
@@ -13,7 +31,7 @@ class Query {
     this.selectVal = [];
   }
 
-  run() {
+  run(): Promise<any> {
     const info = this.info || {
       moreResults: this.ds.MORE_RESULTS_AFTER_LIMIT,
       endCursor: 'abcdef',
@@ -21,29 +39,29 @@ class Query {
     return Promise.resolve([this.mocks.entities, info]);
   }
 
-  limit() {
+  limit(): Query {
     return this;
   }
 
-  offset() {
+  offset(): Query {
     return this;
   }
 
-  order() {
+  order(): Query {
     return this;
   }
 
-  filter() {
+  filter(): Query {
     return this;
   }
 
-  select() {
+  select(): Query {
     return this;
   }
 
-  hasAncestor(ancestors) {
+  hasAncestor(ancestors: any): void {
     this.ancestors = ancestors;
   }
 }
 
-module.exports = Query;
+export default Query;

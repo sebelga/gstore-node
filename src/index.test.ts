@@ -1,13 +1,12 @@
-'use strict';
+import chai from 'chai';
+import sinon from 'sinon';
+import { Datastore, Transaction } from '@google-cloud/datastore';
 
-/**
- * Make sure that we are starting from a fresh gstore instance
- */
-delete require.cache[require.resolve('../lib')];
-
-const chai = require('chai');
-const sinon = require('sinon');
-const { Datastore } = require('@google-cloud/datastore');
+import pkg from '../package.json';
+import MockTransaction from '../__tests__/mocks/transaction';
+import Model from './model';
+import GstoreSchema from './schema';
+import { Gstore, instances } from './index';
 
 const { expect, assert } = chai;
 
@@ -16,54 +15,48 @@ const ds = new Datastore({
   apiEndpoint: 'http://localhost:8080',
 });
 
-const { Gstore, instances } = require('../lib');
-
 const gstore = new Gstore();
 const { Schema } = gstore;
-const pkg = require('../package.json');
-const Transaction = require('./mocks/transaction');
 
 describe('gstore-node', () => {
-  let schema;
-  let ModelInstance;
-  let transaction;
+  let schema: GstoreSchema;
+  let ModelInstance: Model;
+  let transaction: Transaction;
 
   beforeEach(() => {
     gstore.models = {};
-    gstore.modelSchemas = {};
 
     schema = new Schema({
-      name: { type: 'string' },
-      email: { type: 'string', read: false },
+      name: { type: String },
+      email: { type: String, read: false },
     });
-    ModelInstance = gstore.model('Blog', schema, {});
+    ModelInstance = gstore.model('Blog', schema);
 
-    transaction = new Transaction();
+    transaction = new MockTransaction();
     sinon.spy(transaction, 'save');
     sinon.spy(transaction, 'commit');
     sinon.spy(transaction, 'rollback');
   });
 
   afterEach(() => {
-    transaction.save.restore();
-    transaction.commit.restore();
-    transaction.rollback.restore();
+    (transaction as any).save.restore();
+    (transaction as any).commit.restore();
+    (transaction as any).rollback.restore();
   });
 
-  it('should initialized its properties', () => {
+  test('should initialized its properties', () => {
     assert.isDefined(gstore.models);
-    assert.isDefined(gstore.modelSchemas);
     assert.isDefined(gstore.Schema);
   });
 
-  it('should save ds instance', () => {
+  test('should save ds instance', () => {
     gstore.connect(ds);
     expect(gstore.ds).to.equal(ds);
     expect(gstore.ds.constructor.name).equal('Datastore');
   });
 
-  it('should throw an error if ds passed on connect is not a Datastore instance', () => {
-    const fn = () => {
+  test('should throw an error if ds passed on connect is not a Datastore instance', () => {
+    const fn = (): void => {
       gstore.connect({});
     };
 
@@ -73,75 +66,73 @@ describe('gstore-node', () => {
   describe('should create models', () => {
     beforeEach(() => {
       schema = new gstore.Schema({
-        title: { type: 'string' },
+        title: { type: String },
       });
 
       gstore.models = {};
-      gstore.modelSchemas = {};
-      gstore.options = {};
     });
 
-    it('and add it with its schema to the cache', () => {
-      const Model = gstore.model('Blog', schema);
+    test('and add it with its schema to the cache', () => {
+      const BlogModel = gstore.model('Blog', schema);
 
-      assert.isDefined(Model);
+      assert.isDefined(BlogModel);
       assert.isDefined(gstore.models.Blog);
     });
 
-    it('and attach schema to compiled Model', () => {
+    test('and attach schema to compiled Model', () => {
       const Blog = gstore.model('Blog', schema);
-      const schemaUser = new gstore.Schema({ name: { type: 'string' } });
+      const schemaUser = new gstore.Schema({ name: { type: String } });
       const User = gstore.model('User', schemaUser);
 
       expect(Blog.schema).not.equal(User.schema);
     });
 
-    it('reading them from cache', () => {
+    test('reading them from cache', () => {
       const mockModel = { schema };
-      gstore.models.Blog = mockModel;
+      gstore.models.Blog = mockModel as any;
 
       const model = gstore.model('Blog');
 
       expect(model).equal(mockModel);
     });
 
-    it('and throw error if trying to override schema', () => {
+    test('and throw error if trying to override schema', () => {
       const newSchema = new gstore.Schema({});
       const mockModel = { schema };
-      gstore.models.Blog = mockModel;
+      gstore.models.Blog = mockModel as any;
 
-      const fn = () => gstore.model('Blog', newSchema);
+      const fn = (): Model => gstore.model('Blog', newSchema);
 
       expect(fn).to.throw(Error);
     });
 
-    it('and throw error if no Schema is passed', () => {
-      const fn = () => gstore.model('Blog');
+    test('and throw error if no Schema is passed', () => {
+      const fn = (): Model => gstore.model('Blog');
 
       expect(fn).to.throw(Error);
     });
   });
 
-  it('should return the models names', () => {
-    gstore.models = { Blog: {}, Image: {} };
+  test('should return the models names', () => {
+    gstore.models = { Blog: {}, Image: {} } as any;
 
     const names = gstore.modelNames();
 
     expect(names).eql(['Blog', 'Image']);
   });
 
-  it('should return the package version', () => {
+  test('should return the package version', () => {
     const { version } = pkg;
 
     expect(gstore.version).equal(version);
   });
 
-  it('should create shortcut of datastore.transaction', () => {
+  test('should create shortcut of datastore.transaction', () => {
     sinon.spy(ds, 'transaction');
 
     const trans = gstore.transaction();
 
-    expect(ds.transaction.called).equal(true);
+    expect((ds.transaction as any).called).equal(true);
     expect(trans.constructor.name).equal('Transaction');
   });
 
@@ -152,42 +143,44 @@ describe('gstore-node', () => {
     });
 
     afterEach(() => {
-      ds.save.restore();
+      (ds.save as any).restore();
     });
 
-    it('should convert entity instances to datastore Format', () => {
+    test('should convert entity instances to datastore Format', () => {
       const entity1 = new ModelInstance({ name: 'John' });
       const entity2 = new ModelInstance({ name: 'Mick' });
 
       return gstore.save([entity1, entity2]).then(() => {
-        const { args } = ds.save.getCall(0);
+        const { args } = (ds.save as any).getCall(0);
         const firstEntity = args[0][0];
         assert.isUndefined(firstEntity.__className);
         expect(Object.keys(firstEntity)).deep.equal(['key', 'data', 'excludeLargeProperties']);
       });
     });
 
-    it('should work inside a transaction', () => {
+    test('should work inside a transaction', () => {
       const entity = new ModelInstance({ name: 'John' });
 
       gstore.save(entity, transaction);
 
-      expect(transaction.save.called).equal(true);
-      expect(ds.save.called).equal(false);
+      expect((transaction.save as any).called).equal(true);
+      expect((ds.save as any).called).equal(false);
     });
 
-    it('should throw an error if no entities passed', () => {
-      const func = () => gstore.save();
+    test('should throw an error if no entities passed', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
+      const func = (): Promise<any> => gstore.save();
 
       expect(func).to.throw('No entities passed');
     });
 
-    it('should validate entity before saving', done => {
+    test('should validate entity before saving', done => {
       schema = new Schema({ name: { type: String } });
-      const Model = gstore.model('TestValidate', schema);
-      const entity1 = new Model({ name: 'abc' });
-      const entity2 = new Model({ name: 123 });
-      const entity3 = new Model({ name: 'def' });
+      const TestValidateModel = gstore.model('TestValidate', schema);
+      const entity1 = new TestValidateModel({ name: 'abc' });
+      const entity2 = new TestValidateModel({ name: 123 });
+      const entity3 = new TestValidateModel({ name: 'def' });
       sinon.spy(entity1, 'validate');
       sinon.spy(entity3, 'validate');
 
@@ -199,34 +192,33 @@ describe('gstore-node', () => {
       });
     });
 
-    it('should allow to pass a save method ("insert", "update", "upsert")', () => {
+    test('should allow to pass a save method ("insert", "update", "upsert")', () => {
       const entity = new ModelInstance({ name: 'John' });
 
       return gstore.save(entity, undefined, { method: 'insert' }).then(() => {
-        const { args } = ds.save.getCall(0);
+        const { args } = (ds.save as any).getCall(0);
         expect(args[0].method).equal('insert');
       });
     });
   });
 
   describe('cache', () => {
-    /* eslint-disable global-require  */
-    it('should not set any cache by default', () => {
+    test('should not set any cache by default', () => {
       const gstoreNoCache = new Gstore();
       assert.isUndefined(gstoreNoCache.cache);
     });
 
-    it('should set the default cache to memory lru-cache', () => {
+    test('should set the default cache to memory lru-cache', () => {
       const gstoreWithCache = new Gstore({ cache: true });
       gstoreWithCache.connect(ds);
 
       const { cache } = gstoreWithCache;
       assert.isDefined(cache);
-      expect(cache.stores.length).equal(1);
-      expect(cache.stores[0].store).equal('memory');
+      expect(cache!.stores.length).equal(1);
+      expect(cache!.stores[0].store).equal('memory');
     });
 
-    it('should create cache instance from config passed', () => {
+    test('should create cache instance from config passed', () => {
       const cacheSettings = {
         stores: [{ store: 'memory' }],
         config: {
@@ -241,12 +233,12 @@ describe('gstore-node', () => {
       const { cache } = gstoreWithCache;
 
       expect(gstoreWithCache.cache).equal(cache);
-      expect(gstoreWithCache.cache.config.ttl.keys).equal(12345);
+      expect(gstoreWithCache.cache!.config.ttl.keys).equal(12345);
     });
   });
 
   describe('multi instances', () => {
-    it('should cache instances', () => {
+    test('should cache instances', () => {
       const gstore1 = new Gstore();
       const gstore2 = new Gstore({ cache: true });
 
@@ -259,9 +251,13 @@ describe('gstore-node', () => {
       expect(cached2).equal(gstore2);
     });
 
-    it('should throw Error if wrong config', () => {
-      const func1 = () => new Gstore(0);
-      const func2 = () => new Gstore('some-string');
+    test('should throw Error if wrong config', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
+      const func1 = (): Gstore => new Gstore(0);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
+      const func2 = (): Gstore => new Gstore('some-string');
 
       expect(func1).throw();
       expect(func2).throw();
