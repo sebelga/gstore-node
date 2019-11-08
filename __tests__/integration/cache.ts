@@ -62,6 +62,7 @@ describe('Integration Tests (Cache)', () => {
 
   afterEach(done => {
     cleanUp(() => done());
+  });
 
   afterAll(() => {
     gstore.cache!.redisClient.quit();
