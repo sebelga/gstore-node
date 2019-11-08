@@ -17,7 +17,7 @@
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
     "pretest": "yarn lint",
     "release": "yarn build && standard-version",
-    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage --detectOpenHandles",
+    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage",
     "test:unit": "jest --c=jest.config.unit.js --coverage",
     "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=jest.config.integration.js"
   },

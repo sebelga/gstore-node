@@ -26,6 +26,7 @@ install: yarn install
 
 before_script:
   - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
+  - sleep 5
 
 script:
   - yarn test
@@ -39,6 +40,6 @@ after_script:
 
 cache:
   yarn: true
-  # directories:
-  # - "$HOME/google-cloud-sdk/"
+  directories:
+  - "$HOME/google-cloud-sdk/"
 

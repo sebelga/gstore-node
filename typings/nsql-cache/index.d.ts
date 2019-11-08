@@ -41,6 +41,8 @@ declare module 'nsql-cache' {
 
     public stores: any;
 
+    public redisClient: any;
+
     keys: {
       read(
         keys: entity.Key | entity.Key[],

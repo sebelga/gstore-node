@@ -62,6 +62,9 @@ describe('Integration Tests (Cache)', () => {
 
   afterEach(done => {
     cleanUp(() => done());
+
+  afterAll(() => {
+    gstore.cache!.redisClient.quit();
   });
 
   test('should set KEY symbol on query result', () => {
