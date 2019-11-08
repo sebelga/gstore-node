@@ -330,7 +330,7 @@ Not much could neither have been done without the great work of the guys at [goo
 [npm-url]: https://npmjs.org/package/gstore-node
 [npm-downloads]: https://img.shields.io/npm/dm/gstore-node.svg?style=flat-square
 [travis-image]: https://img.shields.io/travis/sebelga/gstore-node/master.svg?style=flat-square
-[travis-url]: https://travis-ci.org/sebelga/gstore-node
+[travis-url]: https://travis-ci.com/sebelga/gstore-node
 [coveralls-image]: https://img.shields.io/coveralls/github/sebelga/gstore-node.svg
 [coveralls-url]: https://coveralls.io/github/sebelga/gstore-node?branch=master
 [commitizen-image]: https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
