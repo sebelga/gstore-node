@@ -64,6 +64,10 @@ describe('Integration Tests (Cache)', () => {
     cleanUp(() => done());
   });
 
+  afterAll(() => {
+    gstore.cache!.redisClient.quit();
+  });
+
   test('should set KEY symbol on query result', () => {
     const id = uniqueId();
     const user = new MyModel({ email: 'test@test.com' }, id);

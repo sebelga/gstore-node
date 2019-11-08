@@ -1,20 +1,42 @@
+sudo: true
 language: node_js
 node_js:
   - "lts/*"
   - "10"
+env:
+# Make sure gcloud command is on our PATH and the App Engine SDK is in the Python path
+- PATH=$PATH:${HOME}/google-cloud-sdk/bin CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 branches:
   only:
   - master
 
+before_install:
+  - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+  - sudo apt-get update -y
+  - sudo apt-get install apt-transport-https ca-certificates -y
+  - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+  - sudo apt-get install google-cloud-sdk -y --allow-unauthenticated
+  - sudo apt-get install google-cloud-sdk-datastore-emulator -y --allow-unauthenticated
+
+services:
+  - redis-server
+
 install: yarn install
 
+before_script:
+  - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
+  - sleep 5
+
 script:
-  - yarn test:unit
+  - yarn test
   - yarn build
 
 after_success:
   - yarn coveralls
+
+after_script:
+  - kill -9 $DATASTORE_PID
 
 cache:
   yarn: true
