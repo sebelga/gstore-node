@@ -180,24 +180,25 @@ export class Gstore {
       throw new Error('No entities passed');
     }
 
-    // Validate entities before saving
-    if (options.validate) {
-      let error;
-      const validateEntity = (entity: GstoreEntity): void => {
-        ({ error } = entity.validate());
+    const serializeAndValidateEntity = (entity: GstoreEntity): void => {
+      entity.__serializeEntityData();
+
+      if (options.validate) {
+        const { error } = entity.validate();
         if (error) {
           throw error;
         }
-      };
-      try {
-        if (Array.isArray(entities)) {
-          entities.forEach(validateEntity);
-        } else {
-          validateEntity(entities);
-        }
-      } catch (err) {
-        return Promise.reject(err);
       }
+    };
+
+    try {
+      if (Array.isArray(entities)) {
+        entities.forEach(serializeAndValidateEntity);
+      } else {
+        serializeAndValidateEntity(entities);
+      }
+    } catch (err) {
+      return Promise.reject(err);
     }
 
     // Convert gstore entities to datastore forma ({key, data})
