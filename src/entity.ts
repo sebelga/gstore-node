@@ -570,12 +570,26 @@ export class Entity<T extends object = GenericObject> {
      */
     if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
       this.schema.__meta.geoPointsProps.forEach((property: string) => {
+        const propValue = (this.entityData as any)[property];
         if (
           {}.hasOwnProperty.call(this.entityData, property) &&
-          (this.entityData as any)[property] !== null &&
-          (this.entityData as any)[property].constructor.name !== 'GeoPoint'
+          propValue !== null &&
+          propValue.constructor.name !== 'GeoPoint'
         ) {
-          (this.entityData as any)[property] = this.gstore.ds.geoPoint((this.entityData as any)[property]);
+          (this.entityData as any)[property] = this.gstore.ds.geoPoint(propValue);
+        }
+      });
+    }
+
+    if ({}.hasOwnProperty.call(this.schema.__meta, 'dateProps')) {
+      this.schema.__meta.dateProps.forEach((property: string) => {
+        const propValue = (this.entityData as any)[property];
+        if (
+          {}.hasOwnProperty.call(this.entityData, property) &&
+          propValue !== null &&
+          propValue instanceof Date === false
+        ) {
+          (this.entityData as any)[property] = new Date(propValue);
         }
       });
     }

@@ -262,7 +262,10 @@ const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObje
   const meta: GenericObject = {};
 
   Object.keys(schema.paths).forEach(k => {
-    switch (schema.paths[k as keyof T].type) {
+    const propType = schema.paths[k as keyof T].type as any;
+    const stringType = propType !== undefined && propType.name ? propType.name : propType;
+
+    switch (stringType) {
       case 'geoPoint':
         // This allows us to automatically convert valid lng/lat objects
         // to Datastore.geoPoints
@@ -272,6 +275,10 @@ const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObje
       case 'entityKey':
         meta.refProps = meta.refProps || {};
         meta.refProps[k] = true;
+        break;
+      case 'Date':
+        meta.dateProps = meta.dateProps || [];
+        meta.dateProps.push(k);
         break;
       default:
     }

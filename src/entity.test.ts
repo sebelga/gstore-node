@@ -1154,6 +1154,16 @@ describe('Entity', () => {
       });
     });
 
+    test('should convert string date to Date object', () => {
+      schema = new Schema({ birthday: { type: Date } });
+      GstoreModel = gstore.model('TestDateConversion', schema);
+      entity = new GstoreModel({ birthday: '2001-01-20' });
+
+      return entity.save().then(() => {
+        expect(entity.entityData.birthday instanceof Date).to.equal(true);
+      });
+    });
+
     test('should sanitize the entityData', () => {
       schema = new Schema({ name: { type: String } });
       GstoreModel = gstore.model('TestValidate', schema);
