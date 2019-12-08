@@ -1,4 +1,3 @@
-import chai from 'chai';
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
 
@@ -11,8 +10,13 @@ const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 gstore.connect(ds);
 
 const { Schema } = gstore;
-const { expect } = chai;
-const userSchema = new Schema({ name: { type: String } });
+
+interface User {
+  name: string;
+  modifiedOn?: Date;
+}
+
+const userSchema = new Schema<User>({ name: { type: String }, modifiedOn: { type: Date } });
 const chance = new Chance();
 
 let generatedIds: string[] = [];
@@ -41,8 +45,8 @@ const cleanUp = (): Promise<any> =>
   ((ds.delete(allKeys) as unknown) as Promise<any>)
     .then(() => UserModel.deleteAll())
     .catch(err => {
-                console.log('Error cleaning up'); // eslint-disable-line
-                console.log(err); // eslint-disable-line
+      console.log('Error cleaning up'); // eslint-disable-line
+      console.log(err); // eslint-disable-line
     });
 
 describe('Gstore (Integration Tests)', () => {
@@ -57,9 +61,18 @@ describe('Gstore (Integration Tests)', () => {
       const users = [getUser(), getUser()];
       return gstore.save(users).then(() =>
         UserModel.list().then(({ entities: { 0: entity } }) => {
-          expect([users[0].name, users[1].name]).include(entity.name);
+          expect([users[0].name, users[1].name]).toContain(entity.name);
         }),
       );
+    });
+
+    test('should update the "modifiedOn" property on entities', async () => {
+      const user = getUser();
+      await gstore.save(user);
+      expect(user.modifiedOn instanceof Date).toBe(true);
+
+      const diff = Date.now() - user.modifiedOn.getTime();
+      expect(diff).toBeLessThan(100);
     });
   });
 });

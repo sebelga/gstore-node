@@ -21,11 +21,6 @@ const customValidationFunction = (obj: any, validator: any, min: number, max: nu
   return false;
 };
 
-/**
- * These are the new Types for the Schemas
- * To be backward compatible, the old types ('int', 'string') are still supported.
- * Once they will be deprecated we can delete the Validation (old Types) below.
- */
 describe('Validation', () => {
   let schema: Schema;
 

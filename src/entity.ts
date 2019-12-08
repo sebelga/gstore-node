@@ -140,39 +140,6 @@ export class Entity<T extends object = GenericObject> {
       return { error: entityDataError || methodError! };
     };
 
-    /**
-     * Process some basic formatting to the entity data before save
-     * - automatically set the modifiedOn property to current date (if exists on schema)
-     * - convert object with latitude/longitude to Datastore GeoPoint
-     */
-    const serializeData = (): EntityData<T> => {
-      /**
-       * If the schema has a "modifiedOn" property we automatically
-       * update its value to the current dateTime
-       */
-      if ({}.hasOwnProperty.call(this.schema.paths, 'modifiedOn')) {
-        (this.entityData as any).modifiedOn = new Date();
-      }
-
-      /**
-       * If the entityData has some property of type 'geoPoint'
-       * and its value is an js object with "latitude" and "longitude"
-       * we convert it to a datastore GeoPoint.
-       */
-      if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
-        this.schema.__meta.geoPointsProps.forEach((property: string) => {
-          if (
-            {}.hasOwnProperty.call(this.entityData, property) &&
-            (this.entityData as any)[property] !== null &&
-            (this.entityData as any)[property].constructor.name !== 'GeoPoint'
-          ) {
-            (this.entityData as any)[property] = this.gstore.ds.geoPoint((this.entityData as any)[property]);
-          }
-        });
-      }
-      return this.entityData;
-    };
-
     const onEntitySaved = (): Promise<EntityResponse<T>> => {
       /**
        * Make sure to clear the cache for this Entity Kind
@@ -223,7 +190,7 @@ export class Entity<T extends object = GenericObject> {
       return Promise.reject(error);
     }
 
-    this.entityData = serializeData();
+    this.__serializeEntityData();
 
     const datastoreEntity = datastoreSerializer.toDatastore(this);
     datastoreEntity.method = options.method;
@@ -580,6 +547,38 @@ export class Entity<T extends object = GenericObject> {
     });
 
     return entityData;
+  }
+
+  /**
+   * Process some basic formatting to the entity data before save
+   * - automatically set the modifiedOn property to current date (if the property exists on schema)
+   * - convert object with latitude/longitude to Datastore GeoPoint
+   */
+  __serializeEntityData(): void {
+    /**
+     * If the schema has a "modifiedOn" property we automatically
+     * update its value to the current dateTime
+     */
+    if ({}.hasOwnProperty.call(this.schema.paths, 'modifiedOn')) {
+      (this.entityData as any).modifiedOn = new Date();
+    }
+
+    /**
+     * If the entityData has 'geoPoint' property(ies)
+     * and its value is an object with "latitude" and "longitude"
+     * we convert it to a datastore GeoPoint.
+     */
+    if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
+      this.schema.__meta.geoPointsProps.forEach((property: string) => {
+        if (
+          {}.hasOwnProperty.call(this.entityData, property) &&
+          (this.entityData as any)[property] !== null &&
+          (this.entityData as any)[property].constructor.name !== 'GeoPoint'
+        ) {
+          (this.entityData as any)[property] = this.gstore.ds.geoPoint((this.entityData as any)[property]);
+        }
+      });
+    }
   }
 }
 
