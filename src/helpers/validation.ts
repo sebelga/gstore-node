@@ -1,4 +1,4 @@
-import moment from 'moment';
+import isDateValid from 'date-fns/isValid';
 import validator from 'validator';
 import is from 'is';
 import { Datastore } from '@google-cloud/datastore';
@@ -8,15 +8,13 @@ import { EntityData } from '../types';
 import Schema, { SchemaPathDefinition, Validator } from '../schema';
 
 const isValidDate = (value: any): boolean => {
-  if (
-    value.constructor.name !== 'Date' &&
-    (typeof value !== 'string' ||
-      !/\d{4}-\d{2}-\d{2}([ ,T])?(\d{2}:\d{2}:\d{2})?(\.\d{1,3})?/.exec(value) ||
-      !moment(value).isValid())
-  ) {
+  if (value instanceof Date) {
+    return true;
+  }
+  if (typeof value !== 'string') {
     return false;
   }
-  return true;
+  return isDateValid(new Date(value));
 };
 
 const isInt = (n: unknown): boolean => Number(n) === n && n % 1 === 0;

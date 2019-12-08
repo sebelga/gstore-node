@@ -316,23 +316,25 @@ describe('Validation', () => {
   test('--> date ok', () => {
     const { error } = validate({ birthday: '2015-01-01' });
     const { error: error2 } = validate({ birthday: new Date() });
+    const { error: error3 } = validate({ birthday: Date() });
+    const { error: error4 } = validate({ birthday: '01-01-2015' });
+    const { error: error5 } = validate({ birthday: '2015/01/01' });
+    const { error: error6 } = validate({ birthday: '01/01/2015' });
 
     expect(error).equal(null);
     expect(error2).equal(null);
+    expect(error3).equal(null);
+    expect(error4).equal(null);
+    expect(error5).equal(null);
+    expect(error6).equal(null);
   });
 
   test('--> date ko', () => {
     const { error } = validate({ birthday: '01-2015-01' });
-    const { error: error2 } = validate({ birthday: '01-01-2015' });
-    const { error: error3 } = validate({ birthday: '2015/01/01' });
-    const { error: error4 } = validate({ birthday: '01/01/2015' });
     const { error: error5 } = validate({ birthday: 12345 }); // No number allowed
     const { error: error6 } = validate({ birthday: 'string' });
 
     expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
-    expect(error2.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
-    expect(error3.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
-    expect(error4.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
     expect(error5.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
     expect(error6.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);
   });
