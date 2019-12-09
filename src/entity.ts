@@ -42,21 +42,17 @@ export class Entity<T extends object = GenericObject> {
 
   public context: GenericObject;
 
-  public __gstore: Gstore | undefined; // Added when creating the Model
+  private __gstore: Gstore | undefined; // Added when creating the Model
 
-  public __schema: Schema<T> | undefined; // Added when creating the Model
+  private __schema: Schema<T> | undefined; // Added when creating the Model
 
-  public __entityKind: string | undefined; // Added when creating the Model
-
-  public __className: string;
+  private __entityKind: string | undefined; // Added when creating the Model
 
   public __excludeFromIndexes: { [P in keyof T]?: string[] };
 
   public __hooksEnabled = true;
 
   constructor(data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
-    this.__className = 'Entity';
-
     this.__excludeFromIndexes = {};
 
     /**
@@ -190,7 +186,7 @@ export class Entity<T extends object = GenericObject> {
       return Promise.reject(error);
     }
 
-    this.__serializeEntityData();
+    this.serializeEntityData();
 
     const datastoreEntity = datastoreSerializer.toDatastore(this);
     datastoreEntity.method = options.method;
@@ -230,7 +226,7 @@ export class Entity<T extends object = GenericObject> {
    * @param options Additional configuration
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/plain
    */
-  plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> {
+  plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> & { [key: string]: any } {
     if (!is.object(options)) {
       throw new Error('Options must be an Object');
     }
@@ -335,6 +331,52 @@ export class Entity<T extends object = GenericObject> {
     return promise as any;
   }
 
+  /**
+   * Process some basic formatting to the entity data before save
+   * - automatically set the modifiedOn property to current date (if the property exists on schema)
+   * - convert object with latitude/longitude to Datastore GeoPoint
+   */
+  serializeEntityData(): void {
+    /**
+     * If the schema has a "modifiedOn" property we automatically
+     * update its value to the current dateTime
+     */
+    if ({}.hasOwnProperty.call(this.schema.paths, 'modifiedOn')) {
+      (this.entityData as any).modifiedOn = new Date();
+    }
+
+    /**
+     * If the entityData has 'geoPoint' property(ies)
+     * and its value is an object with "latitude" and "longitude"
+     * we convert it to a datastore GeoPoint.
+     */
+    if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
+      this.schema.__meta.geoPointsProps.forEach((property: string) => {
+        const propValue = (this.entityData as any)[property];
+        if (
+          {}.hasOwnProperty.call(this.entityData, property) &&
+          propValue !== null &&
+          propValue.constructor.name !== 'GeoPoint'
+        ) {
+          (this.entityData as any)[property] = this.gstore.ds.geoPoint(propValue);
+        }
+      });
+    }
+
+    if ({}.hasOwnProperty.call(this.schema.__meta, 'dateProps')) {
+      this.schema.__meta.dateProps.forEach((property: string) => {
+        const propValue = (this.entityData as any)[property];
+        if (
+          {}.hasOwnProperty.call(this.entityData, property) &&
+          propValue !== null &&
+          propValue instanceof Date === false
+        ) {
+          (this.entityData as any)[property] = new Date(propValue);
+        }
+      });
+    }
+  }
+
   get id(): string | number {
     return this.entityKey.id || this.entityKey.name!;
   }
@@ -369,7 +411,7 @@ export class Entity<T extends object = GenericObject> {
     return this.__entityKind;
   }
 
-  __buildEntityData(data: GenericObject): void {
+  private __buildEntityData(data: GenericObject): void {
     const { schema } = this;
     const isJoiSchema = schema.isJoi;
 
@@ -419,6 +461,7 @@ export class Entity<T extends object = GenericObject> {
       }
 
       // Set excludeFromIndexes
+      // TODO: move this logic in the schema constructor logic (only once, not on every entiy creation!)
       // ----------------------
       isArray = prop.type === Array || (prop.joi && prop.joi._type === 'array');
       isObject = prop.type === Object || (prop.joi && prop.joi._type === 'object');
@@ -451,7 +494,7 @@ export class Entity<T extends object = GenericObject> {
     (this.entityData as any)[this.gstore.ds.KEY] = this.entityKey;
   }
 
-  __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
+  private __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
     if (id && !is.number(id) && !is.string(id)) {
       throw new Error('id must be a string or a number');
     }
@@ -469,7 +512,7 @@ export class Entity<T extends object = GenericObject> {
     return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
   }
 
-  __addAliasAndVirtualProperties(): void {
+  private __addAliasAndVirtualProperties(): void {
     const { schema } = this;
 
     // Create virtual properties (getters and setters for entityData object)
@@ -502,7 +545,7 @@ export class Entity<T extends object = GenericObject> {
       );
   }
 
-  __registerHooksFromSchema(): Entity<T> {
+  private __registerHooksFromSchema(): Entity<T> {
     const callQueue = this.schema.__callQueue.entity;
 
     if (!Object.keys(callQueue).length) {
@@ -528,13 +571,13 @@ export class Entity<T extends object = GenericObject> {
     return this;
   }
 
-  __addCustomMethodsFromSchema(): void {
+  private __addCustomMethodsFromSchema(): void {
     Object.entries(this.schema.methods).forEach(([method, handler]) => {
       (this as any)[method] = handler;
     });
   }
 
-  __getEntityDataWithVirtuals(): EntityData<T> & { [key: string]: any } {
+  private __getEntityDataWithVirtuals(): EntityData<T> & { [key: string]: any } {
     const { __virtuals } = this.schema;
     const entityData: EntityData<T> & { [key: string]: any } = { ...this.entityData };
 
@@ -547,52 +590,6 @@ export class Entity<T extends object = GenericObject> {
     });
 
     return entityData;
-  }
-
-  /**
-   * Process some basic formatting to the entity data before save
-   * - automatically set the modifiedOn property to current date (if the property exists on schema)
-   * - convert object with latitude/longitude to Datastore GeoPoint
-   */
-  __serializeEntityData(): void {
-    /**
-     * If the schema has a "modifiedOn" property we automatically
-     * update its value to the current dateTime
-     */
-    if ({}.hasOwnProperty.call(this.schema.paths, 'modifiedOn')) {
-      (this.entityData as any).modifiedOn = new Date();
-    }
-
-    /**
-     * If the entityData has 'geoPoint' property(ies)
-     * and its value is an object with "latitude" and "longitude"
-     * we convert it to a datastore GeoPoint.
-     */
-    if ({}.hasOwnProperty.call(this.schema.__meta, 'geoPointsProps')) {
-      this.schema.__meta.geoPointsProps.forEach((property: string) => {
-        const propValue = (this.entityData as any)[property];
-        if (
-          {}.hasOwnProperty.call(this.entityData, property) &&
-          propValue !== null &&
-          propValue.constructor.name !== 'GeoPoint'
-        ) {
-          (this.entityData as any)[property] = this.gstore.ds.geoPoint(propValue);
-        }
-      });
-    }
-
-    if ({}.hasOwnProperty.call(this.schema.__meta, 'dateProps')) {
-      this.schema.__meta.dateProps.forEach((property: string) => {
-        const propValue = (this.entityData as any)[property];
-        if (
-          {}.hasOwnProperty.call(this.entityData, property) &&
-          propValue !== null &&
-          propValue instanceof Date === false
-        ) {
-          (this.entityData as any)[property] = new Date(propValue);
-        }
-      });
-    }
   }
 }
 

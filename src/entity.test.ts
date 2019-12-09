@@ -506,13 +506,15 @@ describe('Entity', () => {
     });
 
     test('should add virtuals', () => {
-      entity = new GstoreModel({ name: 'John' });
-      sinon.spy(entity, '__getEntityDataWithVirtuals');
+      const userSchame = new Schema({ firstName: {}, lastName: {} });
+      userSchame.virtual('fullName').get(function fullName(this: any) {
+        return `${this.firstName} ${this.lastName}`;
+      });
+      const UserModel = gstore.model('UserWithVirtuals', userSchame);
+      const user = new UserModel({ firstName: 'John', lastName: 'Snow' });
 
-      entity.plain({ virtuals: true });
-
-      expect((entity.__getEntityDataWithVirtuals as any).called).equal(true);
-      (entity.__getEntityDataWithVirtuals as any).restore();
+      const output = user.plain({ virtuals: true });
+      expect(output.fullName).to.equal('John Snow');
     });
 
     test('should clear embedded object excluded properties', () => {
@@ -624,7 +626,7 @@ describe('Entity', () => {
       return entity.datastoreEntity().then(_entity => {
         expect((ds.get as any).called).equal(true);
         expect((ds.get as any).getCall(0).args[0]).equal(entity.entityKey);
-        expect(_entity!.__className).equal('Entity');
+        expect(_entity! instanceof Entity).equal(true);
         expect(_entity!.entityData).equal(mockData);
 
         (ds.get as any).restore();
@@ -810,26 +812,26 @@ describe('Entity', () => {
 
     test('should Not override', () => {
       entity = new User({ firstname: 'John', lastname: 'Snow', fullname: 'Jooohn' });
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.fullname).equal('Jooohn');
+      expect(output.fullname).equal('Jooohn');
     });
 
     test('should read and parse virtual (set)', () => {
       entity = new User({ fullname: 'John Snow' });
 
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.firstname).equal('John');
-      expect(entityData.lastname).equal('Snow');
+      expect(output.firstname).equal('John');
+      expect(output.lastname).equal('Snow');
     });
 
     test('should override existing', () => {
       entity = new User({ firstname: 'Peter', fullname: 'John Snow' });
 
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.firstname).equal('John');
+      expect(output.firstname).equal('John');
     });
 
     test('should not allow reserved name for virtuals', () => {
@@ -852,7 +854,7 @@ describe('Entity', () => {
 
     test('should return the entity saved', () =>
       entity.save().then(_entity => {
-        expect(_entity.__className).equal('Entity');
+        expect(_entity instanceof Entity).equal(true);
       }));
 
     test('should validate() before', () => {
@@ -907,7 +909,7 @@ describe('Entity', () => {
       return entity.save().then(() => {
         expect((entity.gstore.ds.save as any).calledOnce).equal(true);
         expect(spySerializerToDatastore.called).equal(true);
-        expect(spySerializerToDatastore.getCall(0).args[0].__className).equal('Entity');
+        expect(spySerializerToDatastore.getCall(0).args[0] instanceof Entity).equal(true);
         expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(entity.entityData);
         expect(spySerializerToDatastore.getCall(0).args[0].__excludeFromIndexes).equal(entity.__excludeFromIndexes);
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].key);

@@ -406,7 +406,7 @@ describe('Model', () => {
       GstoreModel.get(123, undefined, undefined, transaction).then(_entity => {
         expect((transaction.get as any).called).equal(true);
         expect(ds.get.called).equal(false);
-        expect(_entity.__className).equal('Entity');
+        expect(_entity instanceof Entity).equal(true);
       }));
 
     test('should throw error if transaction not an instance of glcoud Transaction', () =>
@@ -647,7 +647,7 @@ describe('Model', () => {
 
     test('should return an entity instance', () =>
       GstoreModel.update(123, {}).then(entity => {
-        expect(entity.__className).equal('Entity');
+        expect(entity instanceof Entity).equal(true);
       }));
 
     test('should first get the entity by Key', () =>
@@ -765,7 +765,7 @@ describe('Model', () => {
         expect(ds.transaction.called).equal(false);
         expect((transaction.get as any).called).equal(true);
         expect((transaction.save as any).called).equal(true);
-        expect(entity.__className).equal('Entity');
+        expect(entity instanceof Entity).equal(true);
       }));
 
     test('should throw error if transaction passed is not instance of gcloud Transaction', () =>

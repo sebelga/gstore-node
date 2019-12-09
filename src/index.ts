@@ -7,7 +7,7 @@ import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
 import pkg from '../package.json';
 import GstoreSchema from './schema';
-import GstoreEntity from './entity';
+import GstoreEntity, { EntityResponse } from './entity';
 import GstoreModel, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
@@ -181,7 +181,7 @@ export class Gstore {
     }
 
     const serializeAndValidateEntity = (entity: GstoreEntity): void => {
-      entity.__serializeEntityData();
+      entity.serializeEntityData();
 
       if (options.validate) {
         const { error } = entity.validate();
@@ -298,7 +298,7 @@ export const instances = {
 
 // Export Types
 
-export type Entity<T extends object = GenericObject> = GstoreEntity<T>;
+export type Entity<T extends object = GenericObject> = EntityResponse<T>;
 
 export type Model<
   T extends object = GenericObject,

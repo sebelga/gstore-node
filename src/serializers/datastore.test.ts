@@ -70,7 +70,7 @@ describe('Datastore serializer', () => {
     test('should convert to entity instances', () => {
       const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model, { format: QUERIES_FORMATS.ENTITY });
 
-      expect(serialized.__className).equal('Entity');
+      expect(serialized instanceof Entity).equal(true);
     });
 
     test('should convert Datetime prop to Date object if returned as number', () => {

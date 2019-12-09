@@ -145,7 +145,7 @@ const entitiesToDatastore = <T extends Entity | Entity[], R = T extends Entity ?
   const isMultiple = is.array(entities);
   const entitiesToArray = arrify(entities);
 
-  if (entitiesToArray[0].__className !== 'Entity') {
+  if (entitiesToArray[0] instanceof Entity !== true) {
     // Not an entity instance, nothing to do here...
     return (entities as unknown) as R;
   }
