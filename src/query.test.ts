@@ -4,7 +4,7 @@ import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
 import { Gstore, QUERIES_FORMATS } from './index';
 import Model from './model';
-import Entity from './entity';
+import GstoreEntity from './entity';
 import GstoreSchema from './schema';
 
 import dsFactory from '../__tests__/mocks/datastore';
@@ -357,7 +357,7 @@ describe('Query', () => {
         return ModelInstance.list().then(response => {
           expect((queryMock.limit as any).getCall(0).args[0]).equal(querySettings.limit);
           expect((queryMock.offset as any).getCall(0).args[0]).equal(querySettings.offset);
-          expect(response.entities[0] instanceof Entity).equal(true);
+          expect(response.entities[0] instanceof GstoreEntity).equal(true);
         });
       });
 
@@ -484,7 +484,7 @@ describe('Query', () => {
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' }).then(
           entities => {
             assert.isDefined(entities[0].password);
-            expect(entities[0] instanceof Entity).equal(true);
+            expect(entities[0] instanceof GstoreEntity).equal(true);
           },
         ));
 
@@ -570,7 +570,7 @@ describe('Query', () => {
       test('should return a Model instance', () =>
         ModelInstance.findOne({ name: 'John' }).then(entity => {
           expect(entity!.entityKind).equal('BlogTestQuery');
-          expect(entity! instanceof Entity).equal(true);
+          expect(entity! instanceof GstoreEntity).equal(true);
         }));
 
       test('should validate that params passed are object', done => {

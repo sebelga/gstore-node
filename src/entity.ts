@@ -27,7 +27,7 @@ import { PopulateHandler } from './helpers/populateHelpers';
 const { validation, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
 
-export class Entity<T extends object = GenericObject> {
+export class GstoreEntity<T extends object = GenericObject> {
   /* The entity Key */
   public entityKey: EntityKey;
 
@@ -91,10 +91,10 @@ export class Entity<T extends object = GenericObject> {
    *
    * @param {Transaction} transaction The optional transaction to save the entity into
    * @param options Additional configuration
-   * @returns {Promise<Entity<T>>}
+   * @returns {Promise<GstoreEntity<T>>}
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/save
    */
-  save(transaction?: Transaction, opts?: SaveOptions): Promise<EntityResponse<T>> {
+  save(transaction?: Transaction, opts?: SaveOptions): Promise<Entity<T>> {
     this.__hooksEnabled = true;
 
     const options = {
@@ -136,14 +136,14 @@ export class Entity<T extends object = GenericObject> {
       return { error: entityDataError || methodError! };
     };
 
-    const onEntitySaved = (): Promise<EntityResponse<T>> => {
+    const onEntitySaved = (): Promise<Entity<T>> => {
       /**
        * Make sure to clear the cache for this Entity Kind
        */
       if ((this.constructor as Model).__hasCache(options)) {
         return (this.constructor as Model)
           .clearCache()
-          .then(() => (this as unknown) as EntityResponse<T>)
+          .then(() => (this as unknown) as Entity<T>)
           .catch((err: any) => {
             let msg = 'Error while clearing the cache after saving the entity.';
             msg += 'The entity has been saved successfully though. ';
@@ -155,7 +155,7 @@ export class Entity<T extends object = GenericObject> {
           });
       }
 
-      return Promise.resolve((this as unknown) as EntityResponse<T>);
+      return Promise.resolve((this as unknown) as Entity<T>);
     };
 
     /**
@@ -199,7 +199,7 @@ export class Entity<T extends object = GenericObject> {
       attachPostHooksToTransaction();
       transaction.save(datastoreEntity);
 
-      return Promise.resolve((this as unknown) as EntityResponse<T>);
+      return Promise.resolve((this as unknown) as Entity<T>);
     }
 
     return this.gstore.ds.save(datastoreEntity).then(onEntitySaved);
@@ -254,14 +254,14 @@ export class Entity<T extends object = GenericObject> {
     return this.entityData[path];
   }
 
-  set<P extends keyof T>(path: P, value: any): EntityResponse<T> {
+  set<P extends keyof T>(path: P, value: any): Entity<T> {
     if ({}.hasOwnProperty.call(this.schema.__virtuals, path)) {
       this.schema.__virtuals[path as string].applySetters(value, this.entityData);
-      return (this as unknown) as EntityResponse<T>;
+      return (this as unknown) as Entity<T>;
     }
 
     this.entityData[path] = value;
-    return (this as unknown) as EntityResponse<T>;
+    return (this as unknown) as Entity<T>;
   }
 
   /**
@@ -287,8 +287,8 @@ export class Entity<T extends object = GenericObject> {
    *
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/datastoreentity
    */
-  datastoreEntity(options = {}): Promise<EntityResponse<T> | null> {
-    const onEntityFetched = (result: [EntityData<T> | null]): EntityResponse<T> | null => {
+  datastoreEntity(options = {}): Promise<Entity<T> | null> {
+    const onEntityFetched = (result: [EntityData<T> | null]): Entity<T> | null => {
       const entityData = result ? result[0] : null;
 
       if (!entityData) {
@@ -302,7 +302,7 @@ export class Entity<T extends object = GenericObject> {
       }
 
       this.entityData = entityData;
-      return (this as unknown) as EntityResponse<T>;
+      return (this as unknown) as Entity<T>;
     };
 
     if ((this.constructor as Model<T>).__hasCache(options)) {
@@ -321,7 +321,7 @@ export class Entity<T extends object = GenericObject> {
   populate<U extends string | string[]>(
     path?: U,
     propsToSelect?: U extends Array<string> ? never : string | string[],
-  ): PromiseWithPopulate<EntityResponse<T>> {
+  ): PromiseWithPopulate<Entity<T>> {
     const refsToPopulate: PopulateRef[][] = [];
 
     const promise = Promise.resolve(this).then((this.constructor as Model<T>).__populate(refsToPopulate));
@@ -545,7 +545,7 @@ export class Entity<T extends object = GenericObject> {
       );
   }
 
-  private __registerHooksFromSchema(): Entity<T> {
+  private __registerHooksFromSchema(): GstoreEntity<T> {
     const callQueue = this.schema.__callQueue.entity;
 
     if (!Object.keys(callQueue).length) {
@@ -577,9 +577,9 @@ export class Entity<T extends object = GenericObject> {
     });
   }
 
-  private __getEntityDataWithVirtuals(): EntityData<T> & { [key: string]: any } {
+  private __getEntityDataWithVirtuals(): EntityData<T> & GenericObject {
     const { __virtuals } = this.schema;
-    const entityData: EntityData<T> & { [key: string]: any } = { ...this.entityData };
+    const entityData: EntityData<T> & GenericObject = { ...this.entityData };
 
     Object.keys(__virtuals).forEach(k => {
       if ({}.hasOwnProperty.call(entityData, k)) {
@@ -593,9 +593,9 @@ export class Entity<T extends object = GenericObject> {
   }
 }
 
-export default Entity;
+export default GstoreEntity;
 
-export type EntityResponse<T extends object> = Entity<T> & T;
+export type Entity<T extends object = GenericObject> = GstoreEntity<T> & T;
 
 interface SaveOptions {
   method?: DatastoreSaveMethod;

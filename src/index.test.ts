@@ -5,7 +5,7 @@ import { Datastore, Transaction } from '@google-cloud/datastore';
 import pkg from '../package.json';
 import MockTransaction from '../__tests__/mocks/transaction';
 import Model from './model';
-import Entity from './entity';
+import GstoreEntity from './entity';
 import GstoreSchema from './schema';
 import { Gstore, instances } from './index';
 
@@ -154,7 +154,7 @@ describe('gstore-node', () => {
       return gstore.save([entity1, entity2]).then(() => {
         const { args } = (ds.save as any).getCall(0);
         const firstEntity = args[0][0];
-        expect(firstEntity instanceof Entity).equal(false);
+        expect(firstEntity instanceof GstoreEntity).equal(false);
         expect(Object.keys(firstEntity)).deep.equal(['key', 'data', 'excludeLargeProperties']);
       });
     });

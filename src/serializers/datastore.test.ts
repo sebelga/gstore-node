@@ -4,7 +4,7 @@ import Joi from '@hapi/joi';
 import dsFactory from '../../__tests__/mocks/datastore';
 import { Gstore, QUERIES_FORMATS } from '../index';
 import GstoreModel from '../model';
-import Entity from '../entity';
+import GstoreEntity from '../entity';
 import datastoreSerializer from './datastore';
 
 const ds = dsFactory({
@@ -70,7 +70,7 @@ describe('Datastore serializer', () => {
     test('should convert to entity instances', () => {
       const serialized = datastoreSerializer.fromDatastore(mockEntityData, Model, { format: QUERIES_FORMATS.ENTITY });
 
-      expect(serialized instanceof Entity).equal(true);
+      expect(serialized instanceof GstoreEntity).equal(true);
     });
 
     test('should convert Datetime prop to Date object if returned as number', () => {
@@ -84,7 +84,7 @@ describe('Datastore serializer', () => {
   });
 
   describe('should convert data TO Datastore format', () => {
-    let entity: Entity;
+    let entity: GstoreEntity;
 
     beforeEach(() => {
       const schema = new Schema({

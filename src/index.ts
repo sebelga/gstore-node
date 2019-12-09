@@ -7,7 +7,7 @@ import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
 import pkg from '../package.json';
 import GstoreSchema from './schema';
-import GstoreEntity, { EntityResponse } from './entity';
+import GstoreEntity, { Entity } from './entity';
 import GstoreModel, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
@@ -159,7 +159,7 @@ export class Gstore {
    * Alias to the underlying @google-cloud/datastore `save()` method
    * but instead of passing entity _keys_ this methods accepts one or multiple gstore **_entity_** instance(s).
    *
-   * @param {(Entity | Entity[])} entity The entity(ies) to delete (any Entity Kind). Can be one or many (Array).
+   * @param {(GstoreEntity | GstoreEntity[])} entity The entity(ies) to delete (any Entity Kind). Can be one or many (Array).
    * @param {Transaction} [transaction] An Optional transaction to save the entities into
    * @returns {Promise<any>}
    * @link https://sebloix.gitbook.io/gstore-node/gstore-methods/save
@@ -298,7 +298,7 @@ export const instances = {
 
 // Export Types
 
-export type Entity<T extends object = GenericObject> = EntityResponse<T>;
+export type Entity<T extends object = GenericObject> = Entity<T>;
 
 export type Model<
   T extends object = GenericObject,

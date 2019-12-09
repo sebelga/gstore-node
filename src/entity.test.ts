@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import Joi from '@hapi/joi';
 import { Datastore, Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
-import Entity, { EntityResponse } from './entity';
+import GstoreEntity, { Entity } from './entity';
 import GstoreSchema from './schema';
 import Model from './model';
 import helpers from './helpers';
@@ -23,10 +23,10 @@ const { Schema } = gstore;
 const { expect, assert } = chai;
 const { validation } = helpers;
 
-describe('Entity', () => {
+describe('GstoreEntity', () => {
   let schema: GstoreSchema;
   let GstoreModel: Model<any>;
-  let entity: EntityResponse<{ [key: string]: any }>;
+  let entity: Entity<{ [key: string]: any }>;
   let transaction: DatastoreTransaction;
 
   beforeEach(() => {
@@ -626,7 +626,7 @@ describe('Entity', () => {
       return entity.datastoreEntity().then(_entity => {
         expect((ds.get as any).called).equal(true);
         expect((ds.get as any).getCall(0).args[0]).equal(entity.entityKey);
-        expect(_entity! instanceof Entity).equal(true);
+        expect(_entity instanceof GstoreEntity).equal(true);
         expect(_entity!.entityData).equal(mockData);
 
         (ds.get as any).restore();
@@ -734,8 +734,7 @@ describe('Entity', () => {
         return gstore.cache!.keys.set(key, value).then(() =>
           entity.datastoreEntity({ cache: false }).then(() => {
             assert.ok((ds.get as any).called);
-            assert.ok(!(entity.gstore.cache!.keys.read as any).called);
-
+            expect((entity.gstore.cache!.keys.read as any).called).equal(false);
             (entity.gstore.cache!.keys.read as any).restore();
             (ds.get as any).restore();
           }),
@@ -854,7 +853,7 @@ describe('Entity', () => {
 
     test('should return the entity saved', () =>
       entity.save().then(_entity => {
-        expect(_entity instanceof Entity).equal(true);
+        expect(_entity instanceof GstoreEntity).equal(true);
       }));
 
     test('should validate() before', () => {
@@ -909,7 +908,7 @@ describe('Entity', () => {
       return entity.save().then(() => {
         expect((entity.gstore.ds.save as any).calledOnce).equal(true);
         expect(spySerializerToDatastore.called).equal(true);
-        expect(spySerializerToDatastore.getCall(0).args[0] instanceof Entity).equal(true);
+        expect(spySerializerToDatastore.getCall(0).args[0] instanceof GstoreEntity).equal(true);
         expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(entity.entityData);
         expect(spySerializerToDatastore.getCall(0).args[0].__excludeFromIndexes).equal(entity.__excludeFromIndexes);
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].key);
@@ -1105,7 +1104,7 @@ describe('Entity', () => {
 
     test('transaction.execPostHooks() should set scope to entity saved', done => {
       schema.post('save', function preSave(this: any) {
-        expect(this instanceof Entity).equal(true);
+        expect(this instanceof GstoreEntity).equal(true);
         expect(this.name).equal('John Jagger');
         done();
         return Promise.resolve();

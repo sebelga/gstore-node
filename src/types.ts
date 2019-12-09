@@ -1,5 +1,5 @@
 import { entity } from '@google-cloud/datastore/build/src/entity';
-import Entity from './entity';
+import GstoreEntity from './entity';
 
 export type EntityKey = entity.Key;
 
@@ -9,7 +9,7 @@ export type FuncReturningPromise = (...args: any[]) => Promise<any>;
 
 export type FunctionType = (...args: any[]) => any;
 
-export type CustomEntityFunction<T extends object> = (this: Entity<T>, ...args: any[]) => any;
+export type CustomEntityFunction<T extends object> = (this: GstoreEntity<T>, ...args: any[]) => any;
 
 export type GenericObject = { [key: string]: any };
 
@@ -26,14 +26,14 @@ export type DatastoreSaveMethod = 'upsert' | 'insert' | 'update';
 export type PopulateRef = { path: string; select: string[] };
 
 export type PopulateMetaForEntity = {
-  entity: Entity | EntityData;
+  entity: GstoreEntity | EntityData;
   keysToFetch: EntityKey[];
   mapKeyToPropAndSelect: { [key: string]: { ref: PopulateRef } };
 };
 
 export type PopulateFunction<T extends object> = (
-  entitiesToProcess: null | Entity<T> | Array<Entity<T> | EntityData<T> | null>,
-) => Promise<Entity<T> | EntityData<T> | null | Array<Entity<T> | EntityData<T> | null>>;
+  entitiesToProcess: null | GstoreEntity<T> | Array<GstoreEntity<T> | EntityData<T> | null>,
+) => Promise<GstoreEntity<T> | EntityData<T> | null | Array<GstoreEntity<T> | EntityData<T> | null>>;
 
 export interface PromiseWithPopulate<T> extends Promise<T> {
   populate: <U extends string | string[]>(
