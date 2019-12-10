@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.4](https://github.com/sebelga/gstore-node/compare/v7.2.3...v7.2.4) (2019-12-10)
+
+
+### Bug Fixes
+
+* **gstore.save():** update "modifiedOn" property on entities ([#209](https://github.com/sebelga/gstore-node/issues/209)) ([94b74d8](https://github.com/sebelga/gstore-node/commit/94b74d8636d50369ad9aa8468da8241aac9091f5)), closes [#202](https://github.com/sebelga/gstore-node/issues/202)
+* **schema.date:** allow valid string Date in validation ([#210](https://github.com/sebelga/gstore-node/issues/210)) ([268c22e](https://github.com/sebelga/gstore-node/commit/268c22e713dba2191ebe26230eeafa0fc241bad1)), closes [#206](https://github.com/sebelga/gstore-node/issues/206)
+
 ### [7.2.3](https://github.com/sebelga/gstore-node/compare/v7.2.2...v7.2.3) (2019-10-26)
 
 
