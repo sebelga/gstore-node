@@ -40,7 +40,7 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T> & M;
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   /**
    * The gstore instance
@@ -252,39 +252,6 @@ export interface Model<
 }
 
 /**
- * To improve performance and avoid looping over and over the entityData or Schema config
- * we generate a meta object to cache useful data used later in models and entities methods.
- */
-const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObject => {
-  const meta: GenericObject = {};
-
-  Object.keys(schema.paths).forEach(k => {
-    const propType = schema.paths[k as keyof T].type as any;
-    const stringType = propType !== undefined && propType.name ? propType.name : propType;
-
-    switch (stringType) {
-      case 'geoPoint':
-        // This allows us to automatically convert valid lng/lat objects
-        // to Datastore.geoPoints
-        meta.geoPointsProps = meta.geoPointsProps || [];
-        meta.geoPointsProps.push(k);
-        break;
-      case 'entityKey':
-        meta.refProps = meta.refProps || {};
-        meta.refProps[k] = true;
-        break;
-      case 'Date':
-        meta.dateProps = meta.dateProps || [];
-        meta.dateProps.push(k);
-        break;
-      default:
-    }
-  });
-
-  return meta;
-};
-
-/**
  * Pass all the "pre" and "post" hooks from schema to
  * the current ModelInstance
  */
@@ -320,9 +287,6 @@ export const generateModel = <T extends object, M extends object>(
   schema: Schema<T, M>,
   gstore: Gstore,
 ): Model<T, M> => {
-  if (!schema.__meta || Object.keys(schema.__meta).length === 0) {
-    schema.__meta = extractMetaFromSchema(schema);
-  }
   const model: Model<T, M> = class GstoreModel extends GstoreEntity<T> {
     static gstore: Gstore = gstore;
 
@@ -1146,7 +1110,7 @@ export const generateModel = <T extends object, M extends object>(
   model.findOne = findOne.bind(query);
   model.findAround = findAround.bind(query);
 
-  // TODO: Refactor how the Model/Entity relationship!
+  // TODO: Refactor how the Model/Entity relationship
   // Attach props to prototype
   model.prototype.__gstore = gstore;
   model.prototype.__schema = schema;

@@ -56,7 +56,7 @@ const getAddress = (addressBookEntity: Entity<any> | null = null): Entity<any> &
   return address;
 };
 
-const getUser = (addressEntity: Entity<any>, id: string | number = getId()): Entity<any> & GenericObject => {
+const getUser = (addressEntity: Entity<any>, id: string | number = getId()): Entity<{ address: any }> => {
   const key = UserModel.key(id);
   allKeys.push(key);
   const data = { address: addressEntity.entityKey };
@@ -75,7 +75,7 @@ const cleanUp = (): Promise<any> =>
 describe('Entity (Integration Tests)', () => {
   const addressBook = getAddressBook();
   const address = getAddress(addressBook);
-  let user: Entity<any> & GenericObject;
+  let user: Entity<{ address: any }> & GenericObject;
 
   beforeAll(() => {
     generatedIds = [];
@@ -117,6 +117,8 @@ describe('Entity (Integration Tests)', () => {
         .then(() => {
           expect(user.address.city).equal(address.city);
           expect(user.address.country).equal(address.country);
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
           expect(user.entityData.unknown).equal(null);
         }));
 

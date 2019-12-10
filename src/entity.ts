@@ -19,6 +19,7 @@ import {
   DatastoreSaveMethod,
   PopulateRef,
   PromiseWithPopulate,
+  CustomEntityFunction,
 } from './types';
 import { ValidateResponse } from './helpers/validation';
 import { PopulateHandler } from './helpers/populateHelpers';
@@ -558,7 +559,10 @@ export class GstoreEntity<T extends object = GenericObject> {
 
 export default GstoreEntity;
 
-export type Entity<T extends object = GenericObject> = GstoreEntity<T> & T;
+export type Entity<
+  T extends object = GenericObject,
+  M extends object = { [key: string]: CustomEntityFunction<T> }
+> = GstoreEntity<T> & T & M;
 
 interface SaveOptions {
   method?: DatastoreSaveMethod;

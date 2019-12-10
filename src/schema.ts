@@ -15,6 +15,7 @@ import {
   JSONFormatType,
 } from './types';
 import { QueryListOptions } from './query';
+import helpers from './helpers';
 
 const Joi = optional('@hapi/joi') || optional('joi');
 
@@ -77,6 +78,10 @@ const RESERVED_PROPERTY_NAMES: { [key: string]: boolean } = {
   validate: true,
 };
 
+const {
+  schemaHelpers: { extractMetaFromSchema },
+} = helpers;
+
 /**
  * gstore Schema
  */
@@ -122,11 +127,9 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
       model: {},
       entity: {},
     };
-    this.__meta = {};
-
     this.options = Schema.initSchemaOptions(options);
-
     this.parseSchemaProperties(properties, this.options.joi);
+    this.__meta = extractMetaFromSchema(this.paths);
   }
 
   /**
