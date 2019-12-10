@@ -331,6 +331,7 @@ export class GstoreEntity<T extends object = GenericObject> {
    * Process some basic formatting to the entity data before save
    * - automatically set the modifiedOn property to current date (if the property exists on schema)
    * - convert object with latitude/longitude to Datastore GeoPoint
+   * - convert string date to Date object
    */
   serializeEntityData(): void {
     /**
