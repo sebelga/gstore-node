@@ -9,7 +9,7 @@ import set from 'lodash.set';
 import { Transaction } from '@google-cloud/datastore';
 
 import Gstore from './index';
-import Schema, { JoiConfig } from './schema';
+import Schema, { JoiConfig, SchemaPathDefinition } from './schema';
 import GstoreEntity, { Entity } from './entity';
 import Query, { QueryResponse, GstoreQuery } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
@@ -775,11 +775,16 @@ export const generateModel = <T extends object, M extends object>(
       properties = arrify(properties);
 
       properties.forEach(prop => {
+        let definition: SchemaPathDefinition;
         if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
-          this.schema.path(prop, { optional: true, excludeFromIndexes: true });
+          definition = { optional: true, excludeFromIndexes: true };
+          this.schema.path(prop, definition);
         } else {
-          this.schema.paths[prop as keyof T].excludeFromIndexes = true;
+          definition = this.schema.paths[prop as keyof T];
+          definition.excludeFromIndexes = true;
         }
+
+        this.schema.updateExcludedFromIndexesMap(prop as keyof T, definition);
       });
     }
 

@@ -7,7 +7,7 @@ import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
 import pkg from '../package.json';
 import GstoreSchema from './schema';
-import GstoreEntity, { Entity } from './entity';
+import GstoreEntity, { Entity as EntityType } from './entity';
 import GstoreModel, { generateModel } from './model';
 import defaultValues, { DefaultValues } from './helpers/defaultValues';
 import { GstoreError, ValidationError, TypeError, ValueError, ERROR_CODES } from './errors';
@@ -298,7 +298,7 @@ export const instances = {
 
 // Export Types
 
-export type Entity<T extends object = GenericObject> = Entity<T>;
+export type Entity<T extends object = GenericObject> = EntityType<T>;
 
 export type Model<
   T extends object = GenericObject,

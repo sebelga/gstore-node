@@ -55,7 +55,7 @@ describe('Model', () => {
       icon: { type: Buffer },
       location: { type: Schema.Types.GeoPoint },
     });
-    schema.virtual('fullname').get(() => {});
+    schema.virtual('fullname').get(() => undefined);
 
     ({ mockEntity, mockEntities } = generateEntities());
     transaction = new Transaction();
@@ -460,7 +460,7 @@ describe('Model', () => {
       const dataloader = {};
 
       GstoreModel.get([123, 456], undefined, undefined, undefined, { dataloader }).then(
-        () => {},
+        () => undefined,
         err => {
           expect(err.name).equal('GstoreError');
           expect(err.message).equal('dataloader must be a "DataLoader" instance');
@@ -1015,7 +1015,7 @@ describe('Model', () => {
       });
       GstoreModel = gstore.model('Blog-8', schema);
 
-      return GstoreModel.delete(ids).then(() => {});
+      return GstoreModel.delete(ids).then(() => undefined);
     });
 
     test('transaction.execPostHooks() should call post hooks', () => {
@@ -1284,9 +1284,7 @@ describe('Model', () => {
       const arr = ['newProp', 'url'];
       GstoreModel.excludeFromIndexes(arr);
 
-      const entity = new GstoreModel({});
-
-      expect(entity.__excludeFromIndexes).deep.equal({
+      expect(GstoreModel.schema.excludedFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
         newProp: ['newProp'],
@@ -1301,9 +1299,7 @@ describe('Model', () => {
       const prop = 'lastname';
       GstoreModel.excludeFromIndexes(prop);
 
-      const entity = new GstoreModel({});
-
-      expect(entity.__excludeFromIndexes).deep.equal({
+      expect(GstoreModel.schema.excludedFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
         tags: [],
@@ -1328,7 +1324,7 @@ describe('Model', () => {
     });
 
     test('should not override previous hooks on transaction', () => {
-      const fn = (): void => {};
+      const fn = (): void => undefined;
       transaction.hooks = {
         post: [fn],
       };

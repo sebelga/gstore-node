@@ -1,6 +1,5 @@
 import is from 'is';
 import hooks from 'promised-hooks';
-import arrify from 'arrify';
 import { Transaction } from '@google-cloud/datastore';
 import DataLoader from 'dataloader';
 
@@ -48,13 +47,9 @@ export class GstoreEntity<T extends object = GenericObject> {
 
   private __entityKind: string | undefined; // Added when creating the Model
 
-  public __excludeFromIndexes: { [P in keyof T]?: string[] };
-
   public __hooksEnabled = true;
 
   constructor(data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
-    this.__excludeFromIndexes = {};
-
     /**
      * Object to store custom data for the entity.
      * In some cases we might want to add custom data onto the entity
@@ -426,9 +421,6 @@ export class GstoreEntity<T extends object = GenericObject> {
 
     this.entityData = { ...this.entityData, ...data };
 
-    let isArray;
-    let isObject;
-
     Object.entries(schema.paths as { [k: string]: SchemaPathDefinition }).forEach(([key, prop]) => {
       const hasValue = {}.hasOwnProperty.call(this.entityData, key);
       const isOptional = {}.hasOwnProperty.call(prop, 'optional') && prop.optional !== false;
@@ -458,35 +450,6 @@ export class GstoreEntity<T extends object = GenericObject> {
         }
 
         this.entityData[key as keyof T] = value;
-      }
-
-      // Set excludeFromIndexes
-      // TODO: move this logic in the schema constructor logic (only once, not on every entiy creation!)
-      // ----------------------
-      isArray = prop.type === Array || (prop.joi && prop.joi._type === 'array');
-      isObject = prop.type === Object || (prop.joi && prop.joi._type === 'object');
-
-      if (prop.excludeFromIndexes === true) {
-        if (isArray) {
-          // We exclude both the array values + all the child properties of object items
-          this.__excludeFromIndexes[key as keyof T] = [`${key}[]`, `${key}[].*`];
-        } else if (isObject) {
-          // We exclude the emmbeded entity + all its properties
-          this.__excludeFromIndexes[key as keyof T] = [key, `${key}.*`];
-        } else {
-          this.__excludeFromIndexes[key as keyof T] = [key];
-        }
-      } else if (prop.excludeFromIndexes !== false) {
-        const excludedArray = arrify(prop.excludeFromIndexes) as string[];
-        if (isArray) {
-          // The format to exclude a property from an embedded entity inside
-          // an array is: "myArrayProp[].embeddedKey"
-          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}[].${propExcluded}`);
-        } else if (isObject) {
-          // The format to exclude a property from an embedded entity
-          // is: "myEmbeddedEntity.key"
-          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}.${propExcluded}`);
-        }
       }
     });
 

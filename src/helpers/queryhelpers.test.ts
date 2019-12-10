@@ -126,7 +126,11 @@ describe('Query Helpers', () => {
 
     test('and define several filters', () => {
       const options = {
-        filters: [['name', '=', 'John'], ['lastname', 'Snow'], ['age', '<', 30]],
+        filters: [
+          ['name', '=', 'John'],
+          ['lastname', 'Snow'],
+          ['age', '<', 30],
+        ],
       };
 
       query = queryHelpers.buildQueryFromOptions(query, options, ds);

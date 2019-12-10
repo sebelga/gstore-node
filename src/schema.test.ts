@@ -53,6 +53,29 @@ describe('Schema', () => {
 
       expect(fn).to.throw(Error);
     });
+
+    test('should create the "excludedFromIndexes" map', () => {
+      const schema = new Schema({
+        name: { excludeFromIndexes: true },
+        age: { excludeFromIndexes: true, type: Number },
+        embedded: { type: Object, excludeFromIndexes: ['prop1', 'prop2'] },
+        embedded2: { type: Object, excludeFromIndexes: true },
+        arrayValue: { excludeFromIndexes: 'property', type: Array },
+        // Array in @google-cloud have to be set on the data value
+        arrayValue2: { excludeFromIndexes: true, type: Array },
+        arrayValue3: { excludeFromIndexes: true, joi: Joi.array() },
+      });
+
+      expect(schema.excludedFromIndexes).deep.equal({
+        name: ['name'],
+        age: ['age'],
+        embedded: ['embedded.prop1', 'embedded.prop2'],
+        embedded2: ['embedded2', 'embedded2.*'],
+        arrayValue: ['arrayValue[].property'],
+        arrayValue2: ['arrayValue2[]', 'arrayValue2[].*'],
+        arrayValue3: ['arrayValue3[]', 'arrayValue3[].*'],
+      });
+    });
   });
 
   describe('add method', () => {
@@ -63,7 +86,7 @@ describe('Schema', () => {
     });
 
     test('should add it to its methods table', () => {
-      const fn = (): void => {};
+      const fn = (): void => undefined;
       schema.method('doSomething', fn);
 
       assert.isDefined(schema.methods.doSomething);
@@ -79,7 +102,7 @@ describe('Schema', () => {
     });
 
     test('should allow to pass a map of functions and validate type', () => {
-      const fn = (): void => {};
+      const fn = (): void => undefined;
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       schema.method({
@@ -95,7 +118,7 @@ describe('Schema', () => {
     test('should only allow function and object to be passed', () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
-      schema.method(10, () => {});
+      schema.method(10, () => undefined);
 
       expect(Object.keys(schema.methods).length).equal(0);
     });

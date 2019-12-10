@@ -56,7 +56,7 @@ describe('Validation', () => {
       address: { type: Schema.Types.Key, ref: 'Address' },
     });
 
-    schema.virtual('fullname').get(() => {});
+    schema.virtual('fullname').get(() => undefined);
   });
 
   test('should return an object with an "error" and "value" properties', () => {
@@ -76,7 +76,7 @@ describe('Validation', () => {
         expect(value).equal(entityData);
         return Promise.resolve('test');
       })
-      .catch(() => {})
+      .catch(() => undefined)
       .then((response: any) => {
         expect(response).equal('test');
       });
@@ -86,7 +86,7 @@ describe('Validation', () => {
     const entityData = { name: 123 };
 
     return validate(entityData).then(
-      () => {},
+      () => undefined,
       (error: any) => {
         expect(error.name).equal('ValidationError');
         expect(error.errors[0].code).equal(ERROR_CODES.ERR_PROP_TYPE);

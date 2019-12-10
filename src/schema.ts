@@ -1,6 +1,7 @@
 import optional from 'optional';
 import extend from 'extend';
 import is from 'is';
+import arrify from 'arrify';
 
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
@@ -86,9 +87,11 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
 
   public readonly options: SchemaOptions = {};
 
-  public __meta: GenericObject = {};
-
   public readonly __virtuals: { [key: string]: VirtualType };
+
+  public readonly shortcutQueries: { [key: string]: QueryListOptions<T> };
+
+  public joiSchema?: GenericObject;
 
   public __callQueue: {
     model: {
@@ -105,33 +108,25 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
     };
   };
 
-  public readonly shortcutQueries: { [key: string]: QueryListOptions<T> };
+  public __meta: GenericObject;
 
-  public joiSchema?: GenericObject;
+  public excludedFromIndexes: { [P in keyof T]?: string[] };
 
   constructor(properties: { [P in keyof T]: SchemaPathDefinition }, options?: SchemaOptions) {
     this.methods = {} as any;
-    this.__virtuals = {};
-    this.shortcutQueries = {};
     this.paths = {} as { [P in keyof T]: SchemaPathDefinition };
+    this.shortcutQueries = {};
+    this.excludedFromIndexes = {};
+    this.__virtuals = {};
     this.__callQueue = {
       model: {},
       entity: {},
     };
+    this.__meta = {};
 
     this.options = Schema.initSchemaOptions(options);
 
-    Object.entries(properties).forEach(([key, definition]) => {
-      if (RESERVED_PROPERTY_NAMES[key]) {
-        throw new Error(`${key} is reserved and can not be used as a schema pathname`);
-      }
-
-      this.paths[key as keyof T] = definition as SchemaPathDefinition;
-    });
-
-    if (options) {
-      this.joiSchema = Schema.initJoiSchema(properties, this.options.joi);
-    }
+    this.parseSchemaProperties(properties, this.options.joi);
   }
 
   /**
@@ -265,11 +260,86 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
     return this.joiSchema!.validate(entityData, (this.options.joi as JoiConfig).options || {});
   }
 
+  updateExcludedFromIndexesMap(property: keyof T, definition: SchemaPathDefinition): void {
+    const isArray = definition.type === Array || (definition.joi && definition.joi._type === 'array');
+    const isObject = definition.type === Object || (definition.joi && definition.joi._type === 'object');
+
+    if (definition.excludeFromIndexes === true) {
+      if (isArray) {
+        // We exclude both the array values + all the child properties of object items
+        this.excludedFromIndexes[property] = [`${property}[]`, `${property}[].*`];
+      } else if (isObject) {
+        // We exclude the emmbeded entity + all its properties
+        this.excludedFromIndexes[property] = [property as string, `${property}.*`];
+      } else {
+        this.excludedFromIndexes[property] = [property as string];
+      }
+    } else if (definition.excludeFromIndexes !== false) {
+      const excludedArray = arrify(definition.excludeFromIndexes) as string[];
+      if (isArray) {
+        // The format to exclude a property from an embedded entity inside
+        // an array is: "myArrayProp[].embeddedKey"
+        this.excludedFromIndexes[property] = excludedArray.map(propExcluded => `${property}[].${propExcluded}`);
+      } else if (isObject) {
+        // The format to exclude a property from an embedded entity
+        // is: "myEmbeddedEntity.key"
+        this.excludedFromIndexes[property] = excludedArray.map(propExcluded => `${property}.${propExcluded}`);
+      }
+    }
+  }
+
   /**
    * Flag that returns "true" if the schema has a joi config object.
    */
   get isJoi(): boolean {
     return !is.undefined(this.joiSchema);
+  }
+
+  private parseSchemaProperties(
+    properties: {
+      [key: string]: SchemaPathDefinition;
+    },
+    joiConfig?: boolean | JoiConfig,
+  ): void {
+    const isJoiSchema = joiConfig !== undefined;
+    const joiKeys: { [key: string]: SchemaPathDefinition['joi'] } = {};
+    let hasJoiExtras = false;
+
+    if (isJoiSchema) {
+      hasJoiExtras = is.object((joiConfig as JoiConfig).extra);
+    }
+
+    // Parse the Schema properties and add to our maps and build meta data.
+    Object.entries(properties).forEach(([property, definition]) => {
+      if (RESERVED_PROPERTY_NAMES[property]) {
+        throw new Error(`${property} is reserved and can not be used as a schema property.`);
+      }
+
+      // Add property to our paths map
+      this.paths[property as keyof T] = definition;
+
+      // If property has a Joi rule, add it to our joiKeys map
+      if (isJoiSchema && {}.hasOwnProperty.call(definition, 'joi')) {
+        joiKeys[property] = definition.joi;
+      }
+
+      this.updateExcludedFromIndexesMap(property as keyof T, definition);
+    });
+
+    if (isJoiSchema) {
+      let joiSchema: GenericObject = Joi.object().keys(joiKeys);
+
+      if (hasJoiExtras) {
+        Object.keys((joiConfig as JoiConfig).extra!).forEach(k => {
+          if (is.function(joiSchema[k])) {
+            const args = (joiConfig as JoiConfig).extra![k];
+            joiSchema = joiSchema[k](...args);
+          }
+        });
+      }
+
+      this.joiSchema = joiSchema;
+    }
   }
 
   static initSchemaOptions(provided?: SchemaOptions): SchemaOptions {
@@ -292,38 +362,6 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
     }
 
     return options;
-  }
-
-  static initJoiSchema(
-    schema: { [key: string]: SchemaPathDefinition },
-    joiConfig?: boolean | JoiConfig,
-  ): GenericObject | undefined {
-    if (!is.object(joiConfig)) {
-      return undefined;
-    }
-
-    const hasExtra = is.object((joiConfig as JoiConfig).extra);
-    const joiKeys: { [key: string]: SchemaPathDefinition['joi'] } = {};
-
-    Object.entries(schema).forEach(([key, definition]) => {
-      if ({}.hasOwnProperty.call(definition, 'joi')) {
-        joiKeys[key] = definition.joi;
-      }
-    });
-
-    let joiSchema = Joi.object().keys(joiKeys);
-    let args;
-
-    if (hasExtra) {
-      Object.keys((joiConfig as JoiConfig).extra!).forEach(k => {
-        if (is.function(joiSchema[k])) {
-          args = (joiConfig as JoiConfig).extra![k];
-          joiSchema = joiSchema[k](...args);
-        }
-      });
-    }
-
-    return joiSchema;
   }
 
   /**

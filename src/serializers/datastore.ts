@@ -18,7 +18,7 @@ type DatastoreFormat = {
 const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: GstoreEntity<T>): string[] =>
   Object.entries(data)
     .filter(([, value]) => value !== null)
-    .map(([key]) => entity.__excludeFromIndexes[key as keyof T] as string[])
+    .map(([key]) => entity.schema.excludedFromIndexes[key as keyof T] as string[])
     .filter(v => v !== undefined)
     .reduce((acc: string[], arr) => [...acc, ...arr], []);
 
@@ -28,15 +28,12 @@ const toDatastore = <T extends object>(
   entity: GstoreEntity<T>,
   options: ToDatastoreOptions | undefined = {},
 ): DatastoreFormat => {
-  const data = Object.entries(entity.entityData).reduce(
-    (acc, [key, value]) => {
-      if (typeof value !== 'undefined') {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as { [key: string]: any },
-  );
+  const data = Object.entries(entity.entityData).reduce((acc, [key, value]) => {
+    if (typeof value !== 'undefined') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as { [key: string]: any });
 
   const excludeFromIndexes = getExcludeFromIndexes(data, entity);
 

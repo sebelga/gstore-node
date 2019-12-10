@@ -15,7 +15,7 @@ export type GenericObject = { [key: string]: any };
 
 export type IdType = string | number;
 
-export type Ancestor = (IdType)[];
+export type Ancestor = IdType[];
 
 export type EntityFormatType = 'ENTITY';
 

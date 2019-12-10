@@ -18,7 +18,7 @@ export const ERROR_CODES = {
 
 export const message = (text: string, ...args: any[]): string => util.format(text, ...args);
 
-const messages: { [key: string]: string | (MessageGetter) } = {
+const messages: { [key: string]: string | MessageGetter } = {
   ERR_GENERIC: 'An error occured',
   ERR_VALIDATION: (entityKind: string) =>
     message('The entity data does not validate against the "%s" Schema', entityKind),

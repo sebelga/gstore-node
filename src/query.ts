@@ -301,7 +301,7 @@ export interface QueryListOptions<T> extends QueryOptions {
    * Supported comparison operators are =, <, >, <=, and >=.
    * "Not equal" and IN operators are currently not supported.
    */
-  filters?: [string, any] | [string, DatastoreOperator, any] | (any)[][];
+  filters?: [string, any] | [string, DatastoreOperator, any] | any[][];
   /**
    * Filter a query by ancestors.
    */

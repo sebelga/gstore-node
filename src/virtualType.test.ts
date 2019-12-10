@@ -7,7 +7,7 @@ describe('VirtualType', () => {
   test('should add function to getter array', () => {
     const virtualType = new VirtualType('fullname');
 
-    virtualType.get(() => {});
+    virtualType.get(() => undefined);
 
     expect(virtualType.getter).not.equal(null);
   });
@@ -27,7 +27,7 @@ describe('VirtualType', () => {
   test('should add function to setter array', () => {
     const virtualType = new VirtualType('fullname');
 
-    virtualType.set(() => {});
+    virtualType.set(() => undefined);
 
     expect(virtualType.setter).not.equal(null);
   });

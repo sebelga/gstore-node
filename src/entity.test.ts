@@ -71,7 +71,6 @@ describe('GstoreEntity', () => {
       assert.isDefined(entity.schema);
       assert.isDefined((entity as any).pre);
       assert.isDefined((entity as any).post);
-      expect(entity.__excludeFromIndexes).deep.equal({});
     });
 
     test('should add data passed to entityData', () => {
@@ -186,32 +185,6 @@ describe('GstoreEntity', () => {
       entity = new GstoreModel({});
 
       expect(entity.entityData.email).equal(undefined);
-    });
-
-    test('should create its array of excludeFromIndexes', () => {
-      schema = new Schema({
-        name: { excludeFromIndexes: true },
-        age: { excludeFromIndexes: true, type: Number },
-        embedded: { type: Object, excludeFromIndexes: ['prop1', 'prop2'] },
-        embedded2: { type: Object, excludeFromIndexes: true },
-        arrayValue: { excludeFromIndexes: 'property', type: Array },
-        // Array in @google-cloud have to be set on the data value
-        arrayValue2: { excludeFromIndexes: true, type: Array },
-        arrayValue3: { excludeFromIndexes: true, joi: Joi.array() },
-      });
-      GstoreModel = gstore.model('BlogPost', schema);
-
-      entity = new GstoreModel({ name: 'John' });
-
-      expect(entity.__excludeFromIndexes).deep.equal({
-        name: ['name'],
-        age: ['age'],
-        embedded: ['embedded.prop1', 'embedded.prop2'],
-        embedded2: ['embedded2', 'embedded2.*'],
-        arrayValue: ['arrayValue[].property'],
-        arrayValue2: ['arrayValue2[]', 'arrayValue2[].*'],
-        arrayValue3: ['arrayValue3[]', 'arrayValue3[].*'],
-      });
     });
 
     describe('should create Datastore Key', () => {
@@ -910,7 +883,6 @@ describe('GstoreEntity', () => {
         expect(spySerializerToDatastore.called).equal(true);
         expect(spySerializerToDatastore.getCall(0).args[0] instanceof GstoreEntity).equal(true);
         expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(entity.entityData);
-        expect(spySerializerToDatastore.getCall(0).args[0].__excludeFromIndexes).equal(entity.__excludeFromIndexes);
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].key);
         expect((entity.gstore.ds.save as any).getCall(0).args[0].key.constructor.name).equal('Key');
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].data);
