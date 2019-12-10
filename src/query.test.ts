@@ -570,7 +570,7 @@ describe('Query', () => {
       test('should return a Model instance', () =>
         ModelInstance.findOne({ name: 'John' }).then(entity => {
           expect(entity!.entityKind).equal('BlogTestQuery');
-          expect(entity! instanceof GstoreEntity).equal(true);
+          expect(entity instanceof GstoreEntity).equal(true);
         }));
 
       test('should validate that params passed are object', done => {

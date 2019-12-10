@@ -138,7 +138,10 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
  * @param {any} entities Entity(ies) to format
  * @returns {array} the formated entity(ies)
  */
-const entitiesToDatastore = <T extends GstoreEntity | GstoreEntity[], R = T extends GstoreEntity ? DatastoreFormat : DatastoreFormat[]>(
+const entitiesToDatastore = <
+  T extends GstoreEntity | GstoreEntity[],
+  R = T extends GstoreEntity ? DatastoreFormat : DatastoreFormat[]
+>(
   entities: T,
   options: ToDatastoreOptions | undefined = {},
 ): R => {

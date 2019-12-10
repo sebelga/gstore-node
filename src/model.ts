@@ -40,10 +40,7 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<
-    T
-  > &
-    M;
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T> & M;
 
   /**
    * The gstore instance
@@ -1002,7 +999,7 @@ export const generateModel = <T extends object, M extends object>(
                       };
                       return acc;
                     },
-                      {} as { [key: string]: any }
+                    {} as { [key: string]: any }
                   )
                   : embeddedEntity.plain();
 
