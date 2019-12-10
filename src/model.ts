@@ -9,8 +9,8 @@ import set from 'lodash.set';
 import { Transaction } from '@google-cloud/datastore';
 
 import Gstore from './index';
-import Schema, { JoiConfig } from './schema';
-import Entity, { EntityResponse } from './entity';
+import Schema, { JoiConfig, SchemaPathDefinition } from './schema';
+import GstoreEntity, { Entity } from './entity';
 import Query, { QueryResponse, GstoreQuery } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
@@ -40,10 +40,7 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): EntityResponse<
-    T
-  > &
-    M;
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
 
   /**
    * The gstore instance
@@ -94,7 +91,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GetOptions,
-  ): PromiseWithPopulate<U extends Array<string | number> ? EntityResponse<T>[] : EntityResponse<T>>;
+  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
 
   /**
    * Update an Entity in the Datastore. This method _partially_ updates an entity data in the Datastore
@@ -117,7 +114,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GenericObject,
-  ): Promise<EntityResponse<T>>;
+  ): Promise<Entity<T>>;
 
   /**
    * Delete an Entity from the Datastore
@@ -194,7 +191,7 @@ export interface Model<
    */
   query<
     F extends JSONFormatType | EntityFormatType = JSONFormatType,
-    R = F extends EntityFormatType ? QueryResponse<T, EntityResponse<T>[]> : QueryResponse<T, EntityData<T>[]>
+    R = F extends EntityFormatType ? QueryResponse<T, Entity<T>[]> : QueryResponse<T, EntityData<T>[]>
   >(
     namespace?: string,
     transaction?: Transaction,
@@ -255,39 +252,6 @@ export interface Model<
 }
 
 /**
- * To improve performance and avoid looping over and over the entityData or Schema config
- * we generate a meta object to cache useful data used later in models and entities methods.
- */
-const extractMetaFromSchema = <T extends object>(schema: Schema<T>): GenericObject => {
-  const meta: GenericObject = {};
-
-  Object.keys(schema.paths).forEach(k => {
-    const propType = schema.paths[k as keyof T].type as any;
-    const stringType = propType !== undefined && propType.name ? propType.name : propType;
-
-    switch (stringType) {
-      case 'geoPoint':
-        // This allows us to automatically convert valid lng/lat objects
-        // to Datastore.geoPoints
-        meta.geoPointsProps = meta.geoPointsProps || [];
-        meta.geoPointsProps.push(k);
-        break;
-      case 'entityKey':
-        meta.refProps = meta.refProps || {};
-        meta.refProps[k] = true;
-        break;
-      case 'Date':
-        meta.dateProps = meta.dateProps || [];
-        meta.dateProps.push(k);
-        break;
-      default:
-    }
-  });
-
-  return meta;
-};
-
-/**
  * Pass all the "pre" and "post" hooks from schema to
  * the current ModelInstance
  */
@@ -323,10 +287,7 @@ export const generateModel = <T extends object, M extends object>(
   schema: Schema<T, M>,
   gstore: Gstore,
 ): Model<T, M> => {
-  if (!schema.__meta || Object.keys(schema.__meta).length === 0) {
-    schema.__meta = extractMetaFromSchema(schema);
-  }
-  const model: Model<T, M> = class GstoreModel extends Entity<T> {
+  const model: Model<T, M> = class GstoreModel extends GstoreEntity<T> {
     static gstore: Gstore = gstore;
 
     static schema: Schema<T> = schema;
@@ -396,7 +357,7 @@ export const generateModel = <T extends object, M extends object>(
       namespace?: string,
       transaction?: Transaction,
       options: GetOptions = {},
-    ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>> {
+    ): PromiseWithPopulate<U extends Array<string | number> ? GstoreEntity<T>[] : GstoreEntity<T>> {
       const ids = arrify(id);
 
       const key = this.key(ids, ancestors, namespace);
@@ -405,7 +366,7 @@ export const generateModel = <T extends object, M extends object>(
 
       const onEntity = (
         entityDataFetched: EntityData<T> | EntityData<T>[],
-      ): Entity<T> | null | Array<Entity<T> | null> => {
+      ): GstoreEntity<T> | null | Array<GstoreEntity<T> | null> => {
         const entityData = arrify(entityDataFetched);
 
         if (
@@ -432,10 +393,10 @@ export const generateModel = <T extends object, M extends object>(
 
         // TODO: Check if this is still useful??
         if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
-          (entity as Entity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
+          (entity as GstoreEntity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
         }
 
-        return Array.isArray(id) ? (entity as Entity<T>[]) : entity[0];
+        return Array.isArray(id) ? (entity as GstoreEntity<T>[]) : entity[0];
       };
 
       /**
@@ -450,7 +411,7 @@ export const generateModel = <T extends object, M extends object>(
 
       (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
 
-      return promise as PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+      return promise as PromiseWithPopulate<U extends Array<string | number> ? GstoreEntity<T>[] : GstoreEntity<T>>;
     }
 
     static update(
@@ -460,10 +421,10 @@ export const generateModel = <T extends object, M extends object>(
       namespace?: string,
       transaction?: Transaction,
       options?: GenericObject,
-    ): Promise<Entity<T>> {
+    ): Promise<GstoreEntity<T>> {
       this.__hooksEnabled = true;
 
-      let entityDataUpdated: Entity<T>;
+      let entityDataUpdated: GstoreEntity<T>;
       let internalTransaction = false;
 
       const key = this.key(id, ancestors, namespace);
@@ -486,7 +447,7 @@ export const generateModel = <T extends object, M extends object>(
         });
       };
 
-      const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData<T> }): Promise<Entity<T>> => {
+      const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData<T> }): Promise<GstoreEntity<T>> => {
         const { key: entityKey, data: entityData } = datastoreFormat;
         const entity = new this(entityData, undefined, undefined, undefined, entityKey);
 
@@ -501,7 +462,7 @@ export const generateModel = <T extends object, M extends object>(
         return entity.save(transaction);
       };
 
-      const onTransactionSuccess = (): Promise<Entity<T>> => {
+      const onTransactionSuccess = (): Promise<GstoreEntity<T>> => {
         /**
          * Make sure to delete the cache for this key
          */
@@ -522,7 +483,7 @@ export const generateModel = <T extends object, M extends object>(
         return Promise.resolve(entityDataUpdated);
       };
 
-      const onEntityUpdated = (entity: Entity<T>): Promise<Entity<T>> => {
+      const onEntityUpdated = (entity: GstoreEntity<T>): Promise<GstoreEntity<T>> => {
         entityDataUpdated = entity;
 
         if (options && options.dataloader) {
@@ -547,7 +508,7 @@ export const generateModel = <T extends object, M extends object>(
         return onTransactionSuccess();
       };
 
-      const getAndUpdate = (): Promise<Entity<T>> =>
+      const getAndUpdate = (): Promise<GstoreEntity<T>> =>
         getEntity()
           .then(saveEntity)
           .then(onEntityUpdated);
@@ -778,11 +739,16 @@ export const generateModel = <T extends object, M extends object>(
       properties = arrify(properties);
 
       properties.forEach(prop => {
+        let definition: SchemaPathDefinition;
         if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
-          this.schema.path(prop, { optional: true, excludeFromIndexes: true });
+          definition = { optional: true, excludeFromIndexes: true };
+          this.schema.path(prop, definition);
         } else {
-          this.schema.paths[prop as keyof T].excludeFromIndexes = true;
+          definition = this.schema.paths[prop as keyof T];
+          definition.excludeFromIndexes = true;
         }
+
+        this.schema.updateExcludedFromIndexesMap(prop as keyof T, definition);
       });
     }
 
@@ -911,13 +877,13 @@ export const generateModel = <T extends object, M extends object>(
       const dataloader = options.dataloader || this.gstore.createDataLoader();
 
       const getPopulateMetaForEntity = (
-        entity: Entity | EntityData,
+        entity: GstoreEntity | EntityData,
         entityRefs: PopulateRef[],
       ): PopulateMetaForEntity => {
         const keysToFetch: EntityKey[] = [];
         const mapKeyToPropAndSelect: { [key: string]: { ref: PopulateRef } } = {};
 
-        const isEntityClass = entity instanceof Entity;
+        const isEntityClass = entity instanceof GstoreEntity;
         entityRefs.forEach(ref => {
           const { path } = ref;
           const entityData: EntityData = isEntityClass ? entity.entityData : entity;
@@ -953,7 +919,7 @@ export const generateModel = <T extends object, M extends object>(
         // Keep track if we provided an array for the response format
         const isArray = Array.isArray(entitiesToProcess);
         const entities = arrify(entitiesToProcess);
-        const isEntityClass = entities[0] instanceof Entity;
+        const isEntityClass = entities[0] instanceof GstoreEntity;
 
         // Fetches the entity references at the current
         // object tree depth
@@ -961,7 +927,7 @@ export const generateModel = <T extends object, M extends object>(
           // For each one of the entities to process, we gatter some meta data
           // like the keys to fetch for that entity in order to populate its refs.
           // Dataloaader will take care to only fetch unique keys on the Datastore
-          const meta = (entities as Entity<T>[]).map(entity => getPopulateMetaForEntity(entity, entityRefs));
+          const meta = (entities as GstoreEntity<T>[]).map(entity => getPopulateMetaForEntity(entity, entityRefs));
 
           const onKeysFetched = (
             response: EntityData[] | null,
@@ -1002,7 +968,7 @@ export const generateModel = <T extends object, M extends object>(
                       };
                       return acc;
                     },
-                      {} as { [key: string]: any }
+                    {} as { [key: string]: any }
                   )
                   : embeddedEntity.plain();
 
@@ -1144,7 +1110,7 @@ export const generateModel = <T extends object, M extends object>(
   model.findOne = findOne.bind(query);
   model.findAround = findAround.bind(query);
 
-  // TODO: Refactor how the Model/Entity relationship!
+  // TODO: Refactor how the Model/Entity relationship
   // Attach props to prototype
   model.prototype.__gstore = gstore;
   model.prototype.__schema = schema;

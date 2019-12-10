@@ -47,6 +47,7 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'no-param-reassign': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true }],
+    'import/extensions': ['error', 'never', { json: 'always' }],
     'jest/no-focused-tests': 'error',
     'jest/no-identical-title': 'error',
   },

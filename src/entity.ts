@@ -1,6 +1,5 @@
 import is from 'is';
 import hooks from 'promised-hooks';
-import arrify from 'arrify';
 import { Transaction } from '@google-cloud/datastore';
 import DataLoader from 'dataloader';
 
@@ -20,6 +19,7 @@ import {
   DatastoreSaveMethod,
   PopulateRef,
   PromiseWithPopulate,
+  CustomEntityFunction,
 } from './types';
 import { ValidateResponse } from './helpers/validation';
 import { PopulateHandler } from './helpers/populateHelpers';
@@ -27,7 +27,7 @@ import { PopulateHandler } from './helpers/populateHelpers';
 const { validation, populateHelpers } = helpers;
 const { populateFactory } = populateHelpers;
 
-export class Entity<T extends object = GenericObject> {
+export class GstoreEntity<T extends object = GenericObject> {
   /* The entity Key */
   public entityKey: EntityKey;
 
@@ -42,23 +42,15 @@ export class Entity<T extends object = GenericObject> {
 
   public context: GenericObject;
 
-  public __gstore: Gstore | undefined; // Added when creating the Model
+  private __gstore: Gstore | undefined; // Added when creating the Model
 
-  public __schema: Schema<T> | undefined; // Added when creating the Model
+  private __schema: Schema<T> | undefined; // Added when creating the Model
 
-  public __entityKind: string | undefined; // Added when creating the Model
-
-  public __className: string;
-
-  public __excludeFromIndexes: { [P in keyof T]?: string[] };
+  private __entityKind: string | undefined; // Added when creating the Model
 
   public __hooksEnabled = true;
 
   constructor(data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
-    this.__className = 'Entity';
-
-    this.__excludeFromIndexes = {};
-
     /**
      * Object to store custom data for the entity.
      * In some cases we might want to add custom data onto the entity
@@ -95,10 +87,10 @@ export class Entity<T extends object = GenericObject> {
    *
    * @param {Transaction} transaction The optional transaction to save the entity into
    * @param options Additional configuration
-   * @returns {Promise<Entity<T>>}
+   * @returns {Promise<GstoreEntity<T>>}
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/save
    */
-  save(transaction?: Transaction, opts?: SaveOptions): Promise<EntityResponse<T>> {
+  save(transaction?: Transaction, opts?: SaveOptions): Promise<Entity<T>> {
     this.__hooksEnabled = true;
 
     const options = {
@@ -140,14 +132,14 @@ export class Entity<T extends object = GenericObject> {
       return { error: entityDataError || methodError! };
     };
 
-    const onEntitySaved = (): Promise<EntityResponse<T>> => {
+    const onEntitySaved = (): Promise<Entity<T>> => {
       /**
        * Make sure to clear the cache for this Entity Kind
        */
       if ((this.constructor as Model).__hasCache(options)) {
         return (this.constructor as Model)
           .clearCache()
-          .then(() => (this as unknown) as EntityResponse<T>)
+          .then(() => (this as unknown) as Entity<T>)
           .catch((err: any) => {
             let msg = 'Error while clearing the cache after saving the entity.';
             msg += 'The entity has been saved successfully though. ';
@@ -159,7 +151,7 @@ export class Entity<T extends object = GenericObject> {
           });
       }
 
-      return Promise.resolve((this as unknown) as EntityResponse<T>);
+      return Promise.resolve((this as unknown) as Entity<T>);
     };
 
     /**
@@ -190,7 +182,7 @@ export class Entity<T extends object = GenericObject> {
       return Promise.reject(error);
     }
 
-    this.__serializeEntityData();
+    this.serializeEntityData();
 
     const datastoreEntity = datastoreSerializer.toDatastore(this);
     datastoreEntity.method = options.method;
@@ -203,7 +195,7 @@ export class Entity<T extends object = GenericObject> {
       attachPostHooksToTransaction();
       transaction.save(datastoreEntity);
 
-      return Promise.resolve((this as unknown) as EntityResponse<T>);
+      return Promise.resolve((this as unknown) as Entity<T>);
     }
 
     return this.gstore.ds.save(datastoreEntity).then(onEntitySaved);
@@ -230,7 +222,7 @@ export class Entity<T extends object = GenericObject> {
    * @param options Additional configuration
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/plain
    */
-  plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> {
+  plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> & { [key: string]: any } {
     if (!is.object(options)) {
       throw new Error('Options must be an Object');
     }
@@ -258,14 +250,14 @@ export class Entity<T extends object = GenericObject> {
     return this.entityData[path];
   }
 
-  set<P extends keyof T>(path: P, value: any): EntityResponse<T> {
+  set<P extends keyof T>(path: P, value: any): Entity<T> {
     if ({}.hasOwnProperty.call(this.schema.__virtuals, path)) {
       this.schema.__virtuals[path as string].applySetters(value, this.entityData);
-      return (this as unknown) as EntityResponse<T>;
+      return (this as unknown) as Entity<T>;
     }
 
     this.entityData[path] = value;
-    return (this as unknown) as EntityResponse<T>;
+    return (this as unknown) as Entity<T>;
   }
 
   /**
@@ -291,8 +283,8 @@ export class Entity<T extends object = GenericObject> {
    *
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/datastoreentity
    */
-  datastoreEntity(options = {}): Promise<EntityResponse<T> | null> {
-    const onEntityFetched = (result: [EntityData<T> | null]): EntityResponse<T> | null => {
+  datastoreEntity(options = {}): Promise<Entity<T> | null> {
+    const onEntityFetched = (result: [EntityData<T> | null]): Entity<T> | null => {
       const entityData = result ? result[0] : null;
 
       if (!entityData) {
@@ -306,7 +298,7 @@ export class Entity<T extends object = GenericObject> {
       }
 
       this.entityData = entityData;
-      return (this as unknown) as EntityResponse<T>;
+      return (this as unknown) as Entity<T>;
     };
 
     if ((this.constructor as Model<T>).__hasCache(options)) {
@@ -325,7 +317,7 @@ export class Entity<T extends object = GenericObject> {
   populate<U extends string | string[]>(
     path?: U,
     propsToSelect?: U extends Array<string> ? never : string | string[],
-  ): PromiseWithPopulate<EntityResponse<T>> {
+  ): PromiseWithPopulate<Entity<T>> {
     const refsToPopulate: PopulateRef[][] = [];
 
     const promise = Promise.resolve(this).then((this.constructor as Model<T>).__populate(refsToPopulate));
@@ -335,226 +327,13 @@ export class Entity<T extends object = GenericObject> {
     return promise as any;
   }
 
-  get id(): string | number {
-    return this.entityKey.id || this.entityKey.name!;
-  }
-
-  /**
-   * The gstore instance
-   */
-  get gstore(): Gstore {
-    if (this.__gstore === undefined) {
-      throw new Error('No gstore instance attached to entity');
-    }
-    return this.__gstore;
-  }
-
-  /**
-   * The entity Model Schema
-   */
-  get schema(): Schema<T> {
-    if (this.__schema === undefined) {
-      throw new Error('No schema instance attached to entity');
-    }
-    return this.__schema;
-  }
-
-  /**
-   * The Datastore entity kind
-   */
-  get entityKind(): string {
-    if (this.__entityKind === undefined) {
-      throw new Error('No entity kind attached to entity');
-    }
-    return this.__entityKind;
-  }
-
-  __buildEntityData(data: GenericObject): void {
-    const { schema } = this;
-    const isJoiSchema = schema.isJoi;
-
-    // If Joi schema, get its default values
-    if (isJoiSchema) {
-      const { error, value } = schema.validateJoi(data);
-
-      if (!error) {
-        this.entityData = { ...value };
-      }
-    }
-
-    this.entityData = { ...this.entityData, ...data };
-
-    let isArray;
-    let isObject;
-
-    Object.entries(schema.paths as { [k: string]: SchemaPathDefinition }).forEach(([key, prop]) => {
-      const hasValue = {}.hasOwnProperty.call(this.entityData, key);
-      const isOptional = {}.hasOwnProperty.call(prop, 'optional') && prop.optional !== false;
-      const isRequired = {}.hasOwnProperty.call(prop, 'required') && prop.required === true;
-
-      // Set Default Values
-      if (!isJoiSchema && !hasValue && !isOptional) {
-        let value = null;
-
-        if ({}.hasOwnProperty.call(prop, 'default')) {
-          if (typeof prop.default === 'function') {
-            value = prop.default();
-          } else {
-            value = prop.default;
-          }
-        }
-
-        if ({}.hasOwnProperty.call(defaultValues.__map__, value)) {
-          /**
-           * If default value is in the gstore.defaultValue hashTable
-           * then execute the handler for that shortcut
-           */
-          value = defaultValues.__handler__(value);
-        } else if (value === null && {}.hasOwnProperty.call(prop, 'values') && !isRequired) {
-          // Default to first value of the allowed values if **not** required
-          [value] = prop.values as any[];
-        }
-
-        this.entityData[key as keyof T] = value;
-      }
-
-      // Set excludeFromIndexes
-      // ----------------------
-      isArray = prop.type === Array || (prop.joi && prop.joi._type === 'array');
-      isObject = prop.type === Object || (prop.joi && prop.joi._type === 'object');
-
-      if (prop.excludeFromIndexes === true) {
-        if (isArray) {
-          // We exclude both the array values + all the child properties of object items
-          this.__excludeFromIndexes[key as keyof T] = [`${key}[]`, `${key}[].*`];
-        } else if (isObject) {
-          // We exclude the emmbeded entity + all its properties
-          this.__excludeFromIndexes[key as keyof T] = [key, `${key}.*`];
-        } else {
-          this.__excludeFromIndexes[key as keyof T] = [key];
-        }
-      } else if (prop.excludeFromIndexes !== false) {
-        const excludedArray = arrify(prop.excludeFromIndexes) as string[];
-        if (isArray) {
-          // The format to exclude a property from an embedded entity inside
-          // an array is: "myArrayProp[].embeddedKey"
-          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}[].${propExcluded}`);
-        } else if (isObject) {
-          // The format to exclude a property from an embedded entity
-          // is: "myEmbeddedEntity.key"
-          this.__excludeFromIndexes[key as keyof T] = excludedArray.map(propExcluded => `${key}.${propExcluded}`);
-        }
-      }
-    });
-
-    // add Symbol Key to the entityData
-    (this.entityData as any)[this.gstore.ds.KEY] = this.entityKey;
-  }
-
-  __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
-    if (id && !is.number(id) && !is.string(id)) {
-      throw new Error('id must be a string or a number');
-    }
-
-    const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
-
-    let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
-
-    if (id) {
-      path = [...path, this.entityKind, id];
-    } else {
-      path.push(this.entityKind);
-    }
-
-    return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
-  }
-
-  __addAliasAndVirtualProperties(): void {
-    const { schema } = this;
-
-    // Create virtual properties (getters and setters for entityData object)
-    Object.keys(schema.paths)
-      .filter(pathKey => ({}.hasOwnProperty.call(schema.paths, pathKey)))
-      .forEach(pathKey =>
-        Object.defineProperty(this, pathKey, {
-          get: function getProp() {
-            return this.entityData[pathKey];
-          },
-          set: function setProp(newValue) {
-            this.entityData[pathKey] = newValue;
-          },
-        }),
-      );
-
-    // Create virtual properties (getters and setters for "virtuals" defined on the Schema)
-
-    Object.keys(schema.__virtuals)
-      .filter(key => ({}.hasOwnProperty.call(schema.__virtuals, key)))
-      .forEach(key =>
-        Object.defineProperty(this, key, {
-          get: function getProp() {
-            return schema.__virtuals[key].applyGetters({ ...this.entityData });
-          },
-          set: function setProp(newValue) {
-            schema.__virtuals[key].applySetters(newValue, this.entityData);
-          },
-        }),
-      );
-  }
-
-  __registerHooksFromSchema(): Entity<T> {
-    const callQueue = this.schema.__callQueue.entity;
-
-    if (!Object.keys(callQueue).length) {
-      return this;
-    }
-
-    Object.keys(callQueue).forEach(method => {
-      if (!(this as any)[method]) {
-        return;
-      }
-
-      // Add Pre hooks
-      callQueue[method].pres.forEach(fn => {
-        (this as any).pre(method, fn);
-      });
-
-      // Add Pre hooks
-      callQueue[method].post.forEach(fn => {
-        (this as any).post(method, fn);
-      });
-    });
-
-    return this;
-  }
-
-  __addCustomMethodsFromSchema(): void {
-    Object.entries(this.schema.methods).forEach(([method, handler]) => {
-      (this as any)[method] = handler;
-    });
-  }
-
-  __getEntityDataWithVirtuals(): EntityData<T> & { [key: string]: any } {
-    const { __virtuals } = this.schema;
-    const entityData: EntityData<T> & { [key: string]: any } = { ...this.entityData };
-
-    Object.keys(__virtuals).forEach(k => {
-      if ({}.hasOwnProperty.call(entityData, k)) {
-        __virtuals[k].applySetters(entityData[k], entityData);
-      } else {
-        __virtuals[k].applyGetters(entityData);
-      }
-    });
-
-    return entityData;
-  }
-
   /**
    * Process some basic formatting to the entity data before save
    * - automatically set the modifiedOn property to current date (if the property exists on schema)
    * - convert object with latitude/longitude to Datastore GeoPoint
+   * - convert string date to Date object
    */
-  __serializeEntityData(): void {
+  serializeEntityData(): void {
     /**
      * If the schema has a "modifiedOn" property we automatically
      * update its value to the current dateTime
@@ -594,11 +373,197 @@ export class Entity<T extends object = GenericObject> {
       });
     }
   }
+
+  get id(): string | number {
+    return this.entityKey.id || this.entityKey.name!;
+  }
+
+  /**
+   * The gstore instance
+   */
+  get gstore(): Gstore {
+    if (this.__gstore === undefined) {
+      throw new Error('No gstore instance attached to entity');
+    }
+    return this.__gstore;
+  }
+
+  /**
+   * The entity Model Schema
+   */
+  get schema(): Schema<T> {
+    if (this.__schema === undefined) {
+      throw new Error('No schema instance attached to entity');
+    }
+    return this.__schema;
+  }
+
+  /**
+   * The Datastore entity kind
+   */
+  get entityKind(): string {
+    if (this.__entityKind === undefined) {
+      throw new Error('No entity kind attached to entity');
+    }
+    return this.__entityKind;
+  }
+
+  private __buildEntityData(data: GenericObject): void {
+    const { schema } = this;
+    const isJoiSchema = schema.isJoi;
+
+    // If Joi schema, get its default values
+    if (isJoiSchema) {
+      const { error, value } = schema.validateJoi(data);
+
+      if (!error) {
+        this.entityData = { ...value };
+      }
+    }
+
+    this.entityData = { ...this.entityData, ...data };
+
+    Object.entries(schema.paths as { [k: string]: SchemaPathDefinition }).forEach(([key, prop]) => {
+      const hasValue = {}.hasOwnProperty.call(this.entityData, key);
+      const isOptional = {}.hasOwnProperty.call(prop, 'optional') && prop.optional !== false;
+      const isRequired = {}.hasOwnProperty.call(prop, 'required') && prop.required === true;
+
+      // Set Default Values
+      if (!isJoiSchema && !hasValue && !isOptional) {
+        let value = null;
+
+        if ({}.hasOwnProperty.call(prop, 'default')) {
+          if (typeof prop.default === 'function') {
+            value = prop.default();
+          } else {
+            value = prop.default;
+          }
+        }
+
+        if ({}.hasOwnProperty.call(defaultValues.__map__, value)) {
+          /**
+           * If default value is in the gstore.defaultValue hashTable
+           * then execute the handler for that shortcut
+           */
+          value = defaultValues.__handler__(value);
+        } else if (value === null && {}.hasOwnProperty.call(prop, 'values') && !isRequired) {
+          // Default to first value of the allowed values if **not** required
+          [value] = prop.values as any[];
+        }
+
+        this.entityData[key as keyof T] = value;
+      }
+    });
+
+    // add Symbol Key to the entityData
+    (this.entityData as any)[this.gstore.ds.KEY] = this.entityKey;
+  }
+
+  private __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
+    if (id && !is.number(id) && !is.string(id)) {
+      throw new Error('id must be a string or a number');
+    }
+
+    const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
+
+    let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
+
+    if (id) {
+      path = [...path, this.entityKind, id];
+    } else {
+      path.push(this.entityKind);
+    }
+
+    return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
+  }
+
+  private __addAliasAndVirtualProperties(): void {
+    const { schema } = this;
+
+    // Create virtual properties (getters and setters for entityData object)
+    Object.keys(schema.paths)
+      .filter(pathKey => ({}.hasOwnProperty.call(schema.paths, pathKey)))
+      .forEach(pathKey =>
+        Object.defineProperty(this, pathKey, {
+          get: function getProp() {
+            return this.entityData[pathKey];
+          },
+          set: function setProp(newValue) {
+            this.entityData[pathKey] = newValue;
+          },
+        }),
+      );
+
+    // Create virtual properties (getters and setters for "virtuals" defined on the Schema)
+
+    Object.keys(schema.__virtuals)
+      .filter(key => ({}.hasOwnProperty.call(schema.__virtuals, key)))
+      .forEach(key =>
+        Object.defineProperty(this, key, {
+          get: function getProp() {
+            return schema.__virtuals[key].applyGetters({ ...this.entityData });
+          },
+          set: function setProp(newValue) {
+            schema.__virtuals[key].applySetters(newValue, this.entityData);
+          },
+        }),
+      );
+  }
+
+  private __registerHooksFromSchema(): GstoreEntity<T> {
+    const callQueue = this.schema.__callQueue.entity;
+
+    if (!Object.keys(callQueue).length) {
+      return this;
+    }
+
+    Object.keys(callQueue).forEach(method => {
+      if (!(this as any)[method]) {
+        return;
+      }
+
+      // Add Pre hooks
+      callQueue[method].pres.forEach(fn => {
+        (this as any).pre(method, fn);
+      });
+
+      // Add Pre hooks
+      callQueue[method].post.forEach(fn => {
+        (this as any).post(method, fn);
+      });
+    });
+
+    return this;
+  }
+
+  private __addCustomMethodsFromSchema(): void {
+    Object.entries(this.schema.methods).forEach(([method, handler]) => {
+      (this as any)[method] = handler;
+    });
+  }
+
+  private __getEntityDataWithVirtuals(): EntityData<T> & GenericObject {
+    const { __virtuals } = this.schema;
+    const entityData: EntityData<T> & GenericObject = { ...this.entityData };
+
+    Object.keys(__virtuals).forEach(k => {
+      if ({}.hasOwnProperty.call(entityData, k)) {
+        __virtuals[k].applySetters(entityData[k], entityData);
+      } else {
+        __virtuals[k].applyGetters(entityData);
+      }
+    });
+
+    return entityData;
+  }
 }
 
-export default Entity;
+export default GstoreEntity;
 
-export type EntityResponse<T extends object> = Entity<T> & T;
+export type Entity<
+  T extends object = GenericObject,
+  M extends object = { [key: string]: CustomEntityFunction<T> }
+> = GstoreEntity<T> & T & M;
 
 interface SaveOptions {
   method?: DatastoreSaveMethod;

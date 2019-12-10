@@ -4,7 +4,7 @@ import is from 'is';
 import Joi from '@hapi/joi';
 import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
-import Entity, { EntityResponse } from './entity';
+import GstoreEntity, { Entity } from './entity';
 import GstoreSchema, { SchemaPathDefinition } from './schema';
 import Model from './model';
 import { Gstore, EntityKey } from './index';
@@ -55,7 +55,7 @@ describe('Model', () => {
       icon: { type: Buffer },
       location: { type: Schema.Types.GeoPoint },
     });
-    schema.virtual('fullname').get(() => {});
+    schema.virtual('fullname').get(() => undefined);
 
     ({ mockEntity, mockEntities } = generateEntities());
     transaction = new Transaction();
@@ -299,7 +299,7 @@ describe('Model', () => {
   });
 
   describe('get()', () => {
-    let entity: EntityResponse<any>;
+    let entity: Entity<any>;
 
     beforeEach(() => {
       entity = { name: 'John' };
@@ -314,13 +314,13 @@ describe('Model', () => {
     test('passing an integer id', () => {
       return GstoreModel.get(123).then(_entity => {
         expect(ds.get.getCall(0).args[0].constructor.name).equal('Key');
-        expect(_entity instanceof Entity).equal(true);
+        expect(_entity instanceof GstoreEntity).equal(true);
       });
     });
 
     test('passing an string id', () =>
       GstoreModel.get('keyname').then(_entity => {
-        expect(_entity instanceof Entity).equal(true);
+        expect(_entity instanceof GstoreEntity).equal(true);
       }));
 
     test('passing an array of ids', () => {
@@ -406,7 +406,7 @@ describe('Model', () => {
       GstoreModel.get(123, undefined, undefined, transaction).then(_entity => {
         expect((transaction.get as any).called).equal(true);
         expect(ds.get.called).equal(false);
-        expect(_entity.__className).equal('Entity');
+        expect(_entity instanceof GstoreEntity).equal(true);
       }));
 
     test('should throw error if transaction not an instance of glcoud Transaction', () =>
@@ -460,7 +460,7 @@ describe('Model', () => {
       const dataloader = {};
 
       GstoreModel.get([123, 456], undefined, undefined, undefined, { dataloader }).then(
-        () => {},
+        () => undefined,
         err => {
           expect(err.name).equal('GstoreError');
           expect(err.message).equal('dataloader must be a "DataLoader" instance');
@@ -647,7 +647,7 @@ describe('Model', () => {
 
     test('should return an entity instance', () =>
       GstoreModel.update(123, {}).then(entity => {
-        expect(entity.__className).equal('Entity');
+        expect(entity instanceof GstoreEntity).equal(true);
       }));
 
     test('should first get the entity by Key', () =>
@@ -765,7 +765,7 @@ describe('Model', () => {
         expect(ds.transaction.called).equal(false);
         expect((transaction.get as any).called).equal(true);
         expect((transaction.save as any).called).equal(true);
-        expect(entity.__className).equal('Entity');
+        expect(entity instanceof GstoreEntity).equal(true);
       }));
 
     test('should throw error if transaction passed is not instance of gcloud Transaction', () =>
@@ -946,7 +946,7 @@ describe('Model', () => {
 
     test('should set "pre" hook scope to entity being deleted (1)', done => {
       schema.pre('delete', function preDelete(this: any) {
-        expect(this instanceof Entity).equal(true);
+        expect(this instanceof GstoreEntity).equal(true);
         done();
         return Promise.resolve();
       });
@@ -996,7 +996,7 @@ describe('Model', () => {
       schema.post('delete', function postDeleteHook(this: any, { key }) {
         expect(key.constructor.name).equal('Key');
         expect(key.id).equal(123);
-        expect(this instanceof Entity).equal(true);
+        expect(this instanceof GstoreEntity).equal(true);
         expect(this.entityKey).equal(key);
         done();
         return Promise.resolve();
@@ -1015,7 +1015,7 @@ describe('Model', () => {
       });
       GstoreModel = gstore.model('Blog-8', schema);
 
-      return GstoreModel.delete(ids).then(() => {});
+      return GstoreModel.delete(ids).then(() => undefined);
     });
 
     test('transaction.execPostHooks() should call post hooks', () => {
@@ -1284,9 +1284,7 @@ describe('Model', () => {
       const arr = ['newProp', 'url'];
       GstoreModel.excludeFromIndexes(arr);
 
-      const entity = new GstoreModel({});
-
-      expect(entity.__excludeFromIndexes).deep.equal({
+      expect(GstoreModel.schema.excludedFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
         newProp: ['newProp'],
@@ -1301,9 +1299,7 @@ describe('Model', () => {
       const prop = 'lastname';
       GstoreModel.excludeFromIndexes(prop);
 
-      const entity = new GstoreModel({});
-
-      expect(entity.__excludeFromIndexes).deep.equal({
+      expect(GstoreModel.schema.excludedFromIndexes).deep.equal({
         lastname: ['lastname'],
         age: ['age'],
         tags: [],
@@ -1328,7 +1324,7 @@ describe('Model', () => {
     });
 
     test('should not override previous hooks on transaction', () => {
-      const fn = (): void => {};
+      const fn = (): void => undefined;
       transaction.hooks = {
         post: [fn],
       };

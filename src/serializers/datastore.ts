@@ -1,7 +1,7 @@
 import is from 'is';
 import arrify from 'arrify';
 
-import Entity from '../entity';
+import GstoreEntity from '../entity';
 import GstoreModel from '../model';
 import { GenericObject, EntityKey, EntityData, IdType, DatastoreSaveMethod } from '../types';
 
@@ -15,28 +15,25 @@ type DatastoreFormat = {
   method?: DatastoreSaveMethod;
 };
 
-const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: Entity<T>): string[] =>
+const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: GstoreEntity<T>): string[] =>
   Object.entries(data)
     .filter(([, value]) => value !== null)
-    .map(([key]) => entity.__excludeFromIndexes[key as keyof T] as string[])
+    .map(([key]) => entity.schema.excludedFromIndexes[key as keyof T] as string[])
     .filter(v => v !== undefined)
     .reduce((acc: string[], arr) => [...acc, ...arr], []);
 
 const idFromKey = (key: EntityKey): IdType => key.path[key.path.length - 1];
 
 const toDatastore = <T extends object>(
-  entity: Entity<T>,
+  entity: GstoreEntity<T>,
   options: ToDatastoreOptions | undefined = {},
 ): DatastoreFormat => {
-  const data = Object.entries(entity.entityData).reduce(
-    (acc, [key, value]) => {
-      if (typeof value !== 'undefined') {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as { [key: string]: any },
-  );
+  const data = Object.entries(entity.entityData).reduce((acc, [key, value]) => {
+    if (typeof value !== 'undefined') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as { [key: string]: any });
 
   const excludeFromIndexes = getExcludeFromIndexes(data, entity);
 
@@ -57,7 +54,7 @@ const toDatastore = <T extends object>(
   return datastoreFormat;
 };
 
-const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTITY' ? Entity : EntityData>(
+const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTITY' ? GstoreEntity : EntityData>(
   entityData: EntityData,
   Model: GstoreModel<any>,
   options: { format?: F; readAll?: boolean; showKey?: boolean } = {},
@@ -119,7 +116,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
     return data;
   };
 
-  const convertToEntity = (): Entity => {
+  const convertToEntity = (): GstoreEntity => {
     const key: EntityKey = entityData[Model.gstore.ds.KEY as any];
     return new Model(entityData, undefined, undefined, undefined, key);
   };
@@ -138,14 +135,17 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
  * @param {any} entities Entity(ies) to format
  * @returns {array} the formated entity(ies)
  */
-const entitiesToDatastore = <T extends Entity | Entity[], R = T extends Entity ? DatastoreFormat : DatastoreFormat[]>(
+const entitiesToDatastore = <
+  T extends GstoreEntity | GstoreEntity[],
+  R = T extends GstoreEntity ? DatastoreFormat : DatastoreFormat[]
+>(
   entities: T,
   options: ToDatastoreOptions | undefined = {},
 ): R => {
   const isMultiple = is.array(entities);
   const entitiesToArray = arrify(entities);
 
-  if (entitiesToArray[0].__className !== 'Entity') {
+  if (entitiesToArray[0] instanceof GstoreEntity !== true) {
     // Not an entity instance, nothing to do here...
     return (entities as unknown) as R;
   }

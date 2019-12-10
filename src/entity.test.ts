@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import Joi from '@hapi/joi';
 import { Datastore, Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
-import Entity, { EntityResponse } from './entity';
+import GstoreEntity, { Entity } from './entity';
 import GstoreSchema from './schema';
 import Model from './model';
 import helpers from './helpers';
@@ -23,10 +23,10 @@ const { Schema } = gstore;
 const { expect, assert } = chai;
 const { validation } = helpers;
 
-describe('Entity', () => {
+describe('GstoreEntity', () => {
   let schema: GstoreSchema;
   let GstoreModel: Model<any>;
-  let entity: EntityResponse<{ [key: string]: any }>;
+  let entity: Entity<{ [key: string]: any }>;
   let transaction: DatastoreTransaction;
 
   beforeEach(() => {
@@ -71,7 +71,6 @@ describe('Entity', () => {
       assert.isDefined(entity.schema);
       assert.isDefined((entity as any).pre);
       assert.isDefined((entity as any).post);
-      expect(entity.__excludeFromIndexes).deep.equal({});
     });
 
     test('should add data passed to entityData', () => {
@@ -186,32 +185,6 @@ describe('Entity', () => {
       entity = new GstoreModel({});
 
       expect(entity.entityData.email).equal(undefined);
-    });
-
-    test('should create its array of excludeFromIndexes', () => {
-      schema = new Schema({
-        name: { excludeFromIndexes: true },
-        age: { excludeFromIndexes: true, type: Number },
-        embedded: { type: Object, excludeFromIndexes: ['prop1', 'prop2'] },
-        embedded2: { type: Object, excludeFromIndexes: true },
-        arrayValue: { excludeFromIndexes: 'property', type: Array },
-        // Array in @google-cloud have to be set on the data value
-        arrayValue2: { excludeFromIndexes: true, type: Array },
-        arrayValue3: { excludeFromIndexes: true, joi: Joi.array() },
-      });
-      GstoreModel = gstore.model('BlogPost', schema);
-
-      entity = new GstoreModel({ name: 'John' });
-
-      expect(entity.__excludeFromIndexes).deep.equal({
-        name: ['name'],
-        age: ['age'],
-        embedded: ['embedded.prop1', 'embedded.prop2'],
-        embedded2: ['embedded2', 'embedded2.*'],
-        arrayValue: ['arrayValue[].property'],
-        arrayValue2: ['arrayValue2[]', 'arrayValue2[].*'],
-        arrayValue3: ['arrayValue3[]', 'arrayValue3[].*'],
-      });
     });
 
     describe('should create Datastore Key', () => {
@@ -506,13 +479,15 @@ describe('Entity', () => {
     });
 
     test('should add virtuals', () => {
-      entity = new GstoreModel({ name: 'John' });
-      sinon.spy(entity, '__getEntityDataWithVirtuals');
+      const userSchame = new Schema({ firstName: {}, lastName: {} });
+      userSchame.virtual('fullName').get(function fullName(this: any) {
+        return `${this.firstName} ${this.lastName}`;
+      });
+      const UserModel = gstore.model('UserWithVirtuals', userSchame);
+      const user = new UserModel({ firstName: 'John', lastName: 'Snow' });
 
-      entity.plain({ virtuals: true });
-
-      expect((entity.__getEntityDataWithVirtuals as any).called).equal(true);
-      (entity.__getEntityDataWithVirtuals as any).restore();
+      const output = user.plain({ virtuals: true });
+      expect(output.fullName).to.equal('John Snow');
     });
 
     test('should clear embedded object excluded properties', () => {
@@ -624,7 +599,7 @@ describe('Entity', () => {
       return entity.datastoreEntity().then(_entity => {
         expect((ds.get as any).called).equal(true);
         expect((ds.get as any).getCall(0).args[0]).equal(entity.entityKey);
-        expect(_entity!.__className).equal('Entity');
+        expect(_entity instanceof GstoreEntity).equal(true);
         expect(_entity!.entityData).equal(mockData);
 
         (ds.get as any).restore();
@@ -732,8 +707,7 @@ describe('Entity', () => {
         return gstore.cache!.keys.set(key, value).then(() =>
           entity.datastoreEntity({ cache: false }).then(() => {
             assert.ok((ds.get as any).called);
-            assert.ok(!(entity.gstore.cache!.keys.read as any).called);
-
+            expect((entity.gstore.cache!.keys.read as any).called).equal(false);
             (entity.gstore.cache!.keys.read as any).restore();
             (ds.get as any).restore();
           }),
@@ -810,26 +784,26 @@ describe('Entity', () => {
 
     test('should Not override', () => {
       entity = new User({ firstname: 'John', lastname: 'Snow', fullname: 'Jooohn' });
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.fullname).equal('Jooohn');
+      expect(output.fullname).equal('Jooohn');
     });
 
     test('should read and parse virtual (set)', () => {
       entity = new User({ fullname: 'John Snow' });
 
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.firstname).equal('John');
-      expect(entityData.lastname).equal('Snow');
+      expect(output.firstname).equal('John');
+      expect(output.lastname).equal('Snow');
     });
 
     test('should override existing', () => {
       entity = new User({ firstname: 'Peter', fullname: 'John Snow' });
 
-      const entityData = entity.__getEntityDataWithVirtuals();
+      const output = entity.plain({ virtuals: true });
 
-      expect(entityData.firstname).equal('John');
+      expect(output.firstname).equal('John');
     });
 
     test('should not allow reserved name for virtuals', () => {
@@ -852,7 +826,7 @@ describe('Entity', () => {
 
     test('should return the entity saved', () =>
       entity.save().then(_entity => {
-        expect(_entity.__className).equal('Entity');
+        expect(_entity instanceof GstoreEntity).equal(true);
       }));
 
     test('should validate() before', () => {
@@ -907,9 +881,8 @@ describe('Entity', () => {
       return entity.save().then(() => {
         expect((entity.gstore.ds.save as any).calledOnce).equal(true);
         expect(spySerializerToDatastore.called).equal(true);
-        expect(spySerializerToDatastore.getCall(0).args[0].__className).equal('Entity');
+        expect(spySerializerToDatastore.getCall(0).args[0] instanceof GstoreEntity).equal(true);
         expect(spySerializerToDatastore.getCall(0).args[0].entityData).equal(entity.entityData);
-        expect(spySerializerToDatastore.getCall(0).args[0].__excludeFromIndexes).equal(entity.__excludeFromIndexes);
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].key);
         expect((entity.gstore.ds.save as any).getCall(0).args[0].key.constructor.name).equal('Key');
         assert.isDefined((entity.gstore.ds.save as any).getCall(0).args[0].data);
@@ -1103,7 +1076,7 @@ describe('Entity', () => {
 
     test('transaction.execPostHooks() should set scope to entity saved', done => {
       schema.post('save', function preSave(this: any) {
-        expect(this instanceof Entity).equal(true);
+        expect(this instanceof GstoreEntity).equal(true);
         expect(this.name).equal('John Jagger');
         done();
         return Promise.resolve();
