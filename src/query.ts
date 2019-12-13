@@ -91,7 +91,6 @@ class Query<T extends object, M extends object> {
     };
 
     /* eslint-disable @typescript-eslint/unbound-method */
-    // ((query as unknown) as GstoreQuery<T, QueryResponse<T>>).__originalRun = ((query as unknown) as DatastoreQuery).run;
     ((query as unknown) as GstoreQuery<T, R>).__originalRun = query.run;
     (query as any).run = enhancedQueryRun;
     /* eslint-enable @typescript-eslint/unbound-method */
@@ -102,14 +101,14 @@ class Query<T extends object, M extends object> {
   list<U extends QueryListOptions<T>, Outputformat = U['format'] extends EntityFormatType ? Entity<T> : EntityData<T>>(
     options: U = {} as U,
   ): PromiseWithPopulate<QueryResponse<T, Outputformat[]>> {
-    // If global options set in schema, we extend it with passed options
+    // If global options set in schema, we extend it with provided options
     if ({}.hasOwnProperty.call(this.Model.schema.shortcutQueries, 'list')) {
       options = extend({}, this.Model.schema.shortcutQueries.list, options);
     }
 
     let query = this.initQuery<QueryResponse<T, Outputformat[]>>(options && options.namespace);
 
-    // Build Datastore Query from options passed
+    // Build Datastore Query from options provided
     query = buildQueryFromOptions<T, QueryResponse<T, Outputformat[]>>(query, options, this.Model.gstore.ds);
 
     const { limit, offset, order, select, ancestors, filters, start, ...rest } = options;
@@ -153,8 +152,8 @@ class Query<T extends object, M extends object> {
         return null;
       }
 
-      const [e] = entities;
-      const entity = new this.Model(e, undefined, undefined, undefined, (e as any)[this.Model.gstore.ds.KEY]);
+      const [entityData] = entities;
+      const entity = new this.Model(entityData, { key: (entityData as any)[this.Model.gstore.ds.KEY] });
       return entity;
     };
     return query.run(options, responseHandler);

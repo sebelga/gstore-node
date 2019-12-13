@@ -212,25 +212,14 @@ describe('GstoreEntity', () => {
       });
 
       test('---> with a full Key (Integer keyname passed)', () => {
-        entity = new GstoreModel({}, 123);
+        entity = new GstoreModel({}, { id: 123 });
 
         expect(entity.entityKey.id).equal(123);
       });
 
       test('---> with a full Key ("string" Integer keyname passed)', () => {
-        entity = new GstoreModel({}, '123');
-        expect(entity.entityKey.name).equal('123');
-      });
-
-      test('---> throw error is id passed is not string or number', () => {
-        const fn = (): Entity => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-          // @ts-ignore
-          entity = new GstoreModel({}, {});
-          return entity;
-        };
-
-        expect(fn).throw(Error);
+        entity = new GstoreModel({}, { id: '123' });
+        expect(entity.entityKey.id).equal(123);
       });
 
       test('---> with a partial Key (auto-generated id)', () => {
@@ -265,7 +254,7 @@ describe('GstoreEntity', () => {
       test('---> with a gcloud Key', () => {
         const key = ds.key(['BlogPost', 1234]);
 
-        entity = new GstoreModel({}, undefined, undefined, undefined, key);
+        entity = new GstoreModel({}, { key });
 
         expect(entity.entityKey).equal(key);
       });
@@ -274,7 +263,7 @@ describe('GstoreEntity', () => {
         function fn(): Entity {
           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
           // @ts-ignore
-          entity = new GstoreModel({}, undefined, undefined, undefined, {});
+          entity = new GstoreModel({}, { key: {} });
           return entity;
         }
 
@@ -662,7 +651,7 @@ describe('GstoreEntity', () => {
       beforeEach(() => {
         gstore.cache = gstoreWithCache.cache;
 
-        key = GstoreModel.key(123);
+        key = GstoreModel.key({ id: 123 });
         mockData = { name: 'John' };
         mockData[gstore.ds.KEY] = key;
       });

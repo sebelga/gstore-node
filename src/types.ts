@@ -1,5 +1,9 @@
 import { entity } from '@google-cloud/datastore/build/src/entity';
+import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
+
 import GstoreEntity from './entity';
+
+export type DocId = string | { id: string | number } | { name: string } | { key: EntityKey };
 
 export type EntityKey = entity.Key;
 
@@ -13,7 +17,7 @@ export type CustomEntityFunction<T extends object> = (this: GstoreEntity<T>, ...
 
 export type GenericObject = { [key: string]: any };
 
-export type IdType = string | number;
+export type IdType = string | number; // TODO removed after refactor
 
 export type Ancestor = IdType[];
 
@@ -24,6 +28,8 @@ export type JSONFormatType = 'JSON';
 export type DatastoreSaveMethod = 'upsert' | 'insert' | 'update';
 
 export type PopulateRef = { path: string; select: string[] };
+
+export type Transaction = DatastoreTransaction;
 
 export type PopulateMetaForEntity = {
   entity: GstoreEntity | EntityData;

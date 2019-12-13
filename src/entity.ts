@@ -13,7 +13,7 @@ import { ERROR_CODES, ValidationError } from './errors';
 import {
   EntityKey,
   EntityData,
-  IdType,
+  DocId,
   Ancestor,
   GenericObject,
   DatastoreSaveMethod,
@@ -24,7 +24,7 @@ import {
 import { ValidateResponse } from './helpers/validation';
 import { PopulateHandler } from './helpers/populateHelpers';
 
-const { validation, populateHelpers } = helpers;
+const { validation, populateHelpers, datastoreHelpers } = helpers;
 const { populateFactory } = populateHelpers;
 
 export class GstoreEntity<T extends object = GenericObject> {
@@ -50,7 +50,7 @@ export class GstoreEntity<T extends object = GenericObject> {
 
   public __hooksEnabled = true;
 
-  constructor(data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey) {
+  constructor(data?: EntityData<T>, id?: DocId, ancestors?: Ancestor, namespace?: string) {
     /**
      * Object to store custom data for the entity.
      * In some cases we might want to add custom data onto the entity
@@ -59,14 +59,13 @@ export class GstoreEntity<T extends object = GenericObject> {
      */
     this.context = {};
 
-    if (key) {
-      if (!this.gstore.ds.isKey(key)) {
-        throw new Error('Entity Key must be a Datastore Key');
-      }
-      this.entityKey = key;
-    } else {
-      this.entityKey = this.__createKey(id, ancestors, namespace);
-    }
+    this.entityKey = datastoreHelpers.buildKey({
+      entityKind: this.entityKind,
+      ids: id,
+      ancestors,
+      namespace,
+      datastore: this.gstore.ds,
+    });
 
     // create entityData from data provided
     this.__buildEntityData(data || {});
@@ -459,23 +458,23 @@ export class GstoreEntity<T extends object = GenericObject> {
     (this.entityData as any)[this.gstore.ds.KEY] = this.entityKey;
   }
 
-  private __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
-    if (id && !is.number(id) && !is.string(id)) {
-      throw new Error('id must be a string or a number');
-    }
+  // private __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
+  //   if (id && !is.number(id) && !is.string(id)) {
+  //     throw new Error('id must be a string or a number');
+  //   }
 
-    const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
+  //   const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
 
-    let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
+  //   let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
 
-    if (id) {
-      path = [...path, this.entityKind, id];
-    } else {
-      path.push(this.entityKind);
-    }
+  //   if (id) {
+  //     path = [...path, this.entityKind, id];
+  //   } else {
+  //     path.push(this.entityKind);
+  //   }
 
-    return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
-  }
+  //   return namespace ? this.gstore.ds.key({ namespace, path }) : this.gstore.ds.key(path);
+  // }
 
   private __addAliasAndVirtualProperties(): void {
     const { schema } = this;

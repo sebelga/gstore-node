@@ -76,6 +76,13 @@ describe('Schema', () => {
         arrayValue3: ['arrayValue3[]', 'arrayValue3[].*'],
       });
     });
+
+    // TODO fix this test for __meta object (previously in model.test.ts)
+    // test('should add __meta object', () => {
+    //   const MyModel = gstore.model('MyEntity', schema);
+    //   assert.isDefined(MyModel.schema.__meta);
+    //   expect(MyModel.schema.__meta.geoPointsProps).deep.equal(['location']);
+    // });
   });
 
   describe('add method', () => {
