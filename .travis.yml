@@ -7,10 +7,6 @@ env:
 # Make sure gcloud command is on our PATH and the App Engine SDK is in the Python path
 - PATH=$PATH:${HOME}/google-cloud-sdk/bin CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
-branches:
-  only:
-  - master
-
 before_install:
   - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
   - sudo apt-get update -y
