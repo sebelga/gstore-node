@@ -118,7 +118,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
 
   const convertToEntity = (): GstoreEntity => {
     const key: EntityKey = entityData[Model.gstore.ds.KEY as any];
-    return new Model(entityData, undefined, undefined, undefined, key);
+    return new Model(entityData, { key });
   };
 
   switch (options.format) {

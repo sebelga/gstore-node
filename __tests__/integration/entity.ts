@@ -40,7 +40,7 @@ const getAddressBook = (): Entity<any> & GenericObject => {
   const key = AddressBookModel.key(getId());
   allKeys.push(key);
   const data = { label: chance.string() };
-  const addressBook = new AddressBookModel(data, undefined, undefined, undefined, key);
+  const addressBook = new AddressBookModel(data, { key });
   return addressBook;
 };
 
@@ -52,25 +52,28 @@ const getAddress = (addressBookEntity: Entity<any> | null = null): Entity<any> &
     country: chance.country(),
     addressBook: addressBookEntity !== null ? addressBookEntity.entityKey : null,
   };
-  const address = new AddressModel(data, undefined, undefined, undefined, key);
+  const address = new AddressModel(data, { key });
   return address;
 };
 
-const getUser = (addressEntity: Entity<any>, id: string | number = getId()): Entity<{ address: any }> => {
+const getUser = (addressEntity: Entity<any>, id: { id: number } | string = getId()): Entity<{ address: any }> => {
   const key = UserModel.key(id);
   allKeys.push(key);
   const data = { address: addressEntity.entityKey };
-  const user = new UserModel(data, undefined, undefined, undefined, key);
+  const user = new UserModel(data, { key });
   return user;
 };
 
-const cleanUp = (): Promise<any> =>
-  ((ds.delete(allKeys) as unknown) as Promise<any>)
-    .then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll(), AddressBookModel.deleteAll()]))
+const cleanUp = (): Promise<any> => {
+  return ((ds.delete(allKeys) as unknown) as Promise<any>)
+    .then(() => {
+      return Promise.all([UserModel.deleteAll(), AddressModel.deleteAll(), AddressBookModel.deleteAll()]);
+    })
     .catch(err => {
-                console.log('Error cleaning up'); // eslint-disable-line
-                console.log(err); // eslint-disable-line
+      console.log('Error cleaning up'); // eslint-disable-line
+      console.log(err); // eslint-disable-line
     });
+};
 
 describe('Entity (Integration Tests)', () => {
   const addressBook = getAddressBook();
@@ -102,7 +105,7 @@ describe('Entity (Integration Tests)', () => {
       const entity1 = await user.save();
       expect(entity1.id).equal(entity1.entityKey.name);
 
-      const user2 = getUser(address, 1234);
+      const user2 = getUser(address, { id: 1234 });
       const entity2 = await user2.save();
 
       expect(entity2.id).equal(entity2.entityKey.id);

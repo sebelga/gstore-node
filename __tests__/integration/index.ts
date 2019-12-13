@@ -37,7 +37,7 @@ const getUser = (): Entity<any> & GenericObject => {
   const key = UserModel.key(getId());
   allKeys.push(key);
   const data = { name: chance.string() };
-  const user = new UserModel(data, undefined, undefined, undefined, key);
+  const user = new UserModel(data, { key });
   return user;
 };
 

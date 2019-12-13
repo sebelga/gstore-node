@@ -44,7 +44,7 @@ const getAddress = (): Entity<any> => {
   const key = AddressModel.key(getId());
   allKeys.push(key);
   const data = { city: chance.city(), country: chance.country() };
-  const address = new AddressModel(data, undefined, undefined, undefined, key);
+  const address = new AddressModel(data, { key });
   return address;
 };
 
@@ -57,7 +57,7 @@ const getUser = (address: Entity<any>): Entity<any> & GenericObject => {
     address: address.entityKey,
     createdAt: new Date('2019-01-20'),
   };
-  const user = new UserModel(data, undefined, undefined, undefined, key);
+  const user = new UserModel(data, { key });
   return user;
 };
 

@@ -6,8 +6,6 @@ import dsAdapterFactory from 'nsql-cache-datastore';
 import get from 'lodash.get';
 import set from 'lodash.set';
 
-import { Transaction } from '@google-cloud/datastore';
-
 import Gstore from './index';
 import Schema, { JoiConfig, SchemaPathDefinition } from './schema';
 import GstoreEntity, { Entity } from './entity';
@@ -15,9 +13,9 @@ import Query, { QueryResponse, GstoreQuery } from './query';
 import { GstoreError, ERROR_CODES } from './errors';
 import helpers from './helpers';
 import {
+  DocId,
   FuncReturningPromise,
   CustomEntityFunction,
-  IdType,
   Ancestor,
   EntityKey,
   EntityData,
@@ -28,10 +26,11 @@ import {
   GenericObject,
   JSONFormatType,
   EntityFormatType,
+  Transaction,
 } from './types';
 
 const dsAdapter = dsAdapterFactory();
-const { populateHelpers } = helpers;
+const { populateHelpers, datastoreHelpers } = helpers;
 
 const { keyToString } = dsAdapter;
 const { populateFactory } = populateHelpers;
@@ -40,7 +39,7 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
+  new (data?: EntityData<T>, id?: DocId, ancestors?: Ancestor, namespace?: string): Entity<T>;
 
   /**
    * The gstore instance
@@ -68,30 +67,22 @@ export interface Model<
    * @returns {entity.Key}
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/key
    */
-  key<U extends IdType | IdType[]>(
-    id?: U,
+  key(): EntityKey;
+  key<U extends DocId | DocId[]>(
+    id: U,
     ancestors?: Array<string | number>,
     namespace?: string,
-  ): U extends Array<IdType> ? EntityKey[] : EntityKey;
+  ): U extends Array<DocId> ? EntityKey[] : EntityKey;
 
   /**
    * Fetch an Entity from the Datastore by _key_.
    *
-   * @param {(string | number | string[] | number[])} id The entity ID
-   * @param {(Array<string | number>)} [ancestors] The entity Ancestors
-   * @param {string} [namespace] The entity Namespace
-   * @param {*} [transaction] The current Datastore Transaction (if any)
+   * @param id The entity/doc name (or Id)
    * @param [options] Additional configuration
-   * @returns {Promise<any>} The entity fetched from the Datastore
+   * @returns {Promise<any>} The entity/document fetched from the database.
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/get
    */
-  get<U extends string | number | Array<string | number>>(
-    id: U,
-    ancestors?: Array<string | number>,
-    namespace?: string,
-    transaction?: Transaction,
-    options?: GetOptions,
-  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+  get(id: DocId, options?: GetOptions): PromiseWithPopulate<Entity<T>>;
 
   /**
    * Update an Entity in the Datastore. This method _partially_ updates an entity data in the Datastore
@@ -108,7 +99,7 @@ export interface Model<
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/update
    */
   update(
-    id: IdType,
+    id: DocId,
     data: EntityData,
     ancestors?: Ancestor,
     namespace?: string,
@@ -130,11 +121,11 @@ export interface Model<
    * @link https://sebloix.gitbook.io/gstore-node/model/methods/delete
    */
   delete(
-    id?: IdType | IdType[],
+    id?: DocId,
     ancestors?: Ancestor,
     namespace?: string,
     transaction?: Transaction,
-    key?: EntityKey | EntityKey[],
+    // key?: EntityKey | EntityKey[], // TODO mdelete for multiple ids
     options?: DeleteOptions,
   ): Promise<DeleteResponse>;
 
@@ -296,71 +287,22 @@ export const generateModel = <T extends object, M extends object>(
 
     static __hooksEnabled = true;
 
-    static key<U extends IdType | IdType[], R = U extends Array<IdType> ? EntityKey[] : EntityKey>(
-      ids: U,
+    static key<U extends DocId | DocId[], R = U extends Array<DocId> ? EntityKey[] : EntityKey>(
+      ids?: U,
       ancestors?: Ancestor,
       namespace?: string,
     ): R {
-      const keys: EntityKey[] = [];
-
-      let isMultiple = false;
-
-      const getPath = (id?: IdType | null): IdType[] => {
-        let path: IdType[] = [this.entityKind];
-
-        if (typeof id !== 'undefined' && id !== null) {
-          path.push(id);
-        }
-
-        if (ancestors && is.array(ancestors)) {
-          path = ancestors.concat(path);
-        }
-
-        return path;
-      };
-
-      const getKey = (id?: IdType | null): EntityKey => {
-        const path = getPath(id);
-        let key;
-
-        if (typeof namespace !== 'undefined' && namespace !== null) {
-          key = this.gstore.ds.key({
-            namespace,
-            path,
-          });
-        } else {
-          key = this.gstore.ds.key(path);
-        }
-        return key;
-      };
-
-      if (typeof ids !== 'undefined' && ids !== null) {
-        const idsArray = arrify(ids);
-
-        isMultiple = idsArray.length > 1;
-
-        idsArray.forEach(id => {
-          const key = getKey(id);
-          keys.push(key);
-        });
-      } else {
-        const key = getKey(null);
-        keys.push(key);
-      }
-
-      return isMultiple ? ((keys as unknown) as R) : ((keys[0] as unknown) as R);
+      return datastoreHelpers.buildKey({
+        entityKind: this.entityKind,
+        datastore: this.gstore.ds,
+        ids,
+        ancestors,
+        namespace,
+      });
     }
 
-    static get<U extends IdType | Array<IdType>>(
-      id: U,
-      ancestors?: Ancestor,
-      namespace?: string,
-      transaction?: Transaction,
-      options: GetOptions = {},
-    ): PromiseWithPopulate<U extends Array<string | number> ? GstoreEntity<T>[] : GstoreEntity<T>> {
-      const ids = arrify(id);
-
-      const key = this.key(ids, ancestors, namespace);
+    static get(id: DocId, options: GetOptions = {}): PromiseWithPopulate<GstoreEntity<T>> {
+      const key = this.key(id, options.ancestors, options.namespace);
       const refsToPopulate: PopulateRef[][] = [];
       const { dataloader } = options;
 
@@ -369,15 +311,9 @@ export const generateModel = <T extends object, M extends object>(
       ): GstoreEntity<T> | null | Array<GstoreEntity<T> | null> => {
         const entityData = arrify(entityDataFetched);
 
-        if (
-          ids.length === 1 &&
-          (entityData.length === 0 || typeof entityData[0] === 'undefined' || entityData[0] === null)
-        ) {
+        if (entityData.length === 0 || typeof entityData[0] === 'undefined' || entityData[0] === null) {
           if (this.gstore.config.errorOnEntityNotFound) {
-            throw new GstoreError(
-              ERROR_CODES.ERR_ENTITY_NOT_FOUND,
-              `${this.entityKind} { ${ids[0].toString()} } not found`,
-            );
+            throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `${this.entityKind} "${key.path.pop()}" not found`);
           }
 
           return null;
@@ -388,15 +324,17 @@ export const generateModel = <T extends object, M extends object>(
           if (typeof data === 'undefined' || data === null) {
             return null;
           }
-          return new this(data, undefined, undefined, undefined, (data as any)[this.gstore.ds.KEY]);
+          return new this(data, { key: (data as any)[this.gstore.ds.KEY] });
         });
 
         // TODO: Check if this is still useful??
-        if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
-          (entity as GstoreEntity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
-        }
+        // Move this logic in mget()
+        // if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
+        //   (entity as GstoreEntity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
+        // }
 
-        return Array.isArray(id) ? (entity as GstoreEntity<T>[]) : entity[0];
+        return entity[0];
+        // return Array.isArray(id) ? (entity as GstoreEntity<T>[]) : entity[0];
       };
 
       /**
@@ -405,17 +343,17 @@ export const generateModel = <T extends object, M extends object>(
        * gstore-cache underneath will call the "fetchHandler" with only the keys that haven't
        * been found. The final response is the merge of the cache result + the fetch.
        */
-      const promise = this.__fetchEntityByKey(key, transaction, dataloader, options)
+      const promise = this.__fetchEntityByKey(key, options.transaction, dataloader, options)
         .then(onEntity)
-        .then(this.__populate(refsToPopulate, { ...options, transaction }));
+        .then(this.__populate(refsToPopulate, { ...options, transaction: options.transaction }));
 
       (promise as any).populate = populateFactory(refsToPopulate, promise, this.schema);
 
-      return promise as PromiseWithPopulate<U extends Array<string | number> ? GstoreEntity<T>[] : GstoreEntity<T>>;
+      return promise as PromiseWithPopulate<GstoreEntity<T>>;
     }
 
     static update(
-      id: IdType,
+      id: DocId,
       data: EntityData<T>,
       ancestors?: Ancestor,
       namespace?: string,
@@ -449,7 +387,7 @@ export const generateModel = <T extends object, M extends object>(
 
       const saveEntity = (datastoreFormat: { key: EntityKey; data: EntityData<T> }): Promise<GstoreEntity<T>> => {
         const { key: entityKey, data: entityData } = datastoreFormat;
-        const entity = new this(entityData, undefined, undefined, undefined, entityKey);
+        const entity = new this(entityData, { key: entityKey });
 
         /**
          * If a DataLoader instance is passed in the options
@@ -555,18 +493,15 @@ export const generateModel = <T extends object, M extends object>(
     }
 
     static delete(
-      id?: IdType | IdType[],
+      id?: DocId | DocId[],
       ancestors?: Ancestor,
       namespace?: string,
       transaction?: Transaction,
-      key?: EntityKey | EntityKey[],
       options: DeleteOptions = {},
     ): Promise<DeleteResponse> {
       this.__hooksEnabled = true;
 
-      if (!key) {
-        key = this.key(id!, ancestors, namespace);
-      }
+      const key = this.key(id, ancestors, namespace);
 
       if (transaction && transaction.constructor.name !== 'Transaction') {
         return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
@@ -603,7 +538,7 @@ export const generateModel = <T extends object, M extends object>(
          * Make sure to delete the cache for this key
          */
         if (this.__hasCache(options)) {
-          return this.clearCache(key!, options.clearQueries)
+          return this.clearCache(key, options.clearQueries)
             .then(() => response)
             .catch(err => {
               let msg = 'Error while clearing the cache after deleting the entity.';
@@ -658,23 +593,20 @@ export const generateModel = <T extends object, M extends object>(
             // We execute delete in serie (chaining Promises) --> so we call each possible pre & post hooks
             return entitiesToDelete
               .reduce(
-                (promise, entity) =>
-                  promise.then(() =>
-                    this.delete(undefined, undefined, undefined, undefined, entity[this.gstore.ds.KEY as any]),
-                  ),
+                (promise, entity) => promise.then(() => this.delete({ key: entity[this.gstore.ds.KEY as any] })),
                 Promise.resolve(),
               )
               .then(onEntitiesDeleted);
           }
 
-          const keys = entitiesToDelete.map(entity => entity[this.gstore.ds.KEY as any]);
+          const keys = entitiesToDelete.map(
+            entity => ({ key: entity[this.gstore.ds.KEY as any] } as { key: EntityKey }),
+          );
 
           // We only need to clear the Queries from the cache once,
           // so we do it on the first batch.
           const clearQueries = currentBatch === 0;
-          return this.delete(undefined, undefined, undefined, undefined, keys, { clearQueries }).then(
-            onEntitiesDeleted,
-          );
+          return this.delete(keys, undefined, undefined, undefined, { clearQueries }).then(onEntitiesDeleted);
         };
 
         const onQueryResponse = (data: QueryResponse<T>): Promise<DeleteAllResponse | DeleteResponse> => {
@@ -953,7 +885,7 @@ export const generateModel = <T extends object, M extends object>(
               }
 
               const EmbeddedModel = this.gstore.model(key.kind);
-              const embeddedEntity = new EmbeddedModel(data, undefined, undefined, undefined, key);
+              const embeddedEntity = new EmbeddedModel(data, { key });
 
               // prettier-ignore
               // If "select" fields are provided, we return them,
@@ -1059,7 +991,7 @@ export const generateModel = <T extends object, M extends object>(
 
         let ancestors;
         let namespace;
-        let key;
+        let key = id?.key;
 
         if (hookType === 'post') {
           ({ key } = args);
@@ -1067,14 +999,14 @@ export const generateModel = <T extends object, M extends object>(
             return null;
           }
         } else {
-          ({ 1: ancestors, 2: namespace, 4: key } = args);
+          ({ 1: ancestors, 2: namespace } = args);
         }
 
         if (!id && !ancestors && !namespace && !key) {
           return undefined;
         }
 
-        return new this({} as EntityData<T>, id, ancestors, namespace, key);
+        return new this({} as EntityData<T>, { id, key }, ancestors, namespace);
       };
 
       switch (hook) {
@@ -1123,15 +1055,23 @@ export const generateModel = <T extends object, M extends object>(
   return model;
 };
 
+// TODO add this option only for mget()
+/**
+ * If you have provided an Array of ids, the order returned by the Datastore is not guaranteed.
+ * If you need the entities back in the same order of the IDs provided, then set `preserveOrder: true`
+ *
+ * @type {boolean}
+ * @default false
+ */
+// preserveOrder?: boolean;
+
 interface GetOptions {
-  /**
-   * If you have provided an Array of ids, the order returned by the Datastore is not guaranteed.
-   * If you need the entities back in the same order of the IDs provided, then set `preserveOrder: true`
-   *
-   * @type {boolean}
-   * @default false
-   */
-  preserveOrder?: boolean;
+  /* The entity/document ancestors. In Firestore it correspond to any possible parent collection */
+  ancestors?: Ancestor;
+  /* The entity Namespace (Datastore only) */
+  namespace?: string;
+  /* The current Transaction */
+  transaction?: Transaction;
   /**
    * An optional Dataloader instance. Read more about Dataloader in the docs.
    *
