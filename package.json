@@ -4,6 +4,7 @@
   "description": "Mono repo for the gstore-node packages.",
   "author": "Sébastien Loix",
   "scripts": {
+    "bootstrap": "bash ./scripts/bootstrap.sh",
     "prebuild": "yarn lint",
     "build": "yarn build:gstore-node && yarn build:datastore-adapter",
     "build:gstore-node": "cd ./packages/gstore-node && yarn build",

@@ -18,7 +18,7 @@ before_install:
 services:
   - redis-server
 
-install: yarn install
+install: yarn bootstrap
 
 before_script:
   - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
