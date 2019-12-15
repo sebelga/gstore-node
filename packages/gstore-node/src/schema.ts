@@ -3,6 +3,7 @@ import extend from 'extend';
 import is from 'is';
 import arrify from 'arrify';
 
+import Joi2 from '@hapi/joi';
 import { QUERIES_FORMATS } from './constants';
 import VirtualType from './virtualType';
 import { ValidationError, ERROR_CODES } from './errors';
@@ -264,8 +265,12 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
   }
 
   updateExcludedFromIndexesMap(property: keyof T, definition: SchemaPathDefinition): void {
-    const isArray = definition.type === Array || (definition.joi && definition.joi._type === 'array');
-    const isObject = definition.type === Object || (definition.joi && definition.joi._type === 'object');
+    const isArray =
+      definition.type === Array ||
+      (definition.joi && (definition.joi._type === 'array' || definition.joi.type === 'array')); // Joi 15 -> ._type, Joi 16 => .type
+    const isObject =
+      definition.type === Object ||
+      (definition.joi && (definition.joi._type === 'object' || definition.joi.type === 'object')); // Joi 15 -> ._type, Joi 16 => .type
 
     if (definition.excludeFromIndexes === true) {
       if (isArray) {

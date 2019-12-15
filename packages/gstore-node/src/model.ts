@@ -302,7 +302,13 @@ export const generateModel = <T extends object, M extends object>(
     }
 
     static get(id: DocId, options: GetOptions = {}): PromiseWithPopulate<GstoreEntity<T>> {
-      const key = this.key(id, options.ancestors, options.namespace);
+      // const key = this.key(id, options.ancestors, options.namespace);
+      const key = this.gstore.__adapter.buildKey({
+        id,
+        type: this.entityKind,
+        ancestors: options.ancestors,
+        namespace: options.namespace,
+      });
       const refsToPopulate: PopulateRef[][] = [];
       const { dataloader } = options;
 

@@ -1,0 +1,89 @@
+{
+  "name": "gstore-node",
+  "version": "7.2.4",
+  "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf ./lib",
+    "build": "yarn clean && tsc --project ./tsconfig.build.json",
+    "postbuild": "bash ./scripts/post_build.sh",
+    "coveralls": "cat ./coverage/lcov.info | coveralls",
+    "cover": "yarn cover:unit && yarn cover:integration && yarn cover:report",
+    "cover:unit": "DATASTORE_EMULATOR_HOST=localhost:8081 nyc --exclude-after-remap false yarn test:unit",
+    "cover:integration": "nyc --silent --no-clean yarn test:integration",
+    "cover:report": "nyc report --reporter=lcov --reporter=html",
+    "lint": "./node_modules/eslint/bin/eslint.js ./src/**/**/*.* ./__tests__/**/**/*.ts",
+    "pretest": "yarn lint",
+    "release": "yarn build && standard-version",
+    "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage"
+  },
+  "engines": {
+    "node": ">=10.0"
+  },
+  "keywords": [
+    "google datastore",
+    "google firestore",
+    "gcloud node",
+    "google app engine",
+    "node.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sebelga/gstore-node.git"
+  },
+  "author": "Sébastien Loix",
+  "contributors": [
+    {
+      "name": "Sébastien Loix",
+      "url": "https://github.com/sebelga"
+    },
+    {
+      "name": "Micah Allen",
+      "url": "https://github.com/micaww"
+    },
+    {
+      "name": "Ricardo Machado",
+      "url": "https://github.com/mAiNiNfEcTiOn"
+    },
+    {
+      "name": "jfbenckhuijsen",
+      "url": "https://github.com/jfbenckhuijsen"
+    }
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "arrify": "^2.0.1",
+    "dataloader": "^1.4.0",
+    "date-fns": "^2.8.1",
+    "extend": "^3.0.2",
+    "is": "^3.3.0",
+    "lodash.get": "^4.4.2",
+    "lodash.set": "^4.3.2",
+    "nsql-cache": "^1.1.5",
+    "nsql-cache-datastore": "^1.1.6",
+    "optional": "^0.1.4",
+    "promised-hooks": "^3.1.0",
+    "validator": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/arrify": "2.0.1",
+    "@types/chai": "^4.2.4",
+    "@types/chance": "^1.0.7",
+    "@types/extend": "^3.0.1",
+    "@types/is": "^0.0.21",
+    "@types/lodash.get": "^4.4.6",
+    "@types/lodash.set": "^4.3.6",
+    "@types/node": "^12.12.5",
+    "@types/sinon": "^7.5.0",
+    "@types/validator": "^10.11.3",
+    "cache-manager-redis-store": "^1.5.0",
+    "chai": "^4.2.0",
+    "chance": "^1.1.0",
+    "redis-mock": "^0.46.0",
+    "sinon": "^7.4.2"
+  },
+  "peerDependencies": {
+    "@google-cloud/datastore": ">= 4.2.0"
+  }
+}

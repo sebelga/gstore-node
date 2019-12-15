@@ -1,5 +1,5 @@
 import { entity } from '@google-cloud/datastore/build/src/entity';
-import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
+import { Datastore, Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
 import GstoreEntity from './entity';
 
@@ -47,6 +47,15 @@ export interface PromiseWithPopulate<T> extends Promise<T> {
     properties?: U extends Array<string> ? never : string | string[],
   ) => PromiseWithPopulate<T>;
 }
+
+export interface GstoreAdapter {
+  buildKey(options: { type: string; id: DocId; ancestors?: Ancestor; namespace?: string }): EntityKey;
+  get(id: DocId): void;
+}
+
+declare let GstoreAdapter: {
+  new (client: Datastore): GstoreAdapter;
+};
 
 /**
  * ---------------------------------------------------

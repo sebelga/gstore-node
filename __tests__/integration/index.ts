@@ -1,12 +1,13 @@
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
 
-import { Gstore, Entity, EntityKey } from '../../src';
+import { Gstore, Entity, EntityKey } from '../../packages/gstore-node/src';
+import { DatastoreAdatper } from '../../packages/gstore-datastore-adapter/src';
 
 type GenericObject = { [key: string]: any };
 
-const gstore = new Gstore();
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
 gstore.connect(ds);
 
 const { Schema } = gstore;

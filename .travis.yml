@@ -25,8 +25,8 @@ before_script:
   - sleep 5
 
 script:
-  - yarn test
   - yarn build
+  - yarn test
 
 after_success:
   - yarn coveralls

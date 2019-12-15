@@ -4,20 +4,23 @@ import is from 'is';
 import Joi from '@hapi/joi';
 import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
 
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
+
 import GstoreEntity, { Entity } from './entity';
 import GstoreSchema, { SchemaPathDefinition } from './schema';
 import Model from './model';
 import { Gstore, EntityKey } from './index';
 import { ERROR_CODES } from './errors';
-import dsFactory from '../__tests__/mocks/datastore';
-import Transaction from '../__tests__/mocks/transaction';
-import entitiesMock from '../__tests__/mocks/entities';
-import Query from '../__tests__/mocks/query';
+import dsFactory from '../../../__tests__/mocks/datastore';
+import Transaction from '../../../__tests__/mocks/transaction';
+import entitiesMock from '../../../__tests__/mocks/entities';
+import Query from '../../../__tests__/mocks/query';
 
 const ds = dsFactory({ namespace: 'com.mydomain' });
+const adapter = new DatastoreAdatper(ds);
 
-const gstore = new Gstore();
-const gstoreWithCache = new Gstore({ cache: { config: { ttl: { queries: 600 } } } });
+const gstore = new Gstore({ adapter });
+const gstoreWithCache = new Gstore({ adapter, cache: { config: { ttl: { queries: 600 } } } });
 
 gstore.connect(ds);
 gstoreWithCache.connect(ds);
@@ -188,7 +191,7 @@ describe('Model', () => {
           foo: { joi: Joi.object({ bar: Joi.any() }).required() },
           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
           // @ts-ignoree
-          createdOn: { joi: Joi.date().default(() => new Date('01-01-2019'), 'static createdOn') },
+          createdOn: { joi: Joi.date().default(() => new Date('01-01-2019')) },
         },
         { joi: true },
       );
@@ -199,7 +202,7 @@ describe('Model', () => {
       const { value: validationData, error: validationError } = new BlogWithJoi(data).validate();
 
       assert.isUndefined(entityData.foo.unknown);
-      assert.isNull(validationError);
+      assert.isUndefined(validationError);
       assert.deepEqual(entityData, validationData);
     });
 

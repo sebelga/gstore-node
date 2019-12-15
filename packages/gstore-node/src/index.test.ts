@@ -1,9 +1,10 @@
 import chai from 'chai';
 import sinon from 'sinon';
 import { Datastore, Transaction } from '@google-cloud/datastore';
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
-import pkg from '../package.json';
-import MockTransaction from '../__tests__/mocks/transaction';
+import pkg from '../../../package.json';
+import MockTransaction from '../../../__tests__/mocks/transaction';
 import Model from './model';
 import GstoreEntity from './entity';
 import GstoreSchema from './schema';
@@ -16,7 +17,7 @@ const ds = new Datastore({
   apiEndpoint: 'http://localhost:8080',
 });
 
-const gstore = new Gstore();
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
 const { Schema } = gstore;
 
 describe('gstore-node', () => {
@@ -205,12 +206,12 @@ describe('gstore-node', () => {
 
   describe('cache', () => {
     test('should not set any cache by default', () => {
-      const gstoreNoCache = new Gstore();
+      const gstoreNoCache = new Gstore({ adapter: new DatastoreAdatper(ds) });
       assert.isUndefined(gstoreNoCache.cache);
     });
 
     test('should set the default cache to memory lru-cache', () => {
-      const gstoreWithCache = new Gstore({ cache: true });
+      const gstoreWithCache = new Gstore({ adapter: new DatastoreAdatper(ds), cache: true });
       gstoreWithCache.connect(ds);
 
       const { cache } = gstoreWithCache;
@@ -229,7 +230,7 @@ describe('gstore-node', () => {
           },
         },
       };
-      const gstoreWithCache = new Gstore({ cache: cacheSettings });
+      const gstoreWithCache = new Gstore({ adapter: new DatastoreAdatper(ds), cache: cacheSettings });
       gstoreWithCache.connect(ds);
       const { cache } = gstoreWithCache;
 
@@ -240,8 +241,8 @@ describe('gstore-node', () => {
 
   describe('multi instances', () => {
     test('should cache instances', () => {
-      const gstore1 = new Gstore();
-      const gstore2 = new Gstore({ cache: true });
+      const gstore1 = new Gstore({ adapter: new DatastoreAdatper(ds) });
+      const gstore2 = new Gstore({ adapter: new DatastoreAdatper(ds), cache: true });
 
       instances.set('instance-1', gstore1);
       instances.set('instance-2', gstore2);

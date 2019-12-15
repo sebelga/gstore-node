@@ -5,7 +5,8 @@ import NsqlCache, { NsqlCacheConfig } from 'nsql-cache';
 import dsAdapter from 'nsql-cache-datastore';
 import DataLoader from 'dataloader';
 import { Datastore, Transaction } from '@google-cloud/datastore';
-import pkg from '../package.json';
+import pkg from '../../../package.json';
+
 import GstoreSchema from './schema';
 import GstoreEntity, { Entity as EntityType } from './entity';
 import GstoreModel, { generateModel } from './model';
@@ -16,6 +17,7 @@ import { createDataLoader } from './dataloader';
 import {
   EntityKey as EntityKeyType,
   EntityData as EntityDataType,
+  GstoreAdapter as GstoreAdapterType,
   DatastoreSaveMethod,
   CustomEntityFunction,
   GenericObject,
@@ -27,6 +29,8 @@ export interface CacheConfig {
 }
 
 export interface GstoreConfig {
+  adapter: GstoreAdapterType;
+
   cache?: boolean | CacheConfig;
   /**
    * If set to `true` (defaut), when fetching an entity by key and the entity is not found in the Datastore,
@@ -87,16 +91,18 @@ export class Gstore {
 
   public __pkgVersion = pkg.version;
 
-  constructor(config: GstoreConfig = {}) {
+  public __adapter: GstoreAdapterType;
+
+  constructor(config: GstoreConfig) {
     if (!is.object(config)) {
       throw new Error('Gstore config must be an object.');
     }
 
+    this.__adapter = config.adapter;
     this.models = {};
     this.config = { ...DEFAULT_GSTORE_CONFIG, ...config };
     this.Schema = GstoreSchema;
     this.__defaultValues = defaultValues;
-    // this.__pkgVersion = pkg.version;
 
     this.errors = {
       GstoreError,
@@ -316,7 +322,7 @@ export { ValidateResponse } from './helpers/validation';
 
 export { SchemaPathDefinition, SchemaOptions, PropType } from './schema';
 
-export { EntityData, EntityKey, IdType } from './types';
+export { EntityData, EntityKey, IdType, DocId, GstoreAdapter, Ancestor } from './types';
 
 export { QueryListOptions, QueryFindAroundOptions, QueryOptions, QueryResponse, GstoreQuery } from './query';
 

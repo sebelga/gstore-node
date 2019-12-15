@@ -2,12 +2,13 @@ import chai from 'chai';
 import sinon from 'sinon';
 import Joi from '@hapi/joi';
 import { Datastore, Transaction as DatastoreTransaction } from '@google-cloud/datastore';
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
 import GstoreEntity, { Entity } from './entity';
 import GstoreSchema from './schema';
 import Model from './model';
 import helpers from './helpers';
-import Transaction from '../__tests__/mocks/transaction';
+import Transaction from '../../../__tests__/mocks/transaction';
 import { ERROR_CODES } from './errors';
 import { datastoreSerializer } from './serializers';
 import { Gstore } from './index';
@@ -17,8 +18,8 @@ const ds = new Datastore({
   apiEndpoint: 'http://localhost:8080',
 });
 
-const gstore = new Gstore();
-const gstoreWithCache = new Gstore({ cache: { config: { ttl: { keys: 600 } } } });
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
+const gstoreWithCache = new Gstore({ adapter: new DatastoreAdatper(ds), cache: { config: { ttl: { keys: 600 } } } });
 const { Schema } = gstore;
 const { expect, assert } = chai;
 const { validation } = helpers;
@@ -129,7 +130,7 @@ describe('GstoreEntity', () => {
           lastname: { joi: Joi.string().default('Jagger') },
           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
           // @ts-ignore
-          fullname: { joi: Joi.string().default(generateFullName, 'generated fullname') },
+          fullname: { joi: Joi.string().default(generateFullName) },
         },
         { joi: true },
       );

@@ -1,14 +1,15 @@
 import { Datastore } from '@google-cloud/datastore';
 import chai from 'chai';
 import sinon from 'sinon';
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
 import { Gstore } from './index';
 import { createDataLoader } from './dataloader';
 
-const gstore = new Gstore();
+const ds = new Datastore();
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
 
 const { expect, assert } = chai;
-const ds = new Datastore();
 
 describe('dataloader', () => {
   test('should read the ds instance from gstore', () => {

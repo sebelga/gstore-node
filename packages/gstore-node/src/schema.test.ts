@@ -1,12 +1,13 @@
 import chai from 'chai';
 import Joi from '@hapi/joi';
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
 import { Gstore } from './index';
 import GstoreSchema from './schema';
-import dsFactory from '../__tests__/mocks/datastore';
+import dsFactory from '../../../__tests__/mocks/datastore';
 
 const ds = dsFactory();
-const gstore = new Gstore();
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
 const { expect, assert } = chai;
 const { Schema } = gstore;
 

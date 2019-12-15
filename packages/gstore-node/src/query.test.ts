@@ -1,24 +1,25 @@
 import chai from 'chai';
 import sinon from 'sinon';
 import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
 import { Gstore, QUERIES_FORMATS } from './index';
 import Model from './model';
 import GstoreEntity from './entity';
 import GstoreSchema from './schema';
 
-import dsFactory from '../__tests__/mocks/datastore';
-import Transaction from '../__tests__/mocks/transaction';
-import Query from '../__tests__/mocks/query';
-import entitiesMock from '../__tests__/mocks/entities';
+import dsFactory from '../../../__tests__/mocks/datastore';
+import Transaction from '../../../__tests__/mocks/transaction';
+import Query from '../../../__tests__/mocks/query';
+import entitiesMock from '../../../__tests__/mocks/entities';
 import { GstoreQuery } from './query';
 
 const ds = dsFactory({
   namespace: 'com.mydomain',
 });
 
-const gstore = new Gstore();
-const gstoreWithCache = new Gstore({ cache: true });
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
+const gstoreWithCache = new Gstore({ adapter: new DatastoreAdatper(ds), cache: true });
 const { Schema } = gstore;
 const { expect, assert } = chai;
 const { generateEntities } = entitiesMock;

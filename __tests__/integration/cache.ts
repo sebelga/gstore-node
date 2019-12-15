@@ -3,7 +3,8 @@ import chai from 'chai';
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
 
-import { Gstore, EntityKey, Model } from '../../src';
+import { DatastoreAdatper } from '../../packages/gstore-datastore-adapter/src';
+import { Gstore, EntityKey, Model } from '../../packages/gstore-node/src';
 
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
 const chance = new Chance();
@@ -12,6 +13,7 @@ const { expect } = chai;
 const allKeys: EntityKey[] = [];
 
 const gstore = new Gstore({
+  adapter: new DatastoreAdatper(ds),
   cache: {
     stores: [{ store: redisStore }],
     config: {

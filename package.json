@@ -1,22 +1,18 @@
 {
   "name": "gstore-node",
   "version": "7.2.4",
-  "description": "Google Datastore Entities Modeling for Node.js. Validate the Entity properties and type before saving to the Datastore. Advanced cache to speed up entities fetching.",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "description": "Mono repo for the gstore-node packages.",
+  "author": "Sébastien Loix",
   "scripts": {
-    "build": "rm -rf ./lib && tsc",
-    "postbuild": "bash scripts/post_build.sh",
+    "prebuild": "yarn lint",
+    "build": "yarn build:gstore-node && yarn build:datastore-adapter",
+    "build:gstore-node": "cd ./packages/gstore-node && yarn build",
+    "build:datastore-adapter": "cd ./packages/gstore-datastore-adapter && yarn build",
     "commit": "git-cz",
-    "coveralls": "cat ./coverage/lcov.info | coveralls",
-    "cover": "yarn cover:unit && yarn cover:integration && yarn cover:report",
-    "cover:unit": "DATASTORE_EMULATOR_HOST=localhost:8081 nyc --exclude-after-remap false yarn test:unit",
-    "cover:integration": "nyc --silent --no-clean yarn test:integration",
-    "cover:report": "nyc report --reporter=lcov --reporter=html",
-    "lint": "./node_modules/eslint/bin/eslint.js ./src/**/**/*.* ./__tests__/**/**/*.ts",
+    "lint": "./node_modules/eslint/bin/eslint.js ./packages/**/src/**/*.* ./__tests__/**/**/*.ts",
     "local-datastore": "gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk",
-    "pretest": "yarn lint",
     "release": "yarn build && standard-version",
+    "release:gstore-node": "cd ./packages/gstore-node && yarn build",
     "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage",
     "test:unit": "jest --c=jest.config.unit.js --coverage",
     "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=jest.config.integration.js"
@@ -34,26 +30,7 @@
     "type": "git",
     "url": "https://github.com/sebelga/gstore-node.git"
   },
-  "author": "Sébastien Loix",
-  "contributors": [
-    {
-      "name": "Sébastien Loix",
-      "url": "https://github.com/sebelga"
-    },
-    {
-      "name": "Micah Allen",
-      "url": "https://github.com/micaww"
-    },
-    {
-      "name": "Ricardo Machado",
-      "url": "https://github.com/mAiNiNfEcTiOn"
-    },
-    {
-      "name": "jfbenckhuijsen",
-      "url": "https://github.com/jfbenckhuijsen"
-    }
-  ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
@@ -74,20 +51,14 @@
     "validator": "^11.1.0"
   },
   "devDependencies": {
-    "@google-cloud/datastore": "^4.0.0",
-    "@hapi/joi": "^15.1.1",
-    "@types/arrify": "2.0.1",
+    "@google-cloud/datastore": "^5.0.0",
+    "@hapi/joi": "^16.1.8",
     "@types/chai": "^4.2.4",
     "@types/chance": "^1.0.7",
-    "@types/extend": "^3.0.1",
     "@types/hapi__joi": "^16.0.3",
-    "@types/is": "^0.0.21",
     "@types/jest": "^24.0.21",
-    "@types/lodash.get": "^4.4.6",
-    "@types/lodash.set": "^4.3.6",
     "@types/node": "^12.12.5",
     "@types/sinon": "^7.5.0",
-    "@types/validator": "^10.11.3",
     "@typescript-eslint/eslint-plugin": "^2.11.0",
     "@typescript-eslint/parser": "^2.11.0",
     "cache-manager-redis-store": "^1.5.0",
@@ -99,6 +70,7 @@
     "eslint": "^6.7.2",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-prettier": "^6.7.0",
+    "eslint-import-resolver-typescript": "^2.0.0",
     "eslint-import-resolver-webpack": "^0.12.0",
     "eslint-plugin-import": "^2.19.1",
     "eslint-plugin-jest": "^23.1.1",
@@ -107,9 +79,7 @@
     "nconf": "^0.10.0",
     "nyc": "^14.1.1",
     "prettier": "^1.19.1",
-    "redis-mock": "^0.46.0",
-    "rimraf": "3.0.0",
-    "sinon": "^7.4.2",
+    "sinon": "^7.5.0",
     "standard-version": "^7.0.1",
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.3",
