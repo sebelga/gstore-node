@@ -11,8 +11,9 @@
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": false,
+    "baseUrl": ".",
     "rootDir": ".",
-    "outDir": "lib",
+    "outDir": "dist",
     "types": [
       "node",
       "jest"
@@ -20,8 +21,7 @@
     "allowJs": false
   },
   "include": [
-    "src",
-    "typings",
-    "src/.eslintrc.js"
+    "packages",
+    "packages/.eslintrc.js"
   ]
 }

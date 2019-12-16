@@ -2,13 +2,14 @@ import chai from 'chai';
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
 
-import { Gstore, Entity, EntityKey } from '../../src';
+import { Gstore, Entity, EntityKey } from '../../packages/gstore-node/src';
+import { DatastoreAdatper } from '../../packages/gstore-datastore-adapter/src';
 
 type GenericObject = { [key: string]: any };
 
-const gstore = new Gstore();
-const gstoreWithCache = new Gstore({ cache: { config: { ttl: { queries: 600 } } } });
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
+const gstoreWithCache = new Gstore({ adapter: new DatastoreAdatper(ds), cache: { config: { ttl: { queries: 600 } } } });
 gstore.connect(ds);
 gstoreWithCache.connect(ds);
 

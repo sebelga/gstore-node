@@ -3,11 +3,13 @@
 import chai from 'chai';
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
-import { Gstore } from '../../src';
 
-const gstore = new Gstore();
-const chance = new Chance();
+import { Gstore } from '../../packages/gstore-node/src';
+import { DatastoreAdatper } from '../../packages/gstore-datastore-adapter/src';
+
 const ds = new Datastore({ projectId: 'gstore-integration-tests' });
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
+const chance = new Chance();
 gstore.connect(ds);
 
 const { expect } = chai;

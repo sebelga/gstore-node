@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "gstore-node": ["./src/"],
+      "gstore-node/*": ["./src/*"],
+      "gstore-datastore-adapter": ["../gstore-datastore-adapter/src/"],
+    },
+    "outDir": "./lib"
+  },
+  "include": [
+    "../../typings",
+    "../.eslintrc.js",
+    "./src"
+  ]
+}

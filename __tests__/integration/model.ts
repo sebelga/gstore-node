@@ -6,16 +6,18 @@ import Chance from 'chance';
 import Joi from '@hapi/joi';
 import { Datastore } from '@google-cloud/datastore';
 
-import { Gstore, /* Entity */ EntityKey } from '../../src';
-import GstoreEntity from '../../src/entity';
-
-const gstore = new Gstore();
-const chance = new Chance();
+import { Gstore, /* Entity */ EntityKey } from '../../packages/gstore-node/src';
+import GstoreEntity from '../../packages/gstore-node/src/entity';
+import { DatastoreAdatper } from '../../packages/gstore-datastore-adapter/src';
 
 const ds = new Datastore({
   projectId: 'gstore-integration-tests',
   keyFilename: '/Users/sebastien/secure-keys/gstore-integration-tests-67ddd52037cf.json',
 });
+
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
+const chance = new Chance();
+
 gstore.connect(ds);
 
 const { expect, assert } = chai;

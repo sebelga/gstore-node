@@ -1,7 +1,7 @@
 import chai from 'chai';
-import Joi from '@hapi/joi';
+import Joi from '@hapi/joi'; // eslint-disable-line import/no-extraneous-dependencies
 
-import dsFactory from '../../__tests__/mocks/datastore';
+import dsFactory from '../../../../__tests__/mocks/datastore';
 import Schema from '../schema';
 import { ERROR_CODES } from '../errors';
 import validation from './validation';
@@ -489,10 +489,10 @@ describe('Joi Validation', () => {
     const { error: error5 } = validate({ name: 'John', unknownProp: 'abc' });
 
     expect(error).not.equal(null);
-    expect(error2.details[0].type).equal('any.allowOnly');
+    expect(error2.details[0].type).equal('any.only');
     expect(error3.details[0].type).equal('number.min');
     expect(error4.details[0].type).equal('string.email');
-    expect(error5.details[0].type).equal('object.allowUnknown');
+    expect(error5.details[0].type).equal('object.unknown');
   });
 
   test('should accept extra validation on top of the schema', () => {
@@ -532,7 +532,7 @@ describe('Joi Validation', () => {
 
     const { error } = validate({ name: 'John', unknownProp: 'abc' });
 
-    expect(error).equal(null);
+    expect(error).equal(undefined);
   });
 
   test('should set "stripUnknown" according to "explicitOnly" setting', () => {

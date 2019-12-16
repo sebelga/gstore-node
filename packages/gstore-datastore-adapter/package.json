@@ -1,0 +1,26 @@
+{
+  "name": "gstore-datastore-adapter",
+  "version": "8.0.0",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sebelga/gstore-node.git"
+  },
+  "scripts": {
+    "clean": "rm -rf ./lib",
+    "build": "yarn clean && tsc --project ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/is": "^0.0.21"
+  },
+  "peerDependencies": {
+    "@google-cloud/datastore": ">= 4.2.0",
+    "gstore-node": "^7.2.4"
+  },
+  "dependencies": {
+    "arrify": "^2.0.1",
+    "is": "^3.3.0"
+  }
+}

@@ -1,7 +1,8 @@
 import chai from 'chai';
-import Joi from '@hapi/joi';
+import Joi from '@hapi/joi'; // eslint-disable-line import/no-extraneous-dependencies
+import { DatastoreAdatper } from 'gstore-datastore-adapter';
 
-import dsFactory from '../../__tests__/mocks/datastore';
+import dsFactory from '../../../../__tests__/mocks/datastore';
 import { Gstore, QUERIES_FORMATS } from '../index';
 import GstoreModel from '../model';
 import GstoreEntity from '../entity';
@@ -11,7 +12,7 @@ const ds = dsFactory({
   namespace: 'com.mydomain',
 });
 
-const gstore = new Gstore();
+const gstore = new Gstore({ adapter: new DatastoreAdatper(ds) });
 const { Schema } = gstore;
 
 const { expect, assert } = chai;

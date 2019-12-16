@@ -8,6 +8,7 @@ jsconfig.json
 .babelrc
 .editorconfig
 tsconfig.json
+tsconfig.build.json
 **/todo.txt
 **/notes.txt
 yarn.lock

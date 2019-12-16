@@ -18,15 +18,15 @@ before_install:
 services:
   - redis-server
 
-install: yarn install
+install: yarn bootstrap
 
 before_script:
   - (gcloud beta emulators datastore start --consistency=1.0 --no-store-on-disk & DATASTORE_PID=$!)
   - sleep 5
 
 script:
-  - yarn test
   - yarn build
+  - yarn test
 
 after_success:
   - yarn coveralls
