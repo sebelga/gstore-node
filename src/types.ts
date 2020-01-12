@@ -1,5 +1,5 @@
 import { entity } from '@google-cloud/datastore/build/src/entity';
-import GstoreEntity from './entity';
+import GstoreEntity, { Entity } from './entity';
 
 export type EntityKey = entity.Key;
 
@@ -9,7 +9,7 @@ export type FuncReturningPromise = (...args: any[]) => Promise<any>;
 
 export type FunctionType = (...args: any[]) => any;
 
-export type CustomEntityFunction<T extends object> = (this: GstoreEntity<T>, ...args: any[]) => any;
+export type CustomEntityFunction<T extends object> = (this: Entity<T>, ...args: any[]) => any;
 
 export type GenericObject = { [key: string]: any };
 
