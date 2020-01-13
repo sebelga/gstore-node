@@ -99,7 +99,7 @@ class Query<T extends object, M extends object> {
     return (query as unknown) as GstoreQuery<T, R>;
   }
 
-  list<U extends QueryListOptions<T>, Outputformat = U['format'] extends EntityFormatType ? Entity<T> : EntityData<T>>(
+  list<U extends QueryListOptions<T>, Outputformat = U['format'] extends EntityFormatType ? Entity<T, M> : EntityData<T>>(
     options: U = {} as U,
   ): PromiseWithPopulate<QueryResponse<T, Outputformat[]>> {
     // If global options set in schema, we extend it with passed options
@@ -125,7 +125,7 @@ class Query<T extends object, M extends object> {
       cache?: boolean;
       ttl?: number | { [key: string]: number };
     },
-  ): PromiseWithPopulate<Entity<T> | null> {
+  ): PromiseWithPopulate<Entity<T, M> | null> {
     this.Model.__hooksEnabled = true;
 
     if (!is.object(keyValues)) {
@@ -134,7 +134,7 @@ class Query<T extends object, M extends object> {
       >;
     }
 
-    const query = this.initQuery<Entity<T> | null>(namespace);
+    const query = this.initQuery<Entity<T, M> | null>(namespace);
     query.limit(1);
 
     Object.keys(keyValues).forEach(k => {
@@ -145,7 +145,7 @@ class Query<T extends object, M extends object> {
       query.hasAncestor(this.Model.gstore.ds.key(ancestors.slice()));
     }
 
-    const responseHandler = ({ entities }: QueryResponse<T>): Entity<T> | null => {
+    const responseHandler = ({ entities }: QueryResponse<T>): Entity<T, M> | null => {
       if (entities.length === 0) {
         if (this.Model.gstore.config.errorOnEntityNotFound) {
           throw new GstoreError(ERROR_CODES.ERR_ENTITY_NOT_FOUND, `${this.Model.entityKind} not found`);
@@ -177,7 +177,7 @@ class Query<T extends object, M extends object> {
    */
   findAround<
     U extends QueryFindAroundOptions,
-    Outputformat = U['format'] extends EntityFormatType ? Entity<T> : EntityData<T>
+    Outputformat = U['format'] extends EntityFormatType ? Entity<T, M> : EntityData<T>
   >(property: keyof T, value: any, options: U, namespace?: string): PromiseWithPopulate<Outputformat[]> {
     const validateArguments = (): { error: Error | null } => {
       if (!property || !value || !options) {

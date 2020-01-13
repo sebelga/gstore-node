@@ -40,7 +40,7 @@ export interface Model<
   T extends object = GenericObject,
   M extends object = { [key: string]: CustomEntityFunction<T> }
 > {
-  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T>;
+  new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T, M>;
 
   /**
    * The gstore instance
@@ -91,7 +91,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GetOptions,
-  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T>[] : Entity<T>>;
+  ): PromiseWithPopulate<U extends Array<string | number> ? Entity<T, M>[] : Entity<T, M>>;
 
   /**
    * Update an Entity in the Datastore. This method _partially_ updates an entity data in the Datastore
@@ -114,7 +114,7 @@ export interface Model<
     namespace?: string,
     transaction?: Transaction,
     options?: GenericObject,
-  ): Promise<Entity<T>>;
+  ): Promise<Entity<T, M>>;
 
   /**
    * Delete an Entity from the Datastore
@@ -191,7 +191,7 @@ export interface Model<
    */
   query<
     F extends JSONFormatType | EntityFormatType = JSONFormatType,
-    R = F extends EntityFormatType ? QueryResponse<T, Entity<T>[]> : QueryResponse<T, EntityData<T>[]>
+    R = F extends EntityFormatType ? QueryResponse<T, Entity<T, M>[]> : QueryResponse<T, EntityData<T>[]>
   >(
     namespace?: string,
     transaction?: Transaction,
