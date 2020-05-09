@@ -8,4 +8,5 @@ module.exports = {
   testRegex: '(/__tests__/integration/.*|(\\.|/)(test|spec))\\.ts?$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts'],
+  testEnvironment: 'node',
 };
