@@ -99,9 +99,10 @@ class Query<T extends object, M extends object> {
     return (query as unknown) as GstoreQuery<T, R>;
   }
 
-  list<U extends QueryListOptions<T>, Outputformat = U['format'] extends EntityFormatType ? Entity<T, M> : EntityData<T>>(
-    options: U = {} as U,
-  ): PromiseWithPopulate<QueryResponse<T, Outputformat[]>> {
+  list<
+    U extends QueryListOptions<T>,
+    Outputformat = U['format'] extends EntityFormatType ? Entity<T, M> : EntityData<T>
+  >(options: U = {} as U): PromiseWithPopulate<QueryResponse<T, Outputformat[]>> {
     // If global options set in schema, we extend it with passed options
     if ({}.hasOwnProperty.call(this.Model.schema.shortcutQueries, 'list')) {
       options = extend({}, this.Model.schema.shortcutQueries.list, options);
