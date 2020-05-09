@@ -5,7 +5,7 @@ module.exports = {
   parserOptions: {
     sourceType: 'script',
   },
-  extends: ['airbnb-base', 'plugin:prettier/recommended'],
+  extends: ['plugin:json/recommended', 'airbnb-base', 'plugin:prettier/recommended'],
   env: {
     node: true,
     jest: true,
