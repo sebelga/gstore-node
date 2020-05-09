@@ -35,7 +35,7 @@ const cleanUp = (cb: any): Promise<any> => {
     .then(() => {
       cb();
     })
-    .catch(err => {
+    .catch((err) => {
             console.log('Error cleaning up'); // eslint-disable-line
             console.log(err); // eslint-disable-line
     });
@@ -114,7 +114,7 @@ const addPublication = (userKey = null): Promise<any> => {
 };
 
 describe('Model (Integration Tests)', () => {
-  afterAll(done => {
+  afterAll((done) => {
     cleanUp(() => done());
   });
 
@@ -285,9 +285,7 @@ describe('Model (Integration Tests)', () => {
         {
           name: { joi: Joi.string().required() },
           coins: {
-            joi: Joi.number()
-              .integer()
-              .min(0),
+            joi: Joi.number().integer().min(0),
           },
         },
         { joi: true },
@@ -342,11 +340,11 @@ describe('Model (Integration Tests)', () => {
                     expect(user2.coins).equal(1050);
                     resolve();
                   })
-                  .catch(err => {
+                  .catch((err) => {
                     reject(err);
                   });
               })
-              .catch(err => {
+              .catch((err) => {
                 transaction.rollback();
                 reject(err);
               });
@@ -368,8 +366,8 @@ describe('Model (Integration Tests)', () => {
           });
       });
 
-      test('should throw a 404 Not found when trying to update a non existing entity', done => {
-        User.update(randomName(), { name: 'test' }).catch(err => {
+      test('should throw a 404 Not found when trying to update a non existing entity', (done) => {
+        User.update(randomName(), { name: 'test' }).catch((err) => {
           expect(err.code).equal('ERR_ENTITY_NOT_FOUND');
           done();
         });

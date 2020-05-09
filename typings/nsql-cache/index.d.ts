@@ -1,33 +1,35 @@
 declare module 'nsql-cache' {
   import { entity } from '@google-cloud/datastore/build/src/entity';
-  import { Query } from "@google-cloud/datastore/build/src/query";
+  import { Query } from '@google-cloud/datastore/build/src/query';
 
   export interface NsqlCacheConfig {
     ttl?: {
-        keys?: number,
-        queries?: number,
-        memory?: {
-            keys: number,
-            queries: number
-        },
-        redis?: {
-            keys: number,
-            queries: number
-        },
-        [key: string]: {
-            keys: number,
-            queries: number
-        } | number | undefined,
-
-    },
+      keys?: number;
+      queries?: number;
+      memory?: {
+        keys: number;
+        queries: number;
+      };
+      redis?: {
+        keys: number;
+        queries: number;
+      };
+      [key: string]:
+        | {
+            keys: number;
+            queries: number;
+          }
+        | number
+        | undefined;
+    };
     cachePrefix?: {
-        keys?: string;
-        queries?: string;
-    },
-    hashCacheKeys?: boolean,
-    wrapClient?: boolean,
+      keys?: string;
+      queries?: string;
+    };
+    hashCacheKeys?: boolean;
+    wrapClient?: boolean;
     global?: boolean;
-}
+  }
 
   /**
    * gstore-cache Instance
@@ -35,7 +37,7 @@ declare module 'nsql-cache' {
    * @class Cache
    */
   class NsqlCache {
-    constructor(settings: { db: any, stores?: any[], config: NsqlCacheConfig })
+    constructor(settings: { db: any; stores?: any[]; config: NsqlCacheConfig });
 
     public config: any;
 
@@ -47,7 +49,7 @@ declare module 'nsql-cache' {
       read(
         keys: entity.Key | entity.Key[],
         options?: { ttl?: number | { [propName: string]: number } },
-        fetchHandler?: (keys: entity.Key | entity.Key[]) => Promise<any>
+        fetchHandler?: (keys: entity.Key | entity.Key[]) => Promise<any>,
       ): Promise<any>;
       get(key: entity.Key): Promise<any>;
       mget(...keys: entity.Key[]): Promise<any>;
@@ -60,15 +62,11 @@ declare module 'nsql-cache' {
       read(
         query: Omit<Query, 'run'>,
         options?: { ttl?: number | { [propName: string]: number } },
-        fetchHandler?: (query: Query) => Promise<any>
+        fetchHandler?: (query: Query) => Promise<any>,
       ): Promise<any>;
       get(query: Query): Promise<any>;
       mget(...queries: Query[]): Promise<any>;
-      set(
-        query: Query,
-        data: any,
-        options?: { ttl: number | { [propName: string]: number } }
-      ): Promise<any>;
+      set(query: Query, data: any, options?: { ttl: number | { [propName: string]: number } }): Promise<any>;
       mset(...args: any[]): Promise<any>;
       kset(key: string, data: any, entityKinds: string | string[], options?: { ttl: number }): Promise<any>;
       clearQueriesByKind(entityKinds: string | string[]): Promise<any>;

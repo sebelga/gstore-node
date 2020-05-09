@@ -26,7 +26,7 @@ const messages: { [key: string]: string | MessageGetter } = {
   ERR_PROP_VALUE: (value, prop) => message('"%s" is not a valid value for property "%s"', value, prop),
   ERR_PROP_NOT_ALLOWED: (prop, entityKind) =>
     message('Property "%s" is not allowed for entityKind "%s"', prop, entityKind),
-  ERR_PROP_REQUIRED: prop => message('Property "%s" is required but no value has been provided', prop),
+  ERR_PROP_REQUIRED: (prop) => message('Property "%s" is required but no value has been provided', prop),
   ERR_PROP_IN_RANGE: (prop, range) => message('Property "%s" must be one of [%s]', prop, range && range.join(', ')),
 };
 
@@ -52,7 +52,7 @@ export class GstoreError extends Error {
     this.code = code || ERROR_CODES.ERR_GENERIC;
 
     if (args) {
-      Object.keys(args).forEach(k => {
+      Object.keys(args).forEach((k) => {
         if (k !== 'messageParams') {
           (this as any)[k] = args[k];
         }

@@ -51,7 +51,7 @@ describe('Schema (Integration Tests)', () => {
 
     return user
       .save()
-      .then(entity => {
+      .then((entity) => {
         const response = entity.plain();
         expect(response.password).to.not.exist;
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
@@ -62,7 +62,7 @@ describe('Schema (Integration Tests)', () => {
         expect(response2.password).equal(password);
         expect(response2.state).equal('requested');
       })
-      .catch(err => {
+      .catch((err) => {
         throw err;
       });
   });

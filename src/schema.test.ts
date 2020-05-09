@@ -103,9 +103,7 @@ describe('Schema', () => {
 
     test('should allow to pass a map of functions and validate type', () => {
       const fn = (): void => undefined;
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      // @ts-ignore
-      schema.method({
+      (schema.method as any)({
         doSomething: fn,
         doAnotherThing: 123,
       });

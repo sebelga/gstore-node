@@ -148,7 +148,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
       if (typeof name !== 'object') {
         return;
       }
-      Object.keys(name).forEach(k => {
+      Object.keys(name).forEach((k) => {
         if (typeof name[k] === 'function') {
           this.methods[k as keyof M] = name[k];
         }
@@ -282,11 +282,11 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
       if (isArray) {
         // The format to exclude a property from an embedded entity inside
         // an array is: "myArrayProp[].embeddedKey"
-        this.excludedFromIndexes[property] = excludedArray.map(propExcluded => `${property}[].${propExcluded}`);
+        this.excludedFromIndexes[property] = excludedArray.map((propExcluded) => `${property}[].${propExcluded}`);
       } else if (isObject) {
         // The format to exclude a property from an embedded entity
         // is: "myEmbeddedEntity.key"
-        this.excludedFromIndexes[property] = excludedArray.map(propExcluded => `${property}.${propExcluded}`);
+        this.excludedFromIndexes[property] = excludedArray.map((propExcluded) => `${property}.${propExcluded}`);
       }
     }
   }
@@ -333,7 +333,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
       let joiSchema: GenericObject = Joi.object().keys(joiKeys);
 
       if (hasJoiExtras) {
-        Object.keys((joiConfig as JoiConfig).extra!).forEach(k => {
+        Object.keys((joiConfig as JoiConfig).extra!).forEach((k) => {
           if (is.function(joiSchema[k])) {
             const args = (joiConfig as JoiConfig).extra![k];
             joiSchema = joiSchema[k](...args);

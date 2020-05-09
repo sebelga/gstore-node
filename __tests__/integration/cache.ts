@@ -60,7 +60,7 @@ describe('Integration Tests (Cache)', () => {
     MyModel = gstore.model('CacheTests-User', schema);
   });
 
-  afterEach(done => {
+  afterEach((done) => {
     cleanUp(() => done());
   });
 
@@ -71,9 +71,9 @@ describe('Integration Tests (Cache)', () => {
   test('should set KEY symbol on query result', () => {
     const id = uniqueId();
     const user = new MyModel({ email: 'test@test.com' }, id);
-    return user.save().then(entity => {
+    return user.save().then((entity) => {
       addKey(entity.entityKey);
-      return MyModel.get(entity.entityKey.name!).then(e => {
+      return MyModel.get(entity.entityKey.name!).then((e) => {
         expect(e.email).equal('test@test.com');
       });
     });
@@ -88,7 +88,7 @@ describe('Integration Tests (Cache)', () => {
 
     const result = await Promise.all([user1.save(), user2.save()]);
 
-    result.forEach(entity => addKey(entity.entityKey));
+    result.forEach((entity) => addKey(entity.entityKey));
 
     const responseSingle = await MyModel.get(result[0].entityKey.name!);
     const responseMultiple = await MyModel.get([result[0].entityKey.name!, result[1].entityKey.name!]);

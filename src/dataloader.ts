@@ -32,11 +32,11 @@ export const createDataLoader = (
       // calls return an Array
       const entityData = arrify(response);
       const entitiesByKey: { [key: string]: any } = {};
-      entityData.forEach(data => {
+      entityData.forEach((data) => {
         entitiesByKey[keyToString(data[ds.KEY as any])] = data;
       });
 
-      return keys.map(key => entitiesByKey[keyToString(key)] || null);
+      return keys.map((key) => entitiesByKey[keyToString(key)] || null);
     });
 
   const defaultOptions = {

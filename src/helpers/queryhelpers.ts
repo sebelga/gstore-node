@@ -29,7 +29,7 @@ const buildQueryFromOptions = <T, Outputformat>(
 
   if (options.order) {
     const orderArray = arrify(options.order);
-    orderArray.forEach(order => {
+    orderArray.forEach((order) => {
       query.order(order.property, {
         descending: {}.hasOwnProperty.call(order, 'descending') ? order.descending : false,
       });
@@ -62,7 +62,7 @@ const buildQueryFromOptions = <T, Outputformat>(
     }
 
     if (options.filters[0].length > 1) {
-      options.filters.forEach(filter => {
+      options.filters.forEach((filter) => {
         // We check if the value is a function
         // if it is, we execute it.
         let value = filter[filter.length - 1];

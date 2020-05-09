@@ -482,8 +482,8 @@ export class GstoreEntity<T extends object = GenericObject> {
 
     // Create virtual properties (getters and setters for entityData object)
     Object.keys(schema.paths)
-      .filter(pathKey => ({}.hasOwnProperty.call(schema.paths, pathKey)))
-      .forEach(pathKey =>
+      .filter((pathKey) => ({}.hasOwnProperty.call(schema.paths, pathKey)))
+      .forEach((pathKey) =>
         Object.defineProperty(this, pathKey, {
           get: function getProp() {
             return this.entityData[pathKey];
@@ -497,8 +497,8 @@ export class GstoreEntity<T extends object = GenericObject> {
     // Create virtual properties (getters and setters for "virtuals" defined on the Schema)
 
     Object.keys(schema.__virtuals)
-      .filter(key => ({}.hasOwnProperty.call(schema.__virtuals, key)))
-      .forEach(key =>
+      .filter((key) => ({}.hasOwnProperty.call(schema.__virtuals, key)))
+      .forEach((key) =>
         Object.defineProperty(this, key, {
           get: function getProp() {
             return schema.__virtuals[key].applyGetters({ ...this.entityData });
@@ -517,18 +517,18 @@ export class GstoreEntity<T extends object = GenericObject> {
       return this;
     }
 
-    Object.keys(callQueue).forEach(method => {
+    Object.keys(callQueue).forEach((method) => {
       if (!(this as any)[method]) {
         return;
       }
 
       // Add Pre hooks
-      callQueue[method].pres.forEach(fn => {
+      callQueue[method].pres.forEach((fn) => {
         (this as any).pre(method, fn);
       });
 
       // Add Pre hooks
-      callQueue[method].post.forEach(fn => {
+      callQueue[method].post.forEach((fn) => {
         (this as any).post(method, fn);
       });
     });
@@ -546,7 +546,7 @@ export class GstoreEntity<T extends object = GenericObject> {
     const { __virtuals } = this.schema;
     const entityData: EntityData<T> & GenericObject = { ...this.entityData };
 
-    Object.keys(__virtuals).forEach(k => {
+    Object.keys(__virtuals).forEach((k) => {
       if ({}.hasOwnProperty.call(entityData, k)) {
         __virtuals[k].applySetters(entityData[k], entityData);
       } else {

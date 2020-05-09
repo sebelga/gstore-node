@@ -50,7 +50,7 @@ class Query<T extends object, M extends object> {
 
         // Convert to JSON or ENTITY acording to which format is passed. (default = JSON)
         // If JSON => Add id property to entities and suppress properties with "read" config is set to `false`
-        entities = entities.map(entity => datastoreSerializer.fromDatastore(entity, this.Model, options));
+        entities = entities.map((entity) => datastoreSerializer.fromDatastore(entity, this.Model, options));
 
         const response: QueryResponse<T> = {
           entities,
@@ -138,7 +138,7 @@ class Query<T extends object, M extends object> {
     const query = this.initQuery<Entity<T, M> | null>(namespace);
     query.limit(1);
 
-    Object.keys(keyValues).forEach(k => {
+    Object.keys(keyValues).forEach((k) => {
       query.filter(k as keyof T, keyValues[k as keyof T]);
     });
 
