@@ -308,7 +308,7 @@ const validate = <T extends object>(
 
       return Promise.resolve(onSuccess(entityData));
     },
-    catch: onError => {
+    catch: (onError) => {
       if (validationError) {
         return Promise.resolve(onError(validationError));
       }

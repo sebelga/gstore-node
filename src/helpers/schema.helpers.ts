@@ -8,7 +8,7 @@ import { GenericObject } from '../types';
 const extractMetaFromSchema = <T extends object>(paths: Schema<T>['paths']): GenericObject => {
   const meta: GenericObject = {};
 
-  Object.keys(paths).forEach(k => {
+  Object.keys(paths).forEach((k) => {
     const propType = paths[k as keyof T].type as any;
     const stringType = propType !== undefined && propType.name ? propType.name : propType;
 

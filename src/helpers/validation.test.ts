@@ -427,7 +427,7 @@ describe('Validation', () => {
         return false;
       }
 
-      return obj.every(item => item !== null && typeof item === 'object');
+      return obj.every((item) => item !== null && typeof item === 'object');
     };
 
     schema = new Schema({
@@ -468,10 +468,7 @@ describe('Joi Validation', () => {
         name: { joi: Joi.string().required() },
         color: { joi: Joi.valid('a', 'b') },
         birthyear: {
-          joi: Joi.number()
-            .integer()
-            .min(1900)
-            .max(2013),
+          joi: Joi.number().integer().min(1900).max(2013),
         },
         email: { joi: Joi.string().email() },
       },

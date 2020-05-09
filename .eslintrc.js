@@ -20,7 +20,6 @@ module.exports = {
   },
   rules: {
     strict: ['error', 'global'],
-    'arrow-parens': ['error', 'as-needed'],
     indent: [
       'error',
       2,

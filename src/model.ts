@@ -264,12 +264,12 @@ const registerHooksFromSchema = <T extends object, M extends object>(model: Mode
 
   Object.keys(callQueue).forEach((method: string) => {
     // Add Pre hooks
-    callQueue[method].pres.forEach(fn => {
+    callQueue[method].pres.forEach((fn) => {
       (model as any).pre(method, fn);
     });
 
     // Add Post hooks
-    callQueue[method].post.forEach(fn => {
+    callQueue[method].post.forEach((fn) => {
       (model as any).post(method, fn);
     });
   });
@@ -339,7 +339,7 @@ export const generateModel = <T extends object, M extends object>(
 
         isMultiple = idsArray.length > 1;
 
-        idsArray.forEach(id => {
+        idsArray.forEach((id) => {
           const key = getKey(id);
           keys.push(key);
         });
@@ -384,7 +384,7 @@ export const generateModel = <T extends object, M extends object>(
         }
 
         // Convert entityData to Entity instance
-        const entity = (entityData as EntityData<T>[]).map(data => {
+        const entity = (entityData as EntityData<T>[]).map((data) => {
           if (typeof data === 'undefined' || data === null) {
             return null;
           }
@@ -392,7 +392,7 @@ export const generateModel = <T extends object, M extends object>(
         });
 
         // TODO: Check if this is still useful??
-        if (Array.isArray(id) && options.preserveOrder && entity.every(e => typeof e !== 'undefined' && e !== null)) {
+        if (Array.isArray(id) && options.preserveOrder && entity.every((e) => typeof e !== 'undefined' && e !== null)) {
           (entity as GstoreEntity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
         }
 
@@ -469,7 +469,7 @@ export const generateModel = <T extends object, M extends object>(
         if (this.__hasCache(options)) {
           return this.clearCache(key)
             .then(() => entityDataUpdated)
-            .catch(err => {
+            .catch((err) => {
               let msg = 'Error while clearing the cache after updating the entity.';
               msg += 'The entity has been updated successfully though. ';
               msg += 'Both the cache error and the entity updated have been attached.';
@@ -508,10 +508,7 @@ export const generateModel = <T extends object, M extends object>(
         return onTransactionSuccess();
       };
 
-      const getAndUpdate = (): Promise<GstoreEntity<T>> =>
-        getEntity()
-          .then(saveEntity)
-          .then(onEntityUpdated);
+      const getAndUpdate = (): Promise<GstoreEntity<T>> => getEntity().then(saveEntity).then(onEntityUpdated);
 
       const onUpdateError = (err: Error | Error[]): Promise<any> => {
         const error = Array.isArray(err) ? err[0] : err;
@@ -533,18 +530,13 @@ export const generateModel = <T extends object, M extends object>(
        * and save the data directly to the specified key, overriding any previous data.
        */
       if (replace) {
-        return saveEntity({ key, data })
-          .then(onEntityUpdated)
-          .catch(onUpdateError);
+        return saveEntity({ key, data }).then(onEntityUpdated).catch(onUpdateError);
       }
 
       if (typeof transaction === 'undefined' || transaction === null) {
         internalTransaction = true;
         transaction = this.gstore.ds.transaction();
-        return transaction
-          .run()
-          .then(getAndUpdate)
-          .catch(onUpdateError);
+        return transaction.run().then(getAndUpdate).catch(onUpdateError);
       }
 
       if (transaction.constructor.name !== 'Transaction') {
@@ -605,7 +597,7 @@ export const generateModel = <T extends object, M extends object>(
         if (this.__hasCache(options)) {
           return this.clearCache(key!, options.clearQueries)
             .then(() => response)
-            .catch(err => {
+            .catch((err) => {
               let msg = 'Error while clearing the cache after deleting the entity.';
               msg += 'The entity has been deleted successfully though. ';
               msg += 'The cache error has been attached.';
@@ -667,7 +659,7 @@ export const generateModel = <T extends object, M extends object>(
               .then(onEntitiesDeleted);
           }
 
-          const keys = entitiesToDelete.map(entity => entity[this.gstore.ds.KEY as any]);
+          const keys = entitiesToDelete.map((entity) => entity[this.gstore.ds.KEY as any]);
 
           // We only need to clear the Queries from the cache once,
           // so we do it on the first batch.
@@ -717,7 +709,7 @@ export const generateModel = <T extends object, M extends object>(
 
       if (clearQueries) {
         handlers.push(
-          this.gstore.cache!.queries.clearQueriesByKind(this.entityKind).catch(e => {
+          this.gstore.cache!.queries.clearQueriesByKind(this.entityKind).catch((e) => {
             if (e.code === 'ERR_NO_REDIS') {
               // Silently fail if no Redis Client
               return;
@@ -738,7 +730,7 @@ export const generateModel = <T extends object, M extends object>(
     static excludeFromIndexes(properties: string | string[]): void {
       properties = arrify(properties);
 
-      properties.forEach(prop => {
+      properties.forEach((prop) => {
         let definition: SchemaPathDefinition;
         if (!{}.hasOwnProperty.call(this.schema.paths, prop)) {
           definition = { optional: true, excludeFromIndexes: true };
@@ -785,7 +777,7 @@ export const generateModel = <T extends object, M extends object>(
       let isPropWritable;
       let propValue;
 
-      Object.keys(data).forEach(k => {
+      Object.keys(data).forEach((k) => {
         schemaHasProperty = {}.hasOwnProperty.call(schema.paths, k);
         isPropWritable = schemaHasProperty ? schema.paths[k as keyof T].write !== false : true;
         propValue = sanitized![k];
@@ -884,7 +876,7 @@ export const generateModel = <T extends object, M extends object>(
         const mapKeyToPropAndSelect: { [key: string]: { ref: PopulateRef } } = {};
 
         const isEntityClass = entity instanceof GstoreEntity;
-        entityRefs.forEach(ref => {
+        entityRefs.forEach((ref) => {
           const { path } = ref;
           const entityData: EntityData = isEntityClass ? entity.entityData : entity;
 
@@ -910,7 +902,7 @@ export const generateModel = <T extends object, M extends object>(
         return { entity, keysToFetch, mapKeyToPropAndSelect };
       };
 
-      const populateFn: PopulateFunction<T> = entitiesToProcess => {
+      const populateFn: PopulateFunction<T> = (entitiesToProcess) => {
         if (!refs || !refs.length || entitiesToProcess === null) {
           // Nothing to do here...
           return Promise.resolve(entitiesToProcess);
@@ -927,7 +919,7 @@ export const generateModel = <T extends object, M extends object>(
           // For each one of the entities to process, we gatter some meta data
           // like the keys to fetch for that entity in order to populate its refs.
           // Dataloaader will take care to only fetch unique keys on the Datastore
-          const meta = (entities as GstoreEntity<T>[]).map(entity => getPopulateMetaForEntity(entity, entityRefs));
+          const meta = (entities as GstoreEntity<T>[]).map((entity) => getPopulateMetaForEntity(entity, entityRefs));
 
           const onKeysFetched = (
             response: EntityData[] | null,
@@ -991,7 +983,7 @@ export const generateModel = <T extends object, M extends object>(
               : Promise.resolve(null),
           );
 
-          return Promise.all(promises).then(result => {
+          return Promise.all(promises).then((result) => {
             // Loop over all responses from dataloader.loadMany() calls
             result.forEach((res, i) => onKeysFetched(res, meta[i]));
           });

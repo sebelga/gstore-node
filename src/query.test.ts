@@ -140,7 +140,7 @@ describe('Query', () => {
     });
 
     test('should run query', () =>
-      query.run().then(response => {
+      query.run().then((response) => {
         // We add manually the id in the mocks to be able to deep compare
         mockEntities[0].id = 1234;
         mockEntities[1].id = 'keyname';
@@ -160,18 +160,18 @@ describe('Query', () => {
       }));
 
     test('should add id to entities', () =>
-      query.run().then(response => {
+      query.run().then((response) => {
         expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
         expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
       }));
 
     test('should accept "readAll" option', () =>
-      query.run({ readAll: true }).then(response => {
+      query.run({ readAll: true }).then((response) => {
         assert.isDefined(response.entities[0].password);
       }));
 
     test('should accept "showKey" option', () =>
-      query.run({ showKey: true }).then(response => {
+      query.run({ showKey: true }).then((response) => {
         assert.isDefined(response.entities[0].__key);
       }));
 
@@ -186,7 +186,7 @@ describe('Query', () => {
       (query.__originalRun as any).restore();
       sinon.stub(query, '__originalRun').resolves([[], { moreResults: ds.NO_MORE_RESULTS }]);
 
-      return query.run().then(response => {
+      return query.run().then((response) => {
         assert.isUndefined(response.nextPageCursor);
       });
     });
@@ -196,7 +196,7 @@ describe('Query', () => {
       (query.__originalRun as any).restore();
       sinon.stub(query, '__originalRun').rejects(error);
 
-      return query.run().catch(err => {
+      return query.run().catch((err) => {
         expect(err).equal(error);
       });
     });
@@ -234,7 +234,7 @@ describe('Query', () => {
       });
 
       test('should get query from cache and pass down options', () =>
-        query.run({ ttl: 9999 }).then(response => {
+        query.run({ ttl: 9999 }).then((response) => {
           assert.ok((query.__originalRun as any).called);
           expect((gstore.cache!.queries.read as any).callCount).equal(1);
           expect((gstore.cache!.queries.read as any).getCall(0).args[1].ttl).equal(9999);
@@ -322,14 +322,14 @@ describe('Query', () => {
 
     describe('list', () => {
       test('should work with no settings defined', () =>
-        ModelInstance.list().then(response => {
+        ModelInstance.list().then((response) => {
           expect(response.entities.length).equal(2);
           expect(response.nextPageCursor).equal('abcdef');
           assert.isUndefined(response.entities[0].password);
         }));
 
       test('should add id to entities', () =>
-        ModelInstance.list().then(response => {
+        ModelInstance.list().then((response) => {
           expect(response.entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(response.entities[1].id).equal(mockEntities[1][ds.KEY].name);
         }));
@@ -340,7 +340,7 @@ describe('Query', () => {
           .stub(ds, 'createQuery')
           .callsFake(() => new Query(ds, { entities: mockEntities }, { moreResults: ds.NO_MORE_RESULTS }));
 
-        return ModelInstance.list().then(response => {
+        return ModelInstance.list().then((response) => {
           assert.isUndefined(response.nextPageCursor);
         });
       });
@@ -354,7 +354,7 @@ describe('Query', () => {
         schema.queries('list', querySettings);
         ModelInstance = gstore.model('Blog', schema);
 
-        return ModelInstance.list().then(response => {
+        return ModelInstance.list().then((response) => {
           expect((queryMock.limit as any).getCall(0).args[0]).equal(querySettings.limit);
           expect((queryMock.offset as any).getCall(0).args[0]).equal(querySettings.offset);
           expect(response.entities[0] instanceof GstoreEntity).equal(true);
@@ -371,7 +371,7 @@ describe('Query', () => {
         schema.queries('list', querySettings);
         ModelInstance = gstore.model('Blog', schema);
 
-        return ModelInstance.list({ limit: 15, offset: 15 }).then(response => {
+        return ModelInstance.list({ limit: 15, offset: 15 }).then((response) => {
           expect((queryMock.limit as any).getCall(0).args[0]).equal(15);
           expect((queryMock.offset as any).getCall(0).args[0]).equal(15);
           assert.isDefined(response.entities[0].password);
@@ -387,7 +387,7 @@ describe('Query', () => {
           return queryMock;
         });
 
-        return ModelInstance.list().catch(err => {
+        return ModelInstance.list().catch((err) => {
           expect(err).equal(err);
         });
       });
@@ -427,7 +427,7 @@ describe('Query', () => {
 
     describe('findAround()', () => {
       test('should get 3 entities after a given date', () =>
-        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).then(entities => {
+        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).then((entities) => {
           expect((queryMock.filter as any).getCall(0).args).deep.equal(['createdOn', '>', '2016-1-1']);
           expect((queryMock.order as any).getCall(0).args).deep.equal(['createdOn', { descending: true }]);
           expect((queryMock.limit as any).getCall(0).args[0]).equal(3);
@@ -442,54 +442,54 @@ describe('Query', () => {
           expect((queryMock.limit as any).getCall(0).args[0]).equal(12);
         }));
 
-      test('should throw error if not all arguments are passed', done => {
+      test('should throw error if not all arguments are passed', (done) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
-        ModelInstance.findAround('createdOn', '2016-1-1').catch(err => {
+        ModelInstance.findAround('createdOn', '2016-1-1').catch((err) => {
           expect(err.message).equal('[gstore.findAround()]: Not all the arguments were provided.');
           done();
         });
       });
 
-      test('should validate that options passed is an object', done => {
+      test('should validate that options passed is an object', (done) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
-        ModelInstance.findAround('createdOn', '2016-1-1', 'string').catch(err => {
+        ModelInstance.findAround('createdOn', '2016-1-1', 'string').catch((err) => {
           expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
           done();
         });
       });
 
-      test('should validate that options has an "after" or "before" property', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1', {}).catch(err => {
+      test('should validate that options has an "after" or "before" property', (done) => {
+        ModelInstance.findAround('createdOn', '2016-1-1', {}).catch((err) => {
           expect(err.message).equal('[gstore.findAround()]: You must set "after" or "before" in options.');
           done();
         });
       });
 
-      test('should validate that options has not both "after" & "before" properties', done => {
-        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }).catch(err => {
+      test('should validate that options has not both "after" & "before" properties', (done) => {
+        ModelInstance.findAround('createdOn', '2016-1-1', { after: 3, before: 3 }).catch((err) => {
           expect(err.message).equal('[gstore.findAround()]: You can\'t set both "after" and "before".');
           done();
         });
       });
 
       test('should add id to entities', () =>
-        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then(entities => {
+        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3 }).then((entities) => {
           expect(entities[0].id).equal(mockEntities[0][ds.KEY].id);
           expect(entities[1].id).equal(mockEntities[1][ds.KEY].name);
         }));
 
       test('should read all properties', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, readAll: true, format: 'ENTITY' }).then(
-          entities => {
+          (entities) => {
             assert.isDefined(entities[0].password);
             expect(entities[0] instanceof GstoreEntity).equal(true);
           },
         ));
 
       test('should add entities key', () =>
-        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true }).then(entities => {
+        ModelInstance.findAround('createdOn', '2016-1-1', { before: 3, showKey: true }).then((entities) => {
           assert.isDefined(entities[0].__key);
         }));
 
@@ -509,7 +509,7 @@ describe('Query', () => {
           return queryMock;
         });
 
-        return ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).catch(err => {
+        return ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).catch((err) => {
           expect(err).equal(error);
         });
       });
@@ -568,15 +568,15 @@ describe('Query', () => {
         }));
 
       test('should return a Model instance', () =>
-        ModelInstance.findOne({ name: 'John' }).then(entity => {
+        ModelInstance.findOne({ name: 'John' }).then((entity) => {
           expect(entity!.entityKind).equal('BlogTestQuery');
           expect(entity instanceof GstoreEntity).equal(true);
         }));
 
-      test('should validate that params passed are object', done => {
+      test('should validate that params passed are object', (done) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
-        ModelInstance.findOne('some string').catch(err => {
+        ModelInstance.findOne('some string').catch((err) => {
           expect(err.message).equal('[gstore.findOne()]: "Params" has to be an object.');
           done();
         });
@@ -607,7 +607,7 @@ describe('Query', () => {
           return queryMock;
         });
 
-        return ModelInstance.findOne({ name: 'John' }).catch(err => {
+        return ModelInstance.findOne({ name: 'John' }).catch((err) => {
           expect(err).equal(error);
         });
       });
@@ -618,7 +618,7 @@ describe('Query', () => {
           return queryMock;
         });
 
-        return ModelInstance.findOne({ name: 'John' }).catch(err => {
+        return ModelInstance.findOne({ name: 'John' }).catch((err) => {
           expect(err.code).equal(gstore.errors.codes.ERR_ENTITY_NOT_FOUND);
         });
       });

@@ -49,11 +49,11 @@ const addPathToPopulateRefs = (
     const refsAtCurrentTreeLevel = refs[i] || [];
 
     // Check if we alreday have a config for this tree level
-    const pathConfig = refsAtCurrentTreeLevel.find(ref => ref.path === currentPath);
+    const pathConfig = refsAtCurrentTreeLevel.find((ref) => ref.path === currentPath);
 
     if (!pathConfig) {
       refsAtCurrentTreeLevel.push({ path: currentPath, select: hasNextPath ? [nextPath] : select });
-    } else if (hasNextPath && !pathConfig.select.some(s => s === nextPath)) {
+    } else if (hasNextPath && !pathConfig.select.some((s) => s === nextPath)) {
       // Add the next path to the selected properties on the ref
       pathConfig.select.push(nextPath);
     } else if (!hasNextPath && select.length) {
@@ -82,7 +82,7 @@ const populateFactory = <T extends object>(
 
     // If no path is specified, we fetch all the schema properties that are references to entities (Keys)
     const paths: string[] = path ? arrify(path) : getEntitiesRefsFromSchema(schema);
-    paths.forEach(p => addPathToPopulateRefs(p, propsToSelect, refsToPopulate));
+    paths.forEach((p) => addPathToPopulateRefs(p, propsToSelect, refsToPopulate));
     return promise;
   };
 

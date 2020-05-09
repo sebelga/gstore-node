@@ -44,7 +44,7 @@ const getUser = (): Entity<any> & GenericObject => {
 const cleanUp = (): Promise<any> =>
   ((ds.delete(allKeys) as unknown) as Promise<any>)
     .then(() => UserModel.deleteAll())
-    .catch(err => {
+    .catch((err) => {
       console.log('Error cleaning up'); // eslint-disable-line
       console.log(err); // eslint-disable-line
     });

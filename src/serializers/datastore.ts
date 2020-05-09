@@ -19,7 +19,7 @@ const getExcludeFromIndexes = <T extends object>(data: GenericObject, entity: Gs
   Object.entries(data)
     .filter(([, value]) => value !== null)
     .map(([key]) => entity.schema.excludedFromIndexes[key as keyof T] as string[])
-    .filter(v => v !== undefined)
+    .filter((v) => v !== undefined)
     .reduce((acc: string[], arr) => [...acc, ...arr], []);
 
 const idFromKey = (key: EntityKey): IdType => key.path[key.path.length - 1];
@@ -70,7 +70,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
     };
     data[KEY as any] = entityKey;
 
-    Object.keys(entityData).forEach(k => {
+    Object.keys(entityData).forEach((k) => {
       if (options.readAll || !{}.hasOwnProperty.call(schema.paths, k) || schema.paths[k].read !== false) {
         let value = entityData[k];
 
@@ -86,7 +86,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
             is.array(schema.paths[k].excludeFromRead) &&
             !options.readAll
           ) {
-            schema.paths[k].excludeFromRead!.forEach(prop => {
+            schema.paths[k].excludeFromRead!.forEach((prop) => {
               const segments = prop.split('.');
               let v = value;
 
@@ -150,7 +150,7 @@ const entitiesToDatastore = <
     return (entities as unknown) as R;
   }
 
-  const result = entitiesToArray.map(e => toDatastore(e, options));
+  const result = entitiesToArray.map((e) => toDatastore(e, options));
 
   return isMultiple ? (result as any) : (result[0] as any);
 };
