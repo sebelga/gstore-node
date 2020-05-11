@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.5](https://github.com/sebelga/gstore-node/compare/v7.2.4...v7.2.5) (2020-05-11)
+
+### Chore
+
+* **Dependencies** Update all dependencies.  
+`gstore-node` has been tested and works with `@google-cloud/datastore` **version 5+**.
+
+### Bug Fixes
+
+* **typings:** Fix passing of generic parameters to Entity ([#221](https://github.com/sebelga/gstore-node/issues/221)) ([dc3fba2](https://github.com/sebelga/gstore-node/commit/dc3fba28bdb942e7abb4fee3727a85948a342112))
+
 ### [7.2.4](https://github.com/sebelga/gstore-node/compare/v7.2.3...v7.2.4) (2019-12-10)
 
 
