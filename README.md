@@ -1,13 +1,17 @@
 <img title="logo" src="logo/logo.png" width="75%">
 
-# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20Google%20Datastore%20entities%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
+# DEPRECATED - gstore-node
 
 > Entities modeling for Google's Datastore
 
-[![NPM Version][npm-image]][npm-url]
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/) [![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![coveralls-image]][coveralls-url]
 [![Commitizen friendly][commitizen-image]][commitizen-url]  
+
+## Deprecated / looking for maintainers
+
+Unfortunately I can't dedicate any more time to this project. No new feature nor bugs will be addressed, for this reason I marked it as deprecated. If you want to be a maintainer and continue the work this will be greatly appreciated! Send me a DM.
 
 [**Documentation**](#documentation) |
 [**Example**](#example) |
