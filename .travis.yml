@@ -20,7 +20,7 @@ before_install:
   - sudo apt-get install google-cloud-sdk-datastore-emulator -y --allow-unauthenticated
 
 services:
-  - redis-server
+  - redis
 
 install: yarn install
 
