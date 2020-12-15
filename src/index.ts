@@ -169,12 +169,13 @@ export class Gstore {
     transaction?: Transaction,
     options: { method?: DatastoreSaveMethod; validate?: boolean } | undefined = {},
   ): Promise<
-    [
-      {
-        mutationResults?: any;
-        indexUpdates?: number | null;
-      },
-    ]
+    | [
+        {
+          mutationResults?: any;
+          indexUpdates?: number | null;
+        },
+      ]
+    | void
   > {
     if (!entities) {
       throw new Error('No entities passed');
@@ -205,7 +206,7 @@ export class Gstore {
     const entitiesSerialized = datastoreSerializer.entitiesToDatastore(entities, options);
 
     if (transaction) {
-      return transaction.save(entitiesSerialized);
+      return Promise.resolve(transaction.save(entitiesSerialized));
     }
 
     // We forward the call to google-datastore
