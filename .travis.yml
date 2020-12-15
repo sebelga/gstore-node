@@ -5,7 +5,8 @@ node_js:
   - "10"
 env:
 # Make sure gcloud command is on our PATH and the App Engine SDK is in the Python path
-- PATH=$PATH:${HOME}/google-cloud-sdk/bin CLOUDSDK_CORE_DISABLE_PROMPTS=1
+- PATH=$PATH:${HOME}/google-cloud-sdk/bin
+- CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 branches:
   only:
@@ -20,7 +21,7 @@ before_install:
   - sudo apt-get install google-cloud-sdk-datastore-emulator -y --allow-unauthenticated
 
 services:
-  - redis-server
+  - redis
 
 install: yarn install
 
