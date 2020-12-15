@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.6](https://github.com/sebelga/gstore-node/compare/v7.2.5...v7.2.6) (2020-12-15)
+
 ### [7.2.5](https://github.com/sebelga/gstore-node/compare/v7.2.4...v7.2.5) (2020-05-11)
 
 ### Chore
