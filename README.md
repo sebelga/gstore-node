@@ -1,17 +1,18 @@
 <img title="logo" src="logo/logo.png" width="75%">
 
-# DEPRECATED - gstore-node
+# gstore-node [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Model%20your%20Google%20Datastore%20entities%20with%20gstore-node&url=https://github.com/sebelga/gstore-node)
 
 > Entities modeling for Google's Datastore
 
-[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/) [![NPM Version][npm-image]][npm-url]
+[![NPM Version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![coveralls-image]][coveralls-url]
 [![Commitizen friendly][commitizen-image]][commitizen-url]  
 
-## Deprecated / looking for maintainers
+## :tada: **NEWS**: new maintainer!
 
-Unfortunately I can't dedicate any more time to this project. No new feature nor bugs will be addressed, for this reason I marked it as deprecated. If you want to be a maintainer and continue the work this will be greatly appreciated! Send me a DM.
+A few weeks ago I announced that `gstore-node` was deprecated as I currently don't have bandwidth to work on it. A few days later, [Hendrik Schalekamp](https://github.com/carnun) stepped in and offered to be a maintainer of the project. I was thrilled! :blush:
+Hendrik will be the lead of the project and I will be around to provide any necessary guidance. Thanks Hendrik!
 
 [**Documentation**](#documentation) |
 [**Example**](#example) |
@@ -33,9 +34,9 @@ It is not a replacement of @google-cloud/datastore but a layer on top of it to h
 - **[Joi](https://github.com/hapijs/joi)** schema definition and validation
 - Advanced **[cache layer](https://sebloix.gitbook.io/gstore-node/cache-dataloader/cache)**
 - **[Typescript support](https://sebloix.gitbook.io/gstore-node/typescript)**
-- :tada: **NEW** [**populate()**](https://sebloix.gitbook.io/gstore-node/populate) support to fetch reference entities and do cross Entity Type "joins" when querying one or multiple entities (since v5.0.0)
+- [**populate()**](https://sebloix.gitbook.io/gstore-node/populate) support to fetch reference entities and do cross Entity Type "joins" when querying one or multiple entities (since v5.0.0)
 
-> Please don’t forget to star this repo if you found it useful :)
+> Please don’t forget to star this repo if you find it useful :)
 
 # Installation
 
@@ -304,17 +305,56 @@ module.exports = {
 ```
 <a name="demo-app"/>
 
-# Demo application
+## Demo application
 
 If you want to see an example on how to use gstore-node in your Node.js app, check the [demo blog application repository](https://github.com/sebelga/blog-app-googlecloud).
 
+## Development
+
+1. Install npm dependencies
+
+```
+yarn install
+```
+
+2. Run the unit tests
+
+```
+yarn test:unit
+```
+
+3. Run the integration tests
+
+**Prerequise:**  
+In order to run the integration tests you need to have the [Google Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator) installed as well as [Redis](https://redis.io/).
+
+* Launch the Redis server  
+
+```
+# From the folder where you've installed the Redis SDK run: 
+cd src && ./redis-server
+```
+
+* Launch the Datastore Emulator (separate terminal window)
+
+```
+# From the root of the project
+yarn local-datastore
+```
+
+* Execute the integration tests (separate terminal window)
+
+```
+# From the root of the project
+yarn test:integration
+```
+
 ## Meta
 
-Sébastien Loix – [@sebloix](https://twitter.com/sebloix)
+Sébastien Loix – [@sebloix](https://twitter.com/sebloix)  
+Hendrik Schalekamp - [@carnun](https://twitter.com/carnun)
 
 Distributed under the MIT license. See `LICENSE` for more information.
-
-[https://github.com/sebelga](https://github.com/sebelga/)  
 
 ## Contributing
 
