@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import Chance from 'chance';
 import Joi from '@hapi/joi';
 import { Datastore } from '@google-cloud/datastore';
+import { entity } from '@google-cloud/datastore/build/src/entity';
 
 import { Gstore, Entity, EntityKey } from '../../src';
 import GstoreEntity from '../../src/entity';
@@ -36,8 +37,8 @@ const cleanUp = (cb: any): Promise<any> => {
       cb();
     })
     .catch((err) => {
-            console.log('Error cleaning up'); // eslint-disable-line
-            console.log(err); // eslint-disable-line
+      console.log('Error cleaning up'); // eslint-disable-line
+      console.log(err); // eslint-disable-line
     });
 };
 
@@ -75,7 +76,9 @@ const addCompany = (): Promise<{ name: string; entityKey: EntityKey }> => {
   });
 };
 
-const addUser = (company: EntityKey | null = null): Promise<any> => {
+const addUser = (
+  company: EntityKey | null = null,
+): Promise<{ entityKey: EntityKey; name: string; email: string; company: unknown; privateVal: string }> => {
   const name = randomName();
   const email = chance.email();
   const privateVal = randomName();
@@ -95,7 +98,7 @@ const addUser = (company: EntityKey | null = null): Promise<any> => {
   });
 };
 
-const addPost = (userKey = null, publicationKey = null): Promise<any> => {
+const addPost = (userKey: EntityKey | null = null, publicationKey: EntityKey | null = null): Promise<any> => {
   const title = randomName();
   const post = new PostModel({ title, user: userKey, publication: publicationKey }, randomName());
   return post.save().then(({ entityKey }) => {
@@ -104,7 +107,7 @@ const addPost = (userKey = null, publicationKey = null): Promise<any> => {
   });
 };
 
-const addPublication = (userKey = null): Promise<any> => {
+const addPublication = (userKey: EntityKey | null = null): Promise<any> => {
   const title = randomName();
   const publication = new PublicationModel({ title, user: userKey });
   return publication.save().then(({ entityKey }) => {
@@ -191,7 +194,7 @@ describe('Model (Integration Tests)', () => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
           // @ts-ignore
           await PostModel.get(postKey.name).populate(['user', 'publication'], ['email', 'privateVal']);
-          throw new Error('Shoud not get here.');
+          throw new Error('Should not get here.');
         } catch (err) {
           expect(err.message).equal('Only 1 property can be populated when fields to select are provided');
         }
@@ -263,6 +266,18 @@ describe('Model (Integration Tests)', () => {
   });
 
   describe('findOne()', () => {
+    test('should return a correctly formed entityKey', async () => {
+      const {
+        email,
+        entityKey: { name: entityName },
+      } = await addUser();
+
+      const user = await UserModel.findOne({ email });
+      expect(user!.entityKey instanceof entity.Key).to.eq(true);
+      expect(user!.entityKey.name).to.eq(entityName);
+      expect(user!.privateVal).to.equal(null);
+    });
+
     test('should allow the `option.readAll`', async () => {
       const { email, privateVal } = await addUser();
 
@@ -299,7 +314,7 @@ describe('Model (Integration Tests)', () => {
           toUser: Entity<MyUser> & MyUser,
           amount: number,
         ): Promise<any> {
-          return new Promise((resolve, reject): void => {
+          return new Promise<void>((resolve, reject): void => {
             const transaction = gstore.transaction();
             transaction
               .run()
