@@ -2,6 +2,7 @@ import redisStore from 'cache-manager-redis-store';
 import chai from 'chai';
 import Chance from 'chance';
 import { Datastore } from '@google-cloud/datastore';
+import { entity } from '@google-cloud/datastore/build/src/entity';
 
 import { Gstore, EntityKey, Model } from '../../src';
 
@@ -71,30 +72,46 @@ describe('Integration Tests (Cache)', () => {
   test('should set KEY symbol on query result', () => {
     const id = uniqueId();
     const user = new MyModel({ email: 'test@test.com' }, id);
-    return user.save().then((entity) => {
-      addKey(entity.entityKey);
-      return MyModel.get(entity.entityKey.name!).then((e) => {
+    return user.save().then((result) => {
+      addKey(result.entityKey);
+      return MyModel.get(result.entityKey.name!).then((e) => {
         expect(e.email).equal('test@test.com');
       });
     });
   });
 
-  test('should get one or multiple entities fron the cache', async () => {
+  test('should get one or multiple entities from the cache', async () => {
     const id1 = uniqueId();
     const id2 = uniqueId();
 
     const user1 = new MyModel({ email: 'test1@test.com' }, id1);
     const user2 = new MyModel({ email: 'test2@test.com' }, id2);
 
-    const result = await Promise.all([user1.save(), user2.save()]);
+    const results = await Promise.all([user1.save(), user2.save()]);
 
-    result.forEach((entity) => addKey(entity.entityKey));
+    results.forEach((result) => addKey(result.entityKey));
 
-    const responseSingle = await MyModel.get(result[0].entityKey.name!);
-    const responseMultiple = await MyModel.get([result[0].entityKey.name!, result[1].entityKey.name!]);
+    const responseSingle = await MyModel.get(results[0].entityKey.name!);
+    const responseMultiple = await MyModel.get([results[0].entityKey.name!, results[1].entityKey.name!]);
 
     expect(responseSingle.email).to.equal('test1@test.com');
     expect(responseMultiple[0].email).to.equal('test1@test.com');
     expect(responseMultiple[1].email).to.equal('test2@test.com');
+  });
+
+  test('should find one entity from the cache', async () => {
+    const id = uniqueId();
+
+    const user = new MyModel({ email: 'test2@test.com' }, id);
+
+    const result = await user.save();
+
+    addKey(result.entityKey);
+
+    const response = await MyModel.findOne({ email: 'test2@test.com' });
+
+    expect(response!.email).to.eq('test2@test.com');
+    expect(response!.entityKey.name).to.eq(id);
+    expect(response!.entityKey instanceof entity.Key).to.eq(true);
   });
 });
