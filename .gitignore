@@ -49,3 +49,6 @@ notes.txt
 
 !logo/logo.png
 !logo/logo_small.png
+
+# Redis
+dump.rdb
