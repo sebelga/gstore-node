@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.7](https://github.com/sebelga/gstore-node/compare/v7.2.6...v7.2.7) (2022-04-07)
+
+### Bug Fixes
+- fix(src/serializers/datastore.ts): load cached entities with correct Datastore Key type (#265)  b06641b
+- test(integration tests): add integration tests for fineOne and check entityKey construction (#246)  b87a275
+
+### Dependency upgrades
+- chore(deps): bump validator from 13.0.0 to 13.7.0 (#257)  d35f66a
+- chore(deps): bump tmpl from 1.0.4 to 1.0.5 (#256)  fef76a2
+- chore(deps): bump path-parse from 1.0.6 to 1.0.7 (#255)  707943e
+- chore(deps): bump glob-parent from 5.0.0 to 5.1.2 (#253)  8782798
+- chore(deps): bump hosted-git-info from 2.7.1 to 2.8.9 (#251)  4012b03
+- chore(deps): bump handlebars from 4.7.6 to 4.7.7 (#250)  b75752e
+- chore(deps): bump redis from 3.0.2 to 3.1.2 (#249)  3cb6c45
+- chore(deps): bump y18n from 4.0.0 to 4.0.1 (#248)  766310d
+- chore(deps): bump elliptic from 6.5.3 to 6.5.4 (#247)  5d083f7
+
+### Documentation
+- docs(github issue templates): add github issue templates (#245)  605a848
+
+https://github.com/sebelga/gstore-node/compare/v7.2.6...v7.2.7
+
 ### [7.2.6](https://github.com/sebelga/gstore-node/compare/v7.2.5...v7.2.6) (2020-12-15)
 
 ### [7.2.5](https://github.com/sebelga/gstore-node/compare/v7.2.4...v7.2.5) (2020-05-11)

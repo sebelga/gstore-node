@@ -59,12 +59,17 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
   Model: GstoreModel<any>,
   options: { format?: F; readAll?: boolean; showKey?: boolean } = {},
 ): R => {
+  const getEntityKey = (): EntityKey => {
+    const keyData = entityData[Model.gstore.ds.KEY as any];
+    return Model.gstore.ds.isKey(keyData) ? (keyData as EntityKey) : Model.gstore.ds.key({ ...keyData });
+  };
+
   const convertToJson = (): GenericObject => {
     options.readAll = typeof options.readAll === 'undefined' ? false : options.readAll;
 
     const { schema, gstore } = Model;
     const { KEY } = gstore.ds;
-    const entityKey = entityData[KEY as any];
+    const entityKey = getEntityKey();
     const data: { [key: string]: any } = {
       id: idFromKey(entityKey),
     };
@@ -117,7 +122,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
   };
 
   const convertToEntity = (): GstoreEntity => {
-    const key: EntityKey = entityData[Model.gstore.ds.KEY as any];
+    const key = getEntityKey();
     return new Model(entityData, undefined, undefined, undefined, key);
   };
 
