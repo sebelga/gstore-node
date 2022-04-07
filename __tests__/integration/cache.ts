@@ -27,6 +27,7 @@ const gstore = new Gstore({
 gstore.connect(ds);
 
 const uniqueId = (): string => chance.string({ pool: 'abcdefghijklmnopqrstuvwxyz0123456789' });
+const uniqueNumericId = (): number => Number(`4${chance.string({ numeric: true, length: 15 })}`);
 
 const cleanUp = (cb: any): void => {
   ((ds.delete(allKeys) as unknown) as Promise<any>).then(cb);
@@ -101,8 +102,8 @@ describe('Integration Tests (Cache)', () => {
   });
 
   test('should load already cached entities with correct datastore entity keys', async () => {
-    const id1 = uniqueId();
-    const id2 = uniqueId();
+    const id1 = uniqueNumericId();
+    const id2 = uniqueNumericId();
 
     const user1 = new MyModel({ email: 'test3@test.com' }, id1);
     const user2 = new MyModel({ email: 'test4@test.com' }, id2);
@@ -115,12 +116,14 @@ describe('Integration Tests (Cache)', () => {
 
     responseMultiple0.entities.forEach((entry) => {
       expect(ds.isKey(entry?.entityKey)).to.equal(true);
+      expect(typeof entry?.entityKey.id).to.equal('number');
     });
 
     const responseMultiple1 = await MyModel.list({ format: 'ENTITY', order: { property: 'email', descending: false } });
 
     responseMultiple1.entities.forEach((entry) => {
       expect(ds.isKey(entry?.entityKey)).to.equal(true);
+      expect(typeof entry?.entityKey.id).to.equal('number');
     });
   });
 
