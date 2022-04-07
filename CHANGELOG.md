@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file. See [standa
 
 - **datastore.ts:** Entity keys return ids as Number
 
+### ⚠ KNOWN ISSUES
+
+- Caching - when not using in memory caching (e.g. Redis cache) Date objects data is not being correctly deserialized to Date objects
+
+  - Workaround - cast known Date data to a Date object using the `new Date()` JavaScript constructor
+
 ### Bug Fixes
 
 - **datastore.ts:** ensure entities with id based keys are correcly loaded from cache ([a3a5b33](https://github.com/sebelga/gstore-node/commit/a3a5b3326106017ff4b4fe160c96f7c67cd59162)), closes [#243](https://github.com/sebelga/gstore-node/issues/243)
