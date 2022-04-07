@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.0.0](https://github.com/sebelga/gstore-node/compare/v7.2.8...v8.0.0) (2022-04-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **datastore.ts:** Entity keys return ids as Number
+
+### Bug Fixes
+
+* **datastore.ts:** ensure entities with id based keys are correcly loaded from cache ([a3a5b33](https://github.com/sebelga/gstore-node/commit/a3a5b3326106017ff4b4fe160c96f7c67cd59162)), closes [#243](https://github.com/sebelga/gstore-node/issues/243)
+
 ### [7.2.8](https://github.com/sebelga/gstore-node/compare/v7.2.6...v7.2.8) (2022-04-07)
 
 
