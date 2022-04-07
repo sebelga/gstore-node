@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.2.8](https://github.com/sebelga/gstore-node/compare/v7.2.6...v7.2.8) (2022-04-07)
+
+
+### Bug Fixes
+
+* **src/serializers/datastore.ts:** load cached entities with correct Datastore Key type ([#265](https://github.com/sebelga/gstore-node/issues/265)) ([b06641b](https://github.com/sebelga/gstore-node/commit/b06641bda0e3a910ca76097761d4a93217478401)), closes [#243](https://github.com/sebelga/gstore-node/issues/243)
+
 ### [7.2.7](https://github.com/sebelga/gstore-node/compare/v7.2.6...v7.2.7) (2022-04-07)
 
 ### Bug Fixes
