@@ -75,6 +75,7 @@ describe('Integration Tests (Cache)', () => {
     return user.save().then((result) => {
       addKey(result.entityKey);
       return MyModel.get(result.entityKey.name!).then((e) => {
+        expect(ds.isKey(e.entityKey)).equal(true);
         expect(e.email).equal('test@test.com');
       });
     });
@@ -99,6 +100,30 @@ describe('Integration Tests (Cache)', () => {
     expect(responseMultiple[1].email).to.equal('test2@test.com');
   });
 
+  test('should load already cached entities with correct datastore entity keys', async () => {
+    const id1 = uniqueId();
+    const id2 = uniqueId();
+
+    const user1 = new MyModel({ email: 'test3@test.com' }, id1);
+    const user2 = new MyModel({ email: 'test4@test.com' }, id2);
+
+    const results = await Promise.all([user1.save(), user2.save()]);
+
+    results.forEach((result) => addKey(result.entityKey));
+
+    const responseMultiple0 = await MyModel.list({ format: 'ENTITY', order: { property: 'email', descending: false } });
+
+    responseMultiple0.entities.forEach((entry) => {
+      expect(ds.isKey(entry?.entityKey)).to.equal(true);
+    });
+
+    const responseMultiple1 = await MyModel.list({ format: 'ENTITY', order: { property: 'email', descending: false } });
+
+    responseMultiple1.entities.forEach((entry) => {
+      expect(ds.isKey(entry?.entityKey)).to.equal(true);
+    });
+  });
+
   test('should find one entity from the cache', async () => {
     const id = uniqueId();
 
@@ -109,6 +134,7 @@ describe('Integration Tests (Cache)', () => {
     addKey(result.entityKey);
 
     const response = await MyModel.findOne({ email: 'test2@test.com' });
+    expect(ds.isKey(response?.entityKey)).equal(true);
 
     expect(response!.email).to.eq('test2@test.com');
     expect(response!.entityKey.name).to.eq(id);
