@@ -78,6 +78,7 @@ const addCompany = (): Promise<{ name: string; entityKey: EntityKey }> => {
 
 const addUser = (
   company: EntityKey | null = null,
+  ancestors?: string[],
 ): Promise<{ entityKey: EntityKey; name: string; email: string; company: unknown; privateVal: string }> => {
   const name = randomName();
   const email = chance.email();
@@ -91,6 +92,7 @@ const addUser = (
       privateVal,
     },
     randomName(),
+    ancestors,
   );
   return user.save().then(({ entityKey }) => {
     addKey(entityKey);
@@ -286,6 +288,27 @@ describe('Model (Integration Tests)', () => {
 
       const user2 = await UserModel.findOne({ email }, undefined, undefined, { readAll: true });
       expect(user2!.privateVal).to.equal(privateVal);
+    });
+
+    test('should fetch the keys inside a Transaction', async () => {
+      const ancestors = ['UserModel', 'default'];
+      const transaction = gstore.transaction();
+      sinon.spy(transaction, 'createQuery');
+
+      const {
+        email,
+        entityKey: { name: entityName },
+      } = await addUser(null, ancestors);
+
+      await transaction.run();
+
+      const user = await UserModel.findOne({ email }, ancestors, undefined, undefined, transaction);
+      await transaction.commit();
+      expect((transaction.createQuery as any).called).equal(true);
+      expect((transaction.createQuery as any).callCount).equal(1);
+      expect(user!.entityKey instanceof entity.Key).to.eq(true);
+      expect(user!.entityKey.name).to.eq(entityName);
+      expect(user!.privateVal).to.equal(null);
     });
   });
 
