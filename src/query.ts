@@ -126,6 +126,7 @@ class Query<T extends object, M extends object> {
       cache?: boolean;
       ttl?: number | { [key: string]: number };
     },
+    transaction?: Transaction,
   ): PromiseWithPopulate<Entity<T, M> | null> {
     this.Model.__hooksEnabled = true;
 
@@ -135,7 +136,7 @@ class Query<T extends object, M extends object> {
       >;
     }
 
-    const query = this.initQuery<Entity<T, M> | null>(namespace);
+    const query = this.initQuery<Entity<T, M> | null>(namespace, transaction);
     query.limit(1);
 
     Object.keys(keyValues).forEach((k) => {
