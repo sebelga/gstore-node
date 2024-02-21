@@ -281,6 +281,8 @@ export interface QueryOptions {
   ttl?: number | { [propName: string]: number };
 }
 
+type SelectProperties<T> = Extract<keyof T, string> | '__key__';
+
 export interface QueryListOptions<T> extends QueryOptions {
   /**
    * Optional namespace for the query.
@@ -299,7 +301,7 @@ export interface QueryListOptions<T> extends QueryOptions {
   /**
    * Retrieve only select properties from the matched entities.
    */
-  select?: Extract<keyof T, string> | string[];
+  select?: SelectProperties<T> | SelectProperties<T>[];
   /**
    * Supported comparison operators are =, <, >, <=, and >=.
    * "Not equal" and IN operators are currently not supported.

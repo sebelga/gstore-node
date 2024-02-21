@@ -79,7 +79,7 @@ describe('Query Helpers', () => {
 
     test('and allow select to be an Array', () => {
       const options = {
-        select: ['name', 'lastname', 'email'],
+        select: ['name', 'lastname', 'email'] as Array<'name' | 'lastname' | 'email'>,
       };
 
       query = queryHelpers.buildQueryFromOptions(query, options, ds);
