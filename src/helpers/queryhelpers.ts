@@ -1,4 +1,9 @@
-import { Datastore, Transaction, Query as DatastoreQuery } from '@google-cloud/datastore';
+import {
+  Datastore,
+  Transaction,
+  Query as DatastoreQuery,
+  PropertyFilter as DatastorePropertyFilter,
+} from '@google-cloud/datastore';
 import is from 'is';
 import arrify from 'arrify';
 
@@ -57,19 +62,23 @@ const buildQueryFromOptions = <T, Outputformat>(
       throw new Error('Wrong format for filters option');
     }
 
-    if (!is.array(options.filters[0])) {
+    if (!is.array(options.filters[0]) && !(options.filters[0] instanceof DatastorePropertyFilter)) {
       options.filters = [options.filters];
     }
 
-    if (options.filters[0].length > 1) {
+    if (options.filters.length > 0) {
       options.filters.forEach((filter) => {
-        // We check if the value is a function
-        // if it is, we execute it.
-        let value = filter[filter.length - 1];
-        value = is.fn(value) ? value() : value;
-        const f = filter.slice(0, -1).concat([value]);
+        if (filter?.length > 0) {
+          // We check if the value is a function
+          // if it is, we execute it.
+          let value = filter[filter.length - 1];
+          value = is.fn(value) ? value() : value;
+          const f = filter.slice(0, -1).concat([value]);
 
-        (query.filter as any)(...f);
+          (query.filter as any)(...f);
+        } else {
+          query.filter(filter);
+        }
       });
     }
   }

@@ -13,6 +13,7 @@ const { expect } = chai;
 const allKeys: EntityKey[] = [];
 
 const gstore = new Gstore({
+  errorOnEntityNotFound: false,
   cache: {
     stores: [{ store: redisStore }],
     config: {
@@ -41,6 +42,7 @@ const addKey = (key: EntityKey): void => {
 
 interface MyInterface {
   email: string;
+  birthday?: Date;
 }
 
 describe('Integration Tests (Cache)', () => {
@@ -56,6 +58,10 @@ describe('Integration Tests (Cache)', () => {
         type: String,
         validate: 'isEmail',
         required: true,
+      },
+      birthday: {
+        type: Date,
+        optional: true,
       },
     });
 
@@ -82,31 +88,46 @@ describe('Integration Tests (Cache)', () => {
     });
   });
 
-  test('should get one or multiple entities from the cache', async () => {
+  test('should successfully return if no entity exists', async () => {
+    const id1 = uniqueId();
+
+    const response = await MyModel.get(id1);
+    expect(response).to.equal(null, JSON.stringify(response));
+  });
+
+  test('should get one or multiple entities from the cache multiple times', async () => {
     const id1 = uniqueId();
     const id2 = uniqueId();
 
-    const user1 = new MyModel({ email: 'test1@test.com' }, id1);
+    const user1 = new MyModel({ email: 'test1@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id1);
     const user2 = new MyModel({ email: 'test2@test.com' }, id2);
 
     const results = await Promise.all([user1.save(), user2.save()]);
 
     results.forEach((result) => addKey(result.entityKey));
 
-    const responseSingle = await MyModel.get(results[0].entityKey.name!);
+    const responseSingle0 = await MyModel.get(results[0].entityKey.name!);
+    const responseSingle1 = await MyModel.get(results[0].entityKey.name!);
     const responseMultiple = await MyModel.get([results[0].entityKey.name!, results[1].entityKey.name!]);
 
-    expect(responseSingle.email).to.equal('test1@test.com');
+    expect(responseSingle0.email).to.equal('test1@test.com');
+    expect(responseSingle0.birthday instanceof Date).to.equal(true);
+    expect(+(responseSingle0?.birthday || 0)).to.equal(+new Date('2000-01-01T00:00:00.000Z'));
+    expect(responseSingle1.email).to.equal('test1@test.com');
+    expect(responseSingle1.birthday instanceof Date).to.equal(true);
+    expect(+(responseSingle1?.birthday || 0)).to.equal(+new Date('2000-01-01T00:00:00.000Z'));
     expect(responseMultiple[0].email).to.equal('test1@test.com');
+    expect(responseMultiple[0].birthday instanceof Date).to.eq(true);
     expect(responseMultiple[1].email).to.equal('test2@test.com');
+    // expect(typeof responseMultiple[1].birthday).to.eq('string');
   });
 
-  test('should load already cached entities with correct datastore entity keys', async () => {
+  test('should load already cached entities with correct datastore entity keys and dates', async () => {
     const id1 = uniqueNumericId();
     const id2 = uniqueNumericId();
 
-    const user1 = new MyModel({ email: 'test3@test.com' }, id1);
-    const user2 = new MyModel({ email: 'test4@test.com' }, id2);
+    const user1 = new MyModel({ email: 'test3@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id1);
+    const user2 = new MyModel({ email: 'test4@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id2);
 
     const results = await Promise.all([user1.save(), user2.save()]);
 
@@ -117,6 +138,7 @@ describe('Integration Tests (Cache)', () => {
     responseMultiple0.entities.forEach((entry) => {
       expect(ds.isKey(entry?.entityKey)).to.equal(true);
       expect(typeof entry?.entityKey.id).to.equal('number');
+      expect(entry?.birthday instanceof Date).to.eq(true);
     });
 
     const responseMultiple1 = await MyModel.list({ format: 'ENTITY', order: { property: 'email', descending: false } });
@@ -124,23 +146,34 @@ describe('Integration Tests (Cache)', () => {
     responseMultiple1.entities.forEach((entry) => {
       expect(ds.isKey(entry?.entityKey)).to.equal(true);
       expect(typeof entry?.entityKey.id).to.equal('number');
+      expect(entry?.birthday instanceof Date).to.eq(true);
     });
   });
 
-  test('should find one entity from the cache', async () => {
+  test('should find one entity from the cache multiple times', async () => {
     const id = uniqueId();
 
-    const user = new MyModel({ email: 'test2@test.com' }, id);
+    const user = new MyModel({ email: 'test3@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id);
 
     const result = await user.save();
 
     addKey(result.entityKey);
 
-    const response = await MyModel.findOne({ email: 'test2@test.com' });
+    const response = await MyModel.findOne({ email: 'test3@test.com' });
     expect(ds.isKey(response?.entityKey)).equal(true);
 
-    expect(response!.email).to.eq('test2@test.com');
+    expect(response!.email).to.eq('test3@test.com');
     expect(response!.entityKey.name).to.eq(id);
     expect(response!.entityKey instanceof entity.Key).to.eq(true);
+    expect(response!.birthday instanceof Date).to.eq(true);
+
+    const response2 = await MyModel.findOne({ email: 'test3@test.com' });
+
+    expect(ds.isKey(response2?.entityKey)).equal(true);
+
+    expect(response2!.email).to.eq('test3@test.com');
+    expect(response2!.entityKey.name).to.eq(id);
+    expect(response2!.entityKey instanceof entity.Key).to.eq(true);
+    expect(response2!.birthday instanceof Date).to.eq(true);
   });
 });

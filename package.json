@@ -18,7 +18,7 @@
     "pretest": "yarn lint",
     "release": "yarn build && standard-version",
     "test": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --coverage",
-    "test:unit": "jest --c=jest.config.unit.js --coverage",
+    "test:unit": "NODE_OPTIONS=--trace-warnings jest --c=jest.config.unit.js --coverage",
     "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=jest.config.integration.js"
   },
   "engines": {
@@ -75,10 +75,10 @@
     "nsql-cache-datastore": "^1.1.6",
     "optional": "^0.1.4",
     "promised-hooks": "^3.1.1",
-    "validator": "^13.0.0"
+    "validator": "^13.11.0"
   },
   "devDependencies": {
-    "@google-cloud/datastore": "^6.3.1",
+    "@google-cloud/datastore": "^8.0.0",
     "@hapi/joi": "^15.1.1",
     "@types/arrify": "2.0.1",
     "@types/chai": "^4.2.4",

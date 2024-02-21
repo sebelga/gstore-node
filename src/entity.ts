@@ -453,6 +453,19 @@ export class GstoreEntity<T extends object = GenericObject> {
 
         this.entityData[key as keyof T] = value;
       }
+      // Dates can be returned as numbers or ISOStrings from the cache or datastore
+      if ({}.hasOwnProperty.call(prop, 'type') && (prop.type! as Function).name === 'Date') {
+        const val = this.entityData[key as keyof T];
+        if (typeof val === 'number') {
+          this.entityData[key as keyof T] = new Date(val / 1000) as any;
+        } else if (typeof val === 'string') {
+          const tempVal = new Date(val);
+          // check that it is a valid date
+          if (+tempVal >= 0) {
+            this.entityData[key as keyof T] = tempVal as any;
+          }
+        }
+      }
     });
 
     // add Symbol Key to the entityData

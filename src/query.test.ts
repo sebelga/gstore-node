@@ -1,6 +1,6 @@
 import chai from 'chai';
 import sinon from 'sinon';
-import { Transaction as DatastoreTransaction } from '@google-cloud/datastore';
+import { Transaction as DatastoreTransaction, PropertyFilter } from '@google-cloud/datastore';
 
 import { Gstore, QUERIES_FORMATS } from './index';
 import Model from './model';
@@ -116,6 +116,22 @@ describe('Query', () => {
       const fn = (): GstoreQuery<any, any> => {
         query = ModelInstance.query()
           .filter('name', '=', 'John')
+          .groupBy(['name'])
+          .select(['name'])
+          .order('lastname', { descending: true })
+          .limit(1)
+          .offset(1)
+          .start('X') as any;
+        return query;
+      };
+
+      expect(fn).to.not.throw(Error);
+    });
+
+    test('should be able to execute property filter gcloud-node queries', () => {
+      const fn = (): GstoreQuery<any, any> => {
+        query = ModelInstance.query()
+          .filter(new PropertyFilter('name', '=', 'John'))
           .groupBy(['name'])
           .select(['name'])
           .order('lastname', { descending: true })

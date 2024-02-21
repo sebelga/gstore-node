@@ -1,7 +1,7 @@
 import extend from 'extend';
 import is from 'is';
 
-import { Transaction, Query as DatastoreQuery } from '@google-cloud/datastore';
+import { Transaction, Query as DatastoreQuery, PropertyFilter } from '@google-cloud/datastore';
 
 import Model from './model';
 import { Entity } from './entity';
@@ -48,7 +48,7 @@ class Query<T extends object, M extends object> {
         let entities = data[0];
         const info = data[1];
 
-        // Convert to JSON or ENTITY acording to which format is passed. (default = JSON)
+        // Convert to JSON or ENTITY according to which format is passed. (default = JSON)
         // If JSON => Add id property to entities and suppress properties with "read" config is set to `false`
         entities = entities.map((entity) => datastoreSerializer.fromDatastore(entity, this.Model, options));
 
@@ -223,6 +223,7 @@ class Query<T extends object, M extends object> {
 export interface GstoreQuery<T, R> extends Omit<DatastoreQuery, 'run' | 'filter' | 'order'> {
   __originalRun: DatastoreQuery['run'];
   run: QueryRunFunc<T, R>;
+  filter<P extends keyof T>(f: PropertyFilter<Extract<keyof T, string>>): this;
   filter<P extends keyof T>(property: P, value: T[P]): this;
   filter<P extends keyof T>(property: P, operator: DatastoreOperator, value: T[P]): this;
   order(property: keyof T, options?: OrderOptions): this;
@@ -298,12 +299,16 @@ export interface QueryListOptions<T> extends QueryOptions {
   /**
    * Retrieve only select properties from the matched entities.
    */
-  select?: string | string[];
+  select?: Extract<keyof T, string> | string[];
   /**
    * Supported comparison operators are =, <, >, <=, and >=.
    * "Not equal" and IN operators are currently not supported.
    */
-  filters?: [string, any] | [string, DatastoreOperator, any] | any[][];
+  filters?:
+    | [Extract<keyof T, string>, any]
+    | [Extract<keyof T, string>, DatastoreOperator, any]
+    | PropertyFilter<Extract<keyof T, string>>[]
+    | any[][];
   /**
    * Filter a query by ancestors.
    */

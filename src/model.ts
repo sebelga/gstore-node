@@ -811,7 +811,9 @@ export const generateModel = <T extends object, M extends object>(
       dataloader?: any,
       options?: GetOptions,
     ): Promise<EntityData<T> | EntityData<T>[]> {
-      const handler = (keys: EntityKey | EntityKey[]): Promise<EntityData<T> | EntityData<T>[]> => {
+      const handler = (useCache = false) => (
+        keys: EntityKey | EntityKey[],
+      ): Promise<EntityData<T> | EntityData<T>[]> => {
         const keysArray = arrify(keys);
         if (transaction) {
           if (transaction.constructor.name !== 'Transaction') {
@@ -830,6 +832,14 @@ export const generateModel = <T extends object, M extends object>(
         }
 
         return this.gstore.ds.get(keys).then(([result]: [any]) => {
+          if (!result && useCache) {
+            // nsql-cache cannot cache undefined or null results so we short-circuit it by throwing an error
+            // and storing the result on the thrown error
+            const error = new Error('Entity not found');
+            (error as any).code = ERROR_CODES.ERR_ENTITY_NOT_FOUND;
+            (error as any).originalResult = result;
+            throw error;
+          }
           if (Array.isArray(keys)) {
             return arrify(result);
           }
@@ -838,14 +848,24 @@ export const generateModel = <T extends object, M extends object>(
       };
 
       if (this.__hasCache(options)) {
-        return this.gstore.cache!.keys.read(
-          // nsql-cache requires an array for multiple and a single key when *not* multiple
-          Array.isArray(key) && key.length === 1 ? key[0] : key,
-          options,
-          handler,
-        );
+        return this.gstore
+          .cache!.keys.read(
+            // nsql-cache requires an array for multiple and a single key when *not* multiple
+            Array.isArray(key) && key.length === 1 ? key[0] : key,
+            options,
+            handler(true),
+          )
+          .catch((error) => {
+            if (!this.gstore.config.errorOnEntityNotFound) {
+              // check if we've short circuited nsql-cache and then return the original result
+              if (error?.code === ERROR_CODES.ERR_ENTITY_NOT_FOUND) {
+                return error.originalResult;
+              }
+            }
+            throw error;
+          });
       }
-      return handler(key);
+      return handler()(key);
     }
 
     // Helper to know if the cache is "on" when fetching entities
