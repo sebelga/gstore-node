@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [9.0.1](https://github.com/sebelga/gstore-node/compare/v9.0.0...v9.0.1) (2024-02-21)
+
+
+### Bug Fixes
+
+* **query.ts:** allow '__key__' in selected property list ([11cc921](https://github.com/sebelga/gstore-node/commit/11cc921e102897d34df2d5c7f3aef49900fb5f04))
+
 ## [9.0.0](https://github.com/sebelga/gstore-node/compare/v7.2.6...v9.0.0) (2024-02-21)
 
 
