@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.0.0](https://github.com/sebelga/gstore-node/compare/v7.2.6...v9.0.0) (2024-02-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* YES
+* Entity keys return ids as Number
+
+### Features
+
+* datatore update and improvements ([4b809be](https://github.com/sebelga/gstore-node/commit/4b809be24df3a0594e186da355fc6e10f527966d)), closes [#279](https://github.com/sebelga/gstore-node/issues/279) [#274](https://github.com/sebelga/gstore-node/issues/274)
+* **query:** add transaction parameter to `findOne` ([#259](https://github.com/sebelga/gstore-node/issues/259)) ([a8a46b9](https://github.com/sebelga/gstore-node/commit/a8a46b9ac61a91358887f5441762c2bb47c4cb5f))
+
+
+### Bug Fixes
+
+* **src/serializers/datastore.ts:** load cached entities with correct Datastore Key type ([#265](https://github.com/sebelga/gstore-node/issues/265)) ([b06641b](https://github.com/sebelga/gstore-node/commit/b06641bda0e3a910ca76097761d4a93217478401)), closes [#243](https://github.com/sebelga/gstore-node/issues/243)
+
+
+* v8.0.0 (#272) ([d8aefd3](https://github.com/sebelga/gstore-node/commit/d8aefd3308e70b0ed0e0845d482b0ad3c861d5c2)), closes [#272](https://github.com/sebelga/gstore-node/issues/272) [#243](https://github.com/sebelga/gstore-node/issues/243)
+* 💍 show results ([d646c61](https://github.com/sebelga/gstore-node/commit/d646c6117ba098ea89e5c3f86de99ab470c49537)), closes [AB#123](https://github.com/sebelga/AB/issues/123)
+
 ## [8.0.0](https://github.com/sebelga/gstore-node/compare/v7.2.8...v8.0.0) (2022-04-07)
 
 ### ⚠ BREAKING CHANGES
