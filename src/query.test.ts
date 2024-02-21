@@ -297,8 +297,8 @@ describe('Query', () => {
     let queryMock: Query;
 
     beforeEach(() => {
-      sinon.stub(ds, 'createQuery').callsFake((namespace: string) => {
-        queryMock = new Query(ds, { entities: mockEntities }, undefined, namespace);
+      sinon.stub(ds, 'createQuery').callsFake((...args) => {
+        queryMock = new Query(ds, { entities: mockEntities }, undefined, args[0] as string);
 
         sinon.spy(queryMock, 'run');
         sinon.spy(queryMock, 'filter');

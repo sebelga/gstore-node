@@ -287,7 +287,7 @@ export const generateModel = <T extends object, M extends object>(
   schema: Schema<T, M>,
   gstore: Gstore,
 ): Model<T, M> => {
-  const model: Model<T, M> = class GstoreModel extends GstoreEntity<T> {
+  const model: Model<T, M> = (class GstoreModel extends GstoreEntity<T> {
     static gstore: Gstore = gstore;
 
     static schema: Schema<T> = schema;
@@ -392,8 +392,12 @@ export const generateModel = <T extends object, M extends object>(
         });
 
         // TODO: Check if this is still useful??
-        if (Array.isArray(id) && options.preserveOrder && entity.every((e) => typeof e !== 'undefined' && e !== null)) {
-          (entity as GstoreEntity<T>[]).sort((a, b) => id.indexOf(a.entityKey.id) - id.indexOf(b.entityKey.id));
+        if (Array.isArray(id) && options.preserveOrder && entity.every((e) => e?.entityKey?.id)) {
+          (entity as GstoreEntity<T>[]).sort(
+            // we check that each entity has an id but the compiler does not recognize this so we
+            // cast them to string
+            (a, b) => id.indexOf(a.entityKey.id as string) - id.indexOf(b.entityKey.id as string),
+          );
         }
 
         return Array.isArray(id) ? (entity as GstoreEntity<T>[]) : entity[0];
@@ -1112,7 +1116,7 @@ export const generateModel = <T extends object, M extends object>(
     static list: any; // Is added below from the Query instance
 
     static findAround: any; // Is added below from the Query instance
-  } as Model<T, M> & T;
+  } as unknown) as Model<T, M> & T;
 
   const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;

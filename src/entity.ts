@@ -235,10 +235,14 @@ export class GstoreEntity<T extends object = GenericObject> {
       this.entityData = this.__getEntityDataWithVirtuals();
     }
 
-    const data = datastoreSerializer.fromDatastore(this.entityData, this.constructor as Model, {
-      readAll,
-      showKey,
-    });
+    const data: Partial<EntityData<T>> & { [key: string]: any } = datastoreSerializer.fromDatastore(
+      this.entityData,
+      this.constructor as Model,
+      {
+        readAll,
+        showKey,
+      },
+    );
 
     return data;
   }

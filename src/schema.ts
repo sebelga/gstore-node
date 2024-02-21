@@ -270,10 +270,10 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
     if (definition.excludeFromIndexes === true) {
       if (isArray) {
         // We exclude both the array values + all the child properties of object items
-        this.excludedFromIndexes[property] = [`${property}[]`, `${property}[].*`];
+        this.excludedFromIndexes[property] = [`${String(property)}[]`, `${String(property)}[].*`];
       } else if (isObject) {
         // We exclude the emmbeded entity + all its properties
-        this.excludedFromIndexes[property] = [property as string, `${property}.*`];
+        this.excludedFromIndexes[property] = [property as string, `${String(property)}.*`];
       } else {
         this.excludedFromIndexes[property] = [property as string];
       }
@@ -282,11 +282,13 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
       if (isArray) {
         // The format to exclude a property from an embedded entity inside
         // an array is: "myArrayProp[].embeddedKey"
-        this.excludedFromIndexes[property] = excludedArray.map((propExcluded) => `${property}[].${propExcluded}`);
+        this.excludedFromIndexes[property] = excludedArray.map(
+          (propExcluded) => `${String(property)}[].${propExcluded}`,
+        );
       } else if (isObject) {
         // The format to exclude a property from an embedded entity
         // is: "myEmbeddedEntity.key"
-        this.excludedFromIndexes[property] = excludedArray.map((propExcluded) => `${property}.${propExcluded}`);
+        this.excludedFromIndexes[property] = excludedArray.map((propExcluded) => `${String(property)}.${propExcluded}`);
       }
     }
   }
