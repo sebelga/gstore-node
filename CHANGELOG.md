@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.1.0](https://github.com/sebelga/gstore-node/compare/v9.0.1...v9.1.0) (2024-03-04)
+
 ### [9.0.1](https://github.com/sebelga/gstore-node/compare/v9.0.0...v9.0.1) (2024-02-21)
 
 
