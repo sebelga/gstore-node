@@ -279,6 +279,9 @@ describe('Queries (Integration Tests)', () => {
       test('should also work with ENTITY format', () =>
         UserModel.query<'ENTITY'>()
           .filter('createdAt', '>', new Date('2019-01-01'))
+          .limit(100)
+          .order('createdAt', {descending: false })
+          .offset(0)
           .run({ format: 'ENTITY' })
           .populate()
           .then(({ entities }) => {

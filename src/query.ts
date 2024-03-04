@@ -1,7 +1,7 @@
 import extend from 'extend';
 import is from 'is';
 
-import { Transaction, Query as DatastoreQuery, PropertyFilter } from '@google-cloud/datastore';
+import { Transaction, Query as DatastoreQuery, PropertyFilter, Key } from '@google-cloud/datastore';
 
 import Model from './model';
 import { Entity } from './entity';
@@ -220,13 +220,23 @@ class Query<T extends object, M extends object> {
   }
 }
 
-export interface GstoreQuery<T, R> extends Omit<DatastoreQuery, 'run' | 'filter' | 'order'> {
+export interface GstoreQuery<T, R>
+  extends Omit<
+    DatastoreQuery,
+    'run' | 'hasAncestor' | 'filter' | 'order' | 'groupBy' | 'select' | 'limit' | 'offset' | 'start'
+  > {
   __originalRun: DatastoreQuery['run'];
   run: QueryRunFunc<T, R>;
+  hasAncestor(key: Key): this;
   filter<P extends keyof T>(f: PropertyFilter<Extract<keyof T, string>>): this;
   filter<P extends keyof T>(property: P, value: T[P]): this;
   filter<P extends keyof T>(property: P, operator: DatastoreOperator, value: T[P]): this;
   order(property: keyof T, options?: OrderOptions): this;
+  groupBy(fieldNames: string | string[]): this;
+  select(fieldNames: string | string[]): this;
+  limit(n: number): this;
+  offset(n: number): this;
+  start(start: string | Buffer): this;
 }
 
 type QueryRunFunc<T, R> = (

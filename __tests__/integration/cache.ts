@@ -150,6 +150,31 @@ describe('Integration Tests (Cache)', () => {
     });
   });
 
+  test('should query already cached entities with correct ids and data', async () => {
+    const id1 = uniqueNumericId();
+    const id2 = uniqueNumericId();
+
+    const user1 = new MyModel({ email: 'test3@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id1);
+    const user2 = new MyModel({ email: 'test4@test.com', birthday: new Date('2000-01-01T00:00:00.000Z') }, id2);
+
+    const results = await Promise.all([user1.save(), user2.save()]);
+
+    results.forEach((result) => addKey(result.entityKey));
+
+    const response0 = await MyModel.query().limit(1).offset(1).order('email', { descending: true }).run({ cache: true, ttl: 100 });
+    expect((response0.entities[0] as any).id).to.equal(id1);
+    expect(response0.entities[0].birthday instanceof Date).to.eq(true);
+    expect(response0.entities[0].email).to.eq('test3@test.com')
+    expect(typeof response0.nextPageCursor).to.eq('string')
+
+    const response1 = await MyModel.query().limit(1).offset(1).order('email', { descending: true }).run({ cache: true, ttl: 100 });
+
+    expect((response1.entities[0] as any).id).to.equal(id1);
+    expect(response1.entities[0].birthday instanceof Date).to.eq(true);
+    expect(response1.entities[0].email).to.eq('test3@test.com')
+    expect(typeof response1.nextPageCursor).to.eq('string')
+  });
+
   test('should find one entity from the cache multiple times', async () => {
     const id = uniqueId();
 
