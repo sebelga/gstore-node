@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [10.0.0](https://github.com/sebelga/gstore-node/compare/v9.1.0...v10.0.0) (2026-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changed minimum nodejs version to v22 and @google-cloud/datastore to v10.1.0
+
+* upgrade dependencies ([60d72f5](https://github.com/sebelga/gstore-node/commit/60d72f54e36f258e952a65da49b945b32b64e924)), closes [#283](https://github.com/sebelga/gstore-node/issues/283) [#279](https://github.com/sebelga/gstore-node/issues/279)
+
 ## [9.1.0](https://github.com/sebelga/gstore-node/compare/v9.0.1...v9.1.0) (2024-03-04)
 
 ### [9.0.1](https://github.com/sebelga/gstore-node/compare/v9.0.0...v9.0.1) (2024-02-21)
