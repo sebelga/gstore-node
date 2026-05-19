@@ -1,4 +1,4 @@
-import isDateValid from 'date-fns/isValid';
+import { isValid } from 'date-fns/isValid';
 import validator from 'validator';
 import is from 'is';
 import { Datastore } from '@google-cloud/datastore';
@@ -14,7 +14,7 @@ const isValidDate = (value: any): boolean => {
   if (typeof value !== 'string') {
     return false;
   }
-  return isDateValid(new Date(value));
+  return isValid(new Date(value));
 };
 
 const isInt = (n: unknown): boolean => Number(n) === n && n % 1 === 0;
@@ -184,7 +184,7 @@ export interface ValidateResponse {
 
 const validate = <T extends object>(
   entityData: EntityData,
-  schema: Schema<T>,
+  schema: Schema,
   entityKind: string,
   datastore: Datastore,
 ): ValidateResponse => {

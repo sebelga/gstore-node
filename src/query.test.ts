@@ -444,7 +444,14 @@ describe('Query', () => {
     describe('findAround()', () => {
       test('should get 3 entities after a given date', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { after: 3 }).then((entities) => {
-          expect((queryMock.filter as any).getCall(0).args).deep.equal(['createdOn', '>', '2016-1-1']);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal([
+            {
+              name: 'createdOn',
+              op: '>',
+              val: '2016-1-1',
+            },
+          ]);
+          expect((queryMock.filter as any).getCall(0).args[0].constructor.name).equal('PropertyFilter');
           expect((queryMock.order as any).getCall(0).args).deep.equal(['createdOn', { descending: true }]);
           expect((queryMock.limit as any).getCall(0).args[0]).equal(3);
 
@@ -454,7 +461,14 @@ describe('Query', () => {
 
       test('should get 3 entities before a given date', () =>
         ModelInstance.findAround('createdOn', '2016-1-1', { before: 12 }).then(() => {
-          expect((queryMock.filter as any).getCall(0).args).deep.equal(['createdOn', '<', '2016-1-1']);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal([
+            {
+              name: 'createdOn',
+              op: '<',
+              val: '2016-1-1',
+            },
+          ]);
+          expect((queryMock.filter as any).getCall(0).args[0].constructor.name).equal('PropertyFilter');
           expect((queryMock.limit as any).getCall(0).args[0]).equal(12);
         }));
 
@@ -578,9 +592,23 @@ describe('Query', () => {
 
       test('should run correct gcloud Query', () =>
         ModelInstance.findOne({ name: 'John', email: 'john@snow.com' }).then(() => {
-          expect((queryMock.filter as any).getCall(0).args).deep.equal(['name', 'John']);
+          expect((queryMock.filter as any).getCall(0).args).deep.equal([
+            {
+              name: 'name',
+              op: '=',
+              val: 'John',
+            },
+          ]);
+          expect((queryMock.filter as any).getCall(0).args[0].constructor.name).equal('PropertyFilter');
 
-          expect((queryMock.filter as any).getCall(1).args).deep.equal(['email', 'john@snow.com']);
+          expect((queryMock.filter as any).getCall(1).args).deep.equal([
+            {
+              name: 'email',
+              op: '=',
+              val: 'john@snow.com',
+            },
+          ]);
+          expect((queryMock.filter as any).getCall(1).args[0].constructor.name).equal('PropertyFilter');
         }));
 
       test('should return a Model instance', () =>
@@ -664,10 +692,22 @@ describe('Query', () => {
           const { args: args2 } = (queryMock.filter as any).getCall(1);
           const { args: args3 } = (queryMock.hasAncestor as any).getCall(0);
 
-          expect(args[0]).equal('name');
-          expect(args[1]).equal('Mick');
-          expect(args2[0]).equal('email');
-          expect(args2[1]).equal('mick@jagger.com');
+          expect(args).deep.equal([
+            {
+              name: 'name',
+              op: '=',
+              val: 'Mick',
+            },
+          ]);
+          expect(args[0].constructor.name).equal('PropertyFilter');
+          expect(args2).deep.equal([
+            {
+              name: 'email',
+              op: '=',
+              val: 'mick@jagger.com',
+            },
+          ]);
+          expect(args2[0].constructor.name).equal('PropertyFilter');
           expect(args3[0].kind).equal('Parent');
           expect(args3[0].name).equal('default');
         });

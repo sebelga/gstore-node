@@ -20,7 +20,7 @@ describe('dataloader', () => {
   test('should create a dataloader instance', () => {
     const loader = createDataLoader(ds);
     expect(loader.constructor.name).equal('DataLoader');
-    expect((loader as any)._options.maxBatchSize).equal(1000);
+    expect((loader as any)._maxBatchSize).equal(1000);
   });
 
   test('should pass the keys to the datastore "get" method and preserve Order', () => {

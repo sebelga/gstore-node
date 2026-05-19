@@ -1,6 +1,6 @@
 import chai from 'chai';
 import Chance from 'chance';
-import { Datastore } from '@google-cloud/datastore';
+import { Datastore, PropertyFilter as DatastorePropertyFilter } from '@google-cloud/datastore';
 
 import { Gstore, Entity, EntityKey } from '../../src';
 
@@ -80,7 +80,7 @@ const mapUserToId = users.reduce(
 );
 
 const cleanUp = (): Promise<any> =>
-  ((ds.delete(allKeys) as unknown) as Promise<any>)
+  (ds.delete(allKeys) as unknown as Promise<any>)
     .then(() => Promise.all([UserModel.deleteAll(), AddressModel.deleteAll()]))
     .catch((err) => {
         console.log('Error cleaning up'); // eslint-disable-line
@@ -261,7 +261,7 @@ describe('Queries (Integration Tests)', () => {
     describe('populate()', () => {
       test('should populate the address of all users', () =>
         UserModel.query()
-          .filter('createdAt', '>', new Date('2019-01-01'))
+          .filter(new DatastorePropertyFilter('createdAt', '>', new Date('2019-01-01')))
           .run()
           .populate()
           .then(({ entities }) => {
@@ -278,9 +278,9 @@ describe('Queries (Integration Tests)', () => {
 
       test('should also work with ENTITY format', () =>
         UserModel.query<'ENTITY'>()
-          .filter('createdAt', '>', new Date('2019-01-01'))
+          .filter(new DatastorePropertyFilter('createdAt', '>', new Date('2019-01-01')))
           .limit(100)
-          .order('createdAt', {descending: false })
+          .order('createdAt', { descending: false })
           .offset(0)
           .run({ format: 'ENTITY' })
           .populate()
@@ -298,7 +298,7 @@ describe('Queries (Integration Tests)', () => {
 
       test('should allow to select specific reference entity fields', () =>
         UserModel.query()
-          .filter('createdAt', '>', new Date('2019-01-01'))
+          .filter(new DatastorePropertyFilter('createdAt', '>', new Date('2019-01-01')))
           .run()
           .populate('address', 'country')
           .populate('unknown')

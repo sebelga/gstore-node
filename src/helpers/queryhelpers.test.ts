@@ -1,6 +1,6 @@
 import chai from 'chai';
 import sinon from 'sinon';
-import { Datastore, PropertyFilter } from '@google-cloud/datastore';
+import { Datastore, PropertyFilter as DatastorePropertyFilter } from '@google-cloud/datastore';
 
 import queryHelpers from './queryhelpers';
 import { GstoreQuery } from '../query';
@@ -145,22 +145,22 @@ describe('Query Helpers', () => {
     test('and define several property filters', () => {
       const options = {
         filters: [
-          new PropertyFilter('name', '=', 'John'),
-          new PropertyFilter('lastname', '=', 'Snow'),
-          new PropertyFilter('age', '<', 30),
+          new DatastorePropertyFilter('name', '=', 'John'),
+          new DatastorePropertyFilter('lastname', '=', 'Snow'),
+          new DatastorePropertyFilter('age', '<', 30),
         ],
       };
 
       query = queryHelpers.buildQueryFromOptions(query, options, ds);
 
       expect(query.entityFilters.length).equal(3);
-      expect(((query.entityFilters[0] as any) as PropertyFilter<string>).name).equal('name');
-      expect(((query.entityFilters[0] as any) as PropertyFilter<string>).op).equal('=');
-      expect(((query.entityFilters[0] as any) as PropertyFilter<string>).val).equal('John');
-      expect(((query.entityFilters[1] as any) as PropertyFilter<string>).name).equal('lastname');
-      expect(((query.entityFilters[1] as any) as PropertyFilter<string>).op).equal('=');
-      expect(((query.entityFilters[1] as any) as PropertyFilter<string>).val).equal('Snow');
-      expect(((query.entityFilters[2] as any) as PropertyFilter<string>).op).equal('<');
+      expect((query.entityFilters[0] as any as DatastorePropertyFilter<string>).name).equal('name');
+      expect((query.entityFilters[0] as any as DatastorePropertyFilter<string>).op).equal('=');
+      expect((query.entityFilters[0] as any as DatastorePropertyFilter<string>).val).equal('John');
+      expect((query.entityFilters[1] as any as DatastorePropertyFilter<string>).name).equal('lastname');
+      expect((query.entityFilters[1] as any as DatastorePropertyFilter<string>).op).equal('=');
+      expect((query.entityFilters[1] as any as DatastorePropertyFilter<string>).val).equal('Snow');
+      expect((query.entityFilters[2] as any as DatastorePropertyFilter<string>).op).equal('<');
     });
 
     test('and execute a function in a filter value, without modifying the filters Array', () => {

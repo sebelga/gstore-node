@@ -1,7 +1,12 @@
 import extend from 'extend';
 import is from 'is';
 
-import { Transaction, Query as DatastoreQuery, PropertyFilter, Key } from '@google-cloud/datastore';
+import {
+  Transaction,
+  Query as DatastoreQuery,
+  PropertyFilter as DatastorePropertyFilter,
+  Key,
+} from '@google-cloud/datastore';
 
 import Model from './model';
 import { Entity } from './entity';
@@ -131,16 +136,22 @@ class Query<T extends object, M extends object> {
     this.Model.__hooksEnabled = true;
 
     if (!is.object(keyValues)) {
-      return Promise.reject(new Error('[gstore.findOne()]: "Params" has to be an object.')) as PromiseWithPopulate<
-        never
-      >;
+      return Promise.reject(
+        new Error('[gstore.findOne()]: "Params" has to be an object.'),
+      ) as PromiseWithPopulate<never>;
     }
 
     const query = this.initQuery<Entity<T, M> | null>(namespace, transaction);
     query.limit(1);
 
     Object.keys(keyValues).forEach((k) => {
-      query.filter(k as keyof T, keyValues[k as keyof T]);
+      query.filter(
+        new DatastorePropertyFilter(
+          k as Extract<keyof T, string>,
+          '=',
+          keyValues[k as Extract<keyof T, string>] as any,
+        ),
+      );
     });
 
     if (ancestors) {
@@ -211,12 +222,12 @@ class Query<T extends object, M extends object> {
     const op = options.after ? '>' : '<';
     const descending = !!options.after;
 
-    query.filter(property, op, value);
+    query.filter(new DatastorePropertyFilter(property as Extract<keyof T, string>, op, value));
     query.order(property, { descending });
     query.limit(options.after ? options.after : options.before!);
 
     const { after, before, ...rest } = options;
-    return query.run(rest, (res: QueryResponse<T>) => (res.entities as unknown) as Outputformat[]);
+    return query.run(rest, (res: QueryResponse<T>) => res.entities as unknown as Outputformat[]);
   }
 }
 
@@ -228,7 +239,7 @@ export interface GstoreQuery<T, R>
   __originalRun: DatastoreQuery['run'];
   run: QueryRunFunc<T, R>;
   hasAncestor(key: Key): this;
-  filter<P extends keyof T>(f: PropertyFilter<Extract<keyof T, string>>): this;
+  filter<P extends keyof T>(f: DatastorePropertyFilter<Extract<keyof T, string>>): this;
   filter<P extends keyof T>(property: P, value: T[P]): this;
   filter<P extends keyof T>(property: P, operator: DatastoreOperator, value: T[P]): this;
   order(property: keyof T, options?: OrderOptions): this;
@@ -319,7 +330,7 @@ export interface QueryListOptions<T> extends QueryOptions {
   filters?:
     | [Extract<keyof T, string>, any]
     | [Extract<keyof T, string>, DatastoreOperator, any]
-    | PropertyFilter<Extract<keyof T, string>>[]
+    | DatastorePropertyFilter<Extract<keyof T, string>>[]
     | any[][];
   /**
    * Filter a query by ancestors.

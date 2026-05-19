@@ -3,8 +3,8 @@ import arrify from 'arrify';
 import extend from 'extend';
 import hooks from 'promised-hooks';
 import dsAdapterFactory from 'nsql-cache-datastore';
-import get from 'lodash.get';
-import set from 'lodash.set';
+import get from 'lodash/get';
+import set from 'lodash/set';
 
 import { Transaction } from '@google-cloud/datastore';
 
@@ -38,7 +38,7 @@ const { populateFactory } = populateHelpers;
 
 export interface Model<
   T extends object = GenericObject,
-  M extends object = { [key: string]: CustomEntityFunction<T> }
+  M extends object = { [key: string]: CustomEntityFunction<T> },
 > {
   new (data?: EntityData<T>, id?: IdType, ancestors?: Ancestor, namespace?: string, key?: EntityKey): Entity<T, M>;
 
@@ -191,7 +191,7 @@ export interface Model<
    */
   query<
     F extends JSONFormatType | EntityFormatType = JSONFormatType,
-    R = F extends EntityFormatType ? QueryResponse<T, Entity<T, M>[]> : QueryResponse<T, EntityData<T>[]>
+    R = F extends EntityFormatType ? QueryResponse<T, Entity<T, M>[]> : QueryResponse<T, EntityData<T>[]>,
   >(
     namespace?: string,
     transaction?: Transaction,
@@ -287,7 +287,7 @@ export const generateModel = <T extends object, M extends object>(
   schema: Schema<T, M>,
   gstore: Gstore,
 ): Model<T, M> => {
-  const model: Model<T, M> = (class GstoreModel extends GstoreEntity<T> {
+  const model: Model<T, M> = class GstoreModel extends GstoreEntity<T> {
     static gstore: Gstore = gstore;
 
     static schema: Schema<T> = schema;
@@ -348,7 +348,7 @@ export const generateModel = <T extends object, M extends object>(
         keys.push(key);
       }
 
-      return isMultiple ? ((keys as unknown) as R) : ((keys[0] as unknown) as R);
+      return isMultiple ? (keys as unknown as R) : (keys[0] as unknown as R);
     }
 
     static get<U extends IdType | Array<IdType>>(
@@ -580,7 +580,7 @@ export const generateModel = <T extends object, M extends object>(
         return Promise.resolve({ key });
       }
 
-      return ((this.gstore.ds.delete(key) as unknown) as Promise<any>).then((results?: [{ indexUpdates?: number }]) => {
+      return (this.gstore.ds.delete(key) as unknown as Promise<any>).then((results?: [{ indexUpdates?: number }]) => {
         const response: DeleteResponse = results ? results[0] : {};
         response.key = key;
 
@@ -815,41 +815,41 @@ export const generateModel = <T extends object, M extends object>(
       dataloader?: any,
       options?: GetOptions,
     ): Promise<EntityData<T> | EntityData<T>[]> {
-      const handler = (useCache = false) => (
-        keys: EntityKey | EntityKey[],
-      ): Promise<EntityData<T> | EntityData<T>[]> => {
-        const keysArray = arrify(keys);
-        if (transaction) {
-          if (transaction.constructor.name !== 'Transaction') {
-            return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
+      const handler =
+        (useCache = false) =>
+        (keys: EntityKey | EntityKey[]): Promise<EntityData<T> | EntityData<T>[]> => {
+          const keysArray = arrify(keys);
+          if (transaction) {
+            if (transaction.constructor.name !== 'Transaction') {
+              return Promise.reject(new Error('Transaction needs to be a gcloud Transaction'));
+            }
+            return transaction.get(keysArray).then(([result]) => arrify(result));
           }
-          return transaction.get(keysArray).then(([result]) => arrify(result));
-        }
 
-        if (dataloader) {
-          if (dataloader.constructor.name !== 'DataLoader') {
-            return Promise.reject(
-              new GstoreError(ERROR_CODES.ERR_GENERIC, 'dataloader must be a "DataLoader" instance'),
-            );
+          if (dataloader) {
+            if (dataloader.constructor.name !== 'DataLoader') {
+              return Promise.reject(
+                new GstoreError(ERROR_CODES.ERR_GENERIC, 'dataloader must be a "DataLoader" instance'),
+              );
+            }
+            return dataloader.loadMany(keysArray).then((result: EntityData) => arrify(result));
           }
-          return dataloader.loadMany(keysArray).then((result: EntityData) => arrify(result));
-        }
 
-        return this.gstore.ds.get(keys).then(([result]: [any]) => {
-          if (!result && useCache) {
-            // nsql-cache cannot cache undefined or null results so we short-circuit it by throwing an error
-            // and storing the result on the thrown error
-            const error = new Error('Entity not found');
-            (error as any).code = ERROR_CODES.ERR_ENTITY_NOT_FOUND;
-            (error as any).originalResult = result;
-            throw error;
-          }
-          if (Array.isArray(keys)) {
-            return arrify(result);
-          }
-          return result;
-        });
-      };
+          return this.gstore.ds.get(keys).then(([result]: [any]) => {
+            if (!result && useCache) {
+              // nsql-cache cannot cache undefined or null results so we short-circuit it by throwing an error
+              // and storing the result on the thrown error
+              const error = new Error('Entity not found');
+              (error as any).code = ERROR_CODES.ERR_ENTITY_NOT_FOUND;
+              (error as any).originalResult = result;
+              throw error;
+            }
+            if (Array.isArray(keys)) {
+              return arrify(result);
+            }
+            return result;
+          });
+        };
 
       if (this.__hasCache(options)) {
         return this.gstore
@@ -1116,7 +1116,7 @@ export const generateModel = <T extends object, M extends object>(
     static list: any; // Is added below from the Query instance
 
     static findAround: any; // Is added below from the Query instance
-  } as unknown) as Model<T, M> & T;
+  } as unknown as Model<T, M> & T;
 
   const query = new Query<T, M>(model);
   const { initQuery, list, findOne, findAround } = query;
