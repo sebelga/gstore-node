@@ -283,7 +283,7 @@ describe('Model', () => {
     test('should create array of ids', () => {
       const keys = GstoreModel.key([22, 69]);
 
-      expect(is.array(keys)).equal(true);
+      expect(Array.isArray(keys)).equal(true);
       expect(keys.length).equal(2);
       expect(keys[1].path[1]).equal(69);
     });
@@ -335,15 +335,15 @@ describe('Model', () => {
       sinon.stub(ds, 'get').resolves([[entity2, entity1]]); // not sorted
 
       return GstoreModel.get([22, 69], undefined, undefined, undefined, { preserveOrder: true }).then((_entity) => {
-        expect(is.array(ds.get.getCall(0).args[0])).equal(true);
-        expect(is.array(_entity)).equal(true);
+        expect(Array.isArray(ds.get.getCall(0).args[0])).equal(true);
+        expect(Array.isArray(_entity)).equal(true);
         expect(_entity[0].entityKey.id).equal(22); // sorted
       });
     });
 
     test('should consistently return an array when providing id as an Array', () =>
       GstoreModel.get(['abc']).then((_entity) => {
-        assert.isTrue(is.array(_entity));
+        assert.isTrue(Array.isArray(_entity));
       }));
 
     test('not converting string with mix of number and non number', () =>
@@ -842,7 +842,7 @@ describe('Model', () => {
 
     test('should allow array of ids', () =>
       GstoreModel.delete([22, 69]).then(() => {
-        expect(is.array(ds.delete.getCall(0).args[0])).equal(true);
+        expect(Array.isArray(ds.delete.getCall(0).args[0])).equal(true);
       }));
 
     test('should allow ancestors', () =>
@@ -1175,7 +1175,7 @@ describe('Model', () => {
         expect((GstoreModel.delete as any).callCount).equal(1);
 
         const { args } = (GstoreModel.delete as any).getCall(0);
-        expect(is.array(args[4])).equal(true);
+        expect(Array.isArray(args[4])).equal(true);
         expect(args[4]).deep.equal([mockEntities[0][ds.KEY], mockEntities[1][ds.KEY]]);
 
         (GstoreModel.delete as any).restore();

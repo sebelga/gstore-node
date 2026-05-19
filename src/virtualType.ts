@@ -1,5 +1,3 @@
-import is from 'is';
-
 import { FunctionType, GenericObject } from './types';
 
 class VirtualType {
@@ -19,7 +17,7 @@ class VirtualType {
   }
 
   get(fn: FunctionType): VirtualType {
-    if (!is.fn(fn)) {
+    if (typeof fn !== 'function') {
       throw new Error('You need to pass a function to virtual get');
     }
     this.getter = fn;
@@ -27,7 +25,7 @@ class VirtualType {
   }
 
   set(fn: FunctionType): VirtualType {
-    if (!is.fn(fn)) {
+    if (typeof fn !== 'function') {
       throw new Error('You need to pass a function to virtual set');
     }
     this.setter = fn;

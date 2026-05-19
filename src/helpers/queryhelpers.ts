@@ -58,11 +58,11 @@ const buildQueryFromOptions = <T, Outputformat>(
   }
 
   if (options.filters) {
-    if (!is.array(options.filters)) {
+    if (!Array.isArray(options.filters)) {
       throw new Error('Wrong format for filters option');
     }
 
-    if (!is.array(options.filters[0]) && !(options.filters[0] instanceof DatastorePropertyFilter)) {
+    if (!Array.isArray(options.filters[0]) && !(options.filters[0] instanceof DatastorePropertyFilter)) {
       options.filters = [options.filters];
     }
 
@@ -72,7 +72,7 @@ const buildQueryFromOptions = <T, Outputformat>(
           // We check if the value is a function
           // if it is, we execute it.
           let value = filter[filter.length - 1];
-          value = is.fn(value) ? value() : value;
+          value = typeof value === 'function' ? value() : value;
           const f = filter.slice(0, -1).concat([value]);
 
           (query.filter as any)(...f);

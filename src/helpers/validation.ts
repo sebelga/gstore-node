@@ -72,7 +72,7 @@ const validatePropType = (
       ref = 'datetime.base';
       break;
     case 'array':
-      isValid = is.array(value);
+      isValid = Array.isArray(value);
       ref = 'array.base';
       break;
     case 'number': {
@@ -101,8 +101,9 @@ const validatePropType = (
       break;
     case 'geoPoint': {
       if (
-        is.object(value) &&
-        Object.keys(value).length === 2 &&
+        value !== null &&
+        typeof value === 'object' &&
+        Object.keys(value)?.length === 2 &&
         {}.hasOwnProperty.call(value, 'longitude') &&
         {}.hasOwnProperty.call(value, 'latitude')
       ) {

@@ -1,4 +1,3 @@
-import is from 'is';
 import hooks from 'promised-hooks';
 import { Transaction } from '@google-cloud/datastore';
 import DataLoader from 'dataloader';
@@ -223,7 +222,7 @@ export class GstoreEntity<T extends object = GenericObject> {
    * @link https://sebloix.gitbook.io/gstore-node/entity/methods/plain
    */
   plain(options: PlainOptions | undefined = {}): Partial<EntityData<T>> & { [key: string]: any } {
-    if (!is.object(options)) {
+    if (typeof options !== 'object' && typeof options !== 'function') {
       throw new Error('Options must be an Object');
     }
     const readAll = !!options.readAll || false;
@@ -477,13 +476,13 @@ export class GstoreEntity<T extends object = GenericObject> {
   }
 
   private __createKey(id?: IdType, ancestors?: Ancestor, namespace?: string): EntityKey {
-    if (id && !is.number(id) && !is.string(id)) {
+    if (id && typeof id !== 'number' && typeof id !== 'string') {
       throw new Error('id must be a string or a number');
     }
 
-    const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && is.array(ancestors);
+    const hasAncestors = typeof ancestors !== 'undefined' && ancestors !== null && Array.isArray(ancestors);
 
-    let path: (string | number)[] = hasAncestors ? [...ancestors!] : [];
+    let path: (string | number)[] = hasAncestors ? [...ancestors] : [];
 
     if (id) {
       path = [...path, this.entityKind, id];

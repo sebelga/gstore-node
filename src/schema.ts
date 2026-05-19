@@ -297,7 +297,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
    * Flag that returns "true" if the schema has a joi config object.
    */
   get isJoi(): boolean {
-    return !is.undefined(this.joiSchema);
+    return typeof this.joiSchema !== 'undefined';
   }
 
   private parseSchemaProperties(
@@ -311,7 +311,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
     let hasJoiExtras = false;
 
     if (isJoiSchema) {
-      hasJoiExtras = is.object((joiConfig as JoiConfig).extra);
+      hasJoiExtras = (joiConfig as JoiConfig).extra !== null && typeof (joiConfig as JoiConfig).extra === 'object';
     }
 
     // Parse the Schema properties and add to our maps and build meta data.
@@ -336,7 +336,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
 
       if (hasJoiExtras) {
         Object.keys((joiConfig as JoiConfig).extra!).forEach((k) => {
-          if (is.function(joiSchema[k])) {
+          if (typeof joiSchema[k] === 'function') {
             const args = (joiConfig as JoiConfig).extra![k];
             joiSchema = joiSchema[k](...args);
           }
@@ -356,7 +356,7 @@ class Schema<T extends object = any, M extends object = { [key: string]: CustomE
           allowUnknown: options.explicitOnly !== true,
         },
       };
-      if (is.object(options.joi)) {
+      if (options.joi !== null && typeof options.joi === 'object') {
         options.joi = extend(true, {}, joiOptionsDefault, options.joi);
       } else {
         options.joi = { ...joiOptionsDefault };

@@ -99,9 +99,9 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
         if ({}.hasOwnProperty.call(schema.paths, k)) {
           // During queries @google-cloud converts datetime to number and cache values can be strings
           if (schema.paths[k].type && (schema.paths[k].type! as Function).name === 'Date') {
-            if (is.number(value)) {
+            if (typeof value === 'number') {
               value = new Date(value / 1000);
-            } else if (is.string(value)) {
+            } else if (typeof value === 'string') {
               const tempVal = new Date(value);
               if (+tempVal > 0) {
                 value = tempVal;
@@ -112,7 +112,7 @@ const fromDatastore = <F extends 'JSON' | 'ENTITY' = 'JSON', R = F extends 'ENTI
           // Sanitise embedded objects
           if (
             typeof schema.paths[k].excludeFromRead !== 'undefined' &&
-            is.array(schema.paths[k].excludeFromRead) &&
+            Array.isArray(schema.paths[k].excludeFromRead) &&
             !options.readAll
           ) {
             schema.paths[k].excludeFromRead!.forEach((prop) => {
@@ -171,7 +171,7 @@ const entitiesToDatastore = <
   entities: T,
   options: ToDatastoreOptions | undefined = {},
 ): R => {
-  const isMultiple = is.array(entities);
+  const isMultiple = Array.isArray(entities);
   const entitiesToArray = arrify(entities);
 
   if (entitiesToArray[0] instanceof GstoreEntity !== true) {

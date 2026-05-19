@@ -312,7 +312,7 @@ export const generateModel = <T extends object, M extends object>(
           path.push(id);
         }
 
-        if (ancestors && is.array(ancestors)) {
+        if (ancestors && Array.isArray(ancestors)) {
           path = ancestors.concat(path);
         }
 
@@ -754,7 +754,7 @@ export const generateModel = <T extends object, M extends object>(
     ): { [P in keyof T]: T[P] } | GenericObject {
       const key = data[this.gstore.ds.KEY as any]; // save the Key
 
-      if (!is.object(data)) {
+      if (data !== null && typeof data !== 'object' && typeof data !== 'function') {
         return {};
       }
 
@@ -792,7 +792,7 @@ export const generateModel = <T extends object, M extends object>(
           sanitized![k] = null;
         } else if (hasSchemaRefProps && schema.__meta.refProps[k] && !this.gstore.ds.isKey(propValue)) {
           // Replace populated entity by their entity Key
-          if (is.object(propValue) && propValue[this.gstore.ds.KEY]) {
+          if (propValue !== null && typeof propValue === 'object' && propValue[this.gstore.ds.KEY]) {
             sanitized![k] = propValue[this.gstore.ds.KEY];
           }
         }
@@ -1067,9 +1067,9 @@ export const generateModel = <T extends object, M extends object>(
        */
       const getScopeForDeleteHooks = (): any => {
         const id =
-          is.object(args[0]) && {}.hasOwnProperty.call(args[0], '__override') ? arrify(args[0].__override)[0] : args[0];
+          args[0] !== null && typeof args[0] === 'object' && {}.hasOwnProperty.call(args[0], '__override') ? arrify(args[0].__override)[0] : args[0];
 
-        if (is.array(id)) {
+        if (Array.isArray(id)) {
           return null;
         }
 
@@ -1079,7 +1079,7 @@ export const generateModel = <T extends object, M extends object>(
 
         if (hookType === 'post') {
           ({ key } = args);
-          if (is.array(key)) {
+          if (Array.isArray(key)) {
             return null;
           }
         } else {

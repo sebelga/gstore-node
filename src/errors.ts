@@ -1,7 +1,6 @@
 /* eslint-disable max-classes-per-file, no-use-before-define */
 
 import util from 'util';
-import is from 'is';
 
 type MessageGetter = (...args: any[]) => string;
 
@@ -35,7 +34,7 @@ export class GstoreError extends Error {
 
   constructor(code?: string, msg?: string, args?: any) {
     if (!msg && code && code in messages) {
-      if (is.function(messages[code])) {
+      if (typeof messages[code] === 'function') {
         msg = (messages[code] as MessageGetter)(...args.messageParams);
       } else {
         msg = messages[code] as string;

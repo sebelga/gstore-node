@@ -485,7 +485,7 @@ describe('Query', () => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
         ModelInstance.findAround('createdOn', '2016-1-1', 'string').catch((err) => {
-          expect(err.message).equal('[gstore.findAround()]: Options pased has to be an object.');
+          expect(err.message).equal('[gstore.findAround()]: Options passed has to be an object.');
           done();
         });
       });

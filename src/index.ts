@@ -88,7 +88,7 @@ export class Gstore {
   public __pkgVersion = pkg.version;
 
   constructor(config: GstoreConfig = {}) {
-    if (!is.object(config)) {
+    if (typeof config !== 'object' && typeof config !== 'function') {
       throw new Error('Gstore config must be an object.');
     }
 

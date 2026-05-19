@@ -1,5 +1,4 @@
 import extend from 'extend';
-import is from 'is';
 
 import {
   Transaction,
@@ -135,7 +134,7 @@ class Query<T extends object, M extends object> {
   ): PromiseWithPopulate<Entity<T, M> | null> {
     this.Model.__hooksEnabled = true;
 
-    if (!is.object(keyValues)) {
+    if (typeof keyValues !== 'object') {
       return Promise.reject(
         new Error('[gstore.findOne()]: "Params" has to be an object.'),
       ) as PromiseWithPopulate<never>;
@@ -197,8 +196,8 @@ class Query<T extends object, M extends object> {
         return { error: new Error('[gstore.findAround()]: Not all the arguments were provided.') };
       }
 
-      if (!is.object(options)) {
-        return { error: new Error('[gstore.findAround()]: Options pased has to be an object.') };
+      if (options === null || typeof options !== 'object') {
+        return { error: new Error('[gstore.findAround()]: Options passed has to be an object.') };
       }
 
       if (!{}.hasOwnProperty.call(options, 'after') && !{}.hasOwnProperty.call(options, 'before')) {
