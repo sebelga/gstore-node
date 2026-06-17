@@ -22,7 +22,7 @@
     "test:integration": "DATASTORE_EMULATOR_HOST=localhost:8081 jest --c=jest.config.integration.js"
   },
   "engines": {
-    "node": ">=10.0"
+    "node": ">=22.0"
   },
   "keywords": [
     "google datastore",
