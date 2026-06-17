@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [10.1.1](https://github.com/sebelga/gstore-node/compare/v10.1.0...v10.1.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* **package.json:** fixed the engine requirement to match the changelog ([a5ccfcf](https://github.com/sebelga/gstore-node/commit/a5ccfcff148ab2cd231e6a723dfaa090861976a1)), closes [#285](https://github.com/sebelga/gstore-node/issues/285)
+
 ## [10.1.0](https://github.com/sebelga/gstore-node/compare/v10.0.0...v10.1.0) (2026-05-19)
 
 ## [10.0.0](https://github.com/sebelga/gstore-node/compare/v9.1.0...v10.0.0) (2026-05-19)
